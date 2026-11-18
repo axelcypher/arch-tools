@@ -36,7 +36,7 @@ function VonHand({ p }: { p: ParagrafErgebnis }) {
   if (!p.festlegung) return null;
   const entwurf = !p.festlegung.bestaetigt;
   return (
-    <span className={`br-marke${entwurf ? ' br-marke-entwurf' : ''}`} title={entwurf ? 'von Hand festgelegt – Entwurf, wird beim Speichern bestätigt' : `von Hand festgelegt (${p.festlegung.von})`}>
+    <span className={`br-marke${entwurf ? ' br-marke-entwurf' : ''}`} title={entwurf ? 'von Hand festgelegt – Entwurf, noch nicht gespeichert' : `von Hand festgelegt (${p.festlegung.von})`}>
       {entwurf ? 'von Hand · Entwurf' : 'von Hand'}
     </span>
   );
@@ -86,8 +86,8 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
             )}
           </span>
         </span>
-        {/* bei einer Festlegung ihre Begründung (sonst stünde neben „von Hand“ der automatische Grund) */}
-        <span className="br-paragraf-grund">{nb(p.festlegung && !p.ueberholt && !p.unwirksam ? `Von Hand: ${p.festlegung.grund}` : (p.gruende[0] ?? ''))}</span>
+        {/* bei einer Festlegung: wer und wann bzw. ihre Begründung aus einer älteren Datei (sonst stünde neben „von Hand“ der automatische Grund) */}
+        <span className="br-paragraf-grund">{nb(p.festlegung && !p.ueberholt && !p.unwirksam ? `Von Hand: ${p.festlegung.grund ?? `festgelegt von ${p.festlegung.von}${p.festlegung.am ? ` am ${datum(p.festlegung.am)}` : ''}`}` : (p.gruende[0] ?? ''))}</span>
       </button>
     </li>
   );
@@ -574,7 +574,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       <Karte titel="Vorschriften" className="br-vorschriften-karte">
         {ohneOrt.length > 0 && (
           <div className="meldung warnung br-ohne-ort" role="status">
-            {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt. Übernehmen ordnet {ohneOrt.length === 1 ? 'sie' : 'sie alle'} dem jetzigen Ort zu – als Entwurf, beim Speichern zu bestätigen.{' '}
+            {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt. Übernehmen ordnet {ohneOrt.length === 1 ? 'sie' : 'sie alle'} dem jetzigen Ort zu – als Entwurf bis zum Speichern.{' '}
             <button type="button" className="small br-link" onClick={() => setNurGeaendert(true)} title="Nur die geänderten bzw. überholten Paragrafen zeigen">
               zeigen
             </button>{' '}
@@ -588,10 +588,10 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
                 // ins Suchfeld statt auf die Seite
                 setNurGeaendert(false);
                 setNurHand(true);
-                setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`, filter: filterKennung(suche, true, false, w.ampeln) });
+                setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf bis zum Speichern`, filter: filterKennung(suche, true, false, w.ampeln) });
                 setTimeout(() => suchfeld.current?.focus(), 0);
               }}
-              title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt"
+              title="Dem jetzigen Ort zuordnen – als Entwurf bis zum Speichern"
             >
               Für diesen Ort übernehmen
             </button>

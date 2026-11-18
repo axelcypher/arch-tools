@@ -56,8 +56,29 @@ describe('Abschnitt baurecht und Merkmale', () => {
     const neu = pruefungSetzen(roh, 'BAUA 2', p);
     expect(baurechtAusRoh(neu).pruefungen['BAUA 2']).toEqual(p);
     expect(neu.formulare).toEqual(roh.formulare);
-    const kaputt = baurechtAusRoh({ baurecht: { pruefungen: { A: { festlegungen: { x: { ampel: 'lila', grund: 'g' }, y: { ampel: 'rot', grund: '' } }, fakten: { f: { wert: {} } } } } } });
+    const kaputt = baurechtAusRoh({ baurecht: { pruefungen: { A: { festlegungen: { x: { ampel: 'lila', grund: 'g' } }, fakten: { f: { wert: {} } } } } } });
     expect(kaputt.pruefungen.A).toEqual(leerePruefung());
+  });
+
+  it('Festlegung ohne Begründung (seit sie freiwillig ist) wird geschrieben und gelesen; alte Begründungen bleiben lesbar', () => {
+    const p = leerePruefung();
+    p.festlegungen['bund/bnatschg/44'] = { ampel: 'gruen', von: 'TP', am: '2026-11-18', automatisch: 'gelb', bestaetigt: '2026-11-18T10:00' };
+    p.fakten['schutz.lsg'] = { wert: false, herkunft: 'manuell', sicherheit: 'sicher', bestaetigt: { von: 'TP', am: '2026-11-18' } };
+    expect(baurechtAusRoh(pruefungSetzen(roh, 'BAUA 2', p)).pruefungen['BAUA 2']).toEqual(p);
+    // ältere Datei: Begründung bzw. Beleg stehen weiter da; eine leere Begründung zählt als keine
+    const alt = baurechtAusRoh({
+      baurecht: {
+        pruefungen: {
+          A: {
+            festlegungen: { x: { ampel: 'rot', grund: 'Begehung am 03.11.2026', von: 'TP', am: '2026-11-03', automatisch: 'gelb' }, y: { ampel: 'gelb', grund: '  ' } },
+            fakten: { 'schutz.nsg': { wert: false, herkunft: 'manuell', sicherheit: 'sicher', bestaetigt: { von: 'TP', am: '2026-11-03', grund: 'Auskunft UNB' } } },
+          },
+        },
+      },
+    }).pruefungen.A;
+    expect(alt.festlegungen.x.grund).toBe('Begehung am 03.11.2026');
+    expect(alt.festlegungen.y).toEqual({ ampel: 'gelb', von: '', am: '', automatisch: 'gelb' });
+    expect(alt.fakten['schutz.nsg'].bestaetigt?.grund).toBe('Auskunft UNB');
   });
 
   it('Zusammenführen mit Änderungen einer anderen Instanz: je Eintrag, unbekannte Felder bleiben, Konflikte werden gemeldet', () => {

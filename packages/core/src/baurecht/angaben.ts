@@ -7,8 +7,10 @@ import type { FaktWert } from './typen';
 
 export interface AngabeOptionen {
   von: string;
-  /** Beleg (worauf gestützt) – mit Beleg gilt die Angabe als bestätigt */
+  /** Beleg (worauf gestützt) – nur noch aus älteren Aufrufen bzw. Dateien; mit Beleg gilt die Angabe als bestätigt */
   grund?: string;
+  /** im Dialog bestätigt (ohne Begründungstext): gilt wie mit Beleg als bestätigt – mit Namen und Datum */
+  bestaetigt?: boolean;
   /** Lage, an die die Angabe gebunden wird; `null` = sie müsste gebunden werden, es gibt aber keine Koordinaten */
   lage?: string | null;
   heute: string;
@@ -26,20 +28,21 @@ export function dienstVon(f: FaktWert | undefined): FaktWert['dienst'] {
 }
 
 /**
- * Angabe von Hand. Mit Beleg wie eine Bestätigung (bei Lagebezug an die Lage gebunden; ohne Koordinaten nur Hinweis).
+ * Angabe von Hand. Bestätigt (im Dialog bzw. mit Beleg) wie eine Bestätigung (bei Lagebezug an die Lage gebunden; ohne Koordinaten nur Hinweis).
  * Das letzte Ergebnis eines Dienstes bleibt an der Angabe, der Widerspruch wird daraus bestimmt.
  */
 export function angabeVonHand(alt: FaktWert | undefined, id: string, wert: FaktWert['wert'], o: AngabeOptionen): FaktWert {
   const f: FaktWert = { wert, herkunft: 'manuell', sicherheit: 'sicher', stand: o.heute, quelle: o.von ? `von Hand (${o.von})` : 'von Hand' };
   const grund = o.grund?.trim();
-  // Gemeindeschlüssel von Hand steuert Gebietsmodule und Schutzgebietswerte: nur Hinweis, bis er mit Beleg bestätigt ist
-  if (id === 'lage.ags' && !grund) Object.assign(f, { sicherheit: 'hinweis', grund: `von Hand eingetragen – bitte mit Beleg bestätigen (z. B. Flurstücksnachweis)${o.desktop ? ' oder „Lage abfragen“' : ''}` });
-  if (grund && o.lage !== null) f.bestaetigt = { von: o.von, am: o.heute, grund, ...(o.lage ? { lage: o.lage } : {}) };
-  if (grund && o.lage === null) Object.assign(f, { sicherheit: 'hinweis', grund: `${OHNE_LAGE} (Beleg: ${grund})` });
-  // Angaben zur Lage (Gemeindeschlüssel, Altlasten, Kampfmittel …) gelten auch ohne Beleg nur für diese Lage: ändert
+  const bestaetigt = !!o.bestaetigt || !!grund;
+  // Gemeindeschlüssel von Hand steuert Gebietsmodule und Schutzgebietswerte: nur Hinweis, bis er bestätigt ist
+  if (id === 'lage.ags' && !bestaetigt) Object.assign(f, { sicherheit: 'hinweis', grund: `von Hand eingetragen – bitte bestätigen (z. B. nach dem Flurstücksnachweis)${o.desktop ? ' oder „Lage abfragen“' : ''}` });
+  if (bestaetigt && o.lage !== null) f.bestaetigt = { von: o.von, am: o.heute, ...(grund ? { grund } : {}), ...(o.lage ? { lage: o.lage } : {}) };
+  if (bestaetigt && o.lage === null) Object.assign(f, { sicherheit: 'hinweis', grund: grund ? `${OHNE_LAGE} (Beleg: ${grund})` : OHNE_LAGE });
+  // Angaben zur Lage (Gemeindeschlüssel, Altlasten, Kampfmittel …) gelten auch unbestätigt nur für diese Lage: ändert
   // sich die Adresse, werden sie zum Hinweis; ohne Koordinaten sind sie von vornherein nur Hinweis
-  if (!grund && o.lage) f.lage = o.lage;
-  if (!grund && o.lage === null) Object.assign(f, { sicherheit: 'hinweis', grund: OHNE_LAGE });
+  if (!bestaetigt && o.lage) f.lage = o.lage;
+  if (!bestaetigt && o.lage === null) Object.assign(f, { sicherheit: 'hinweis', grund: OHNE_LAGE });
   return mitDienst(f, dienstVon(alt));
 }
 
@@ -47,9 +50,9 @@ export function angabeVonHand(alt: FaktWert | undefined, id: string, wert: FaktW
  * Hinweis als gesichert übernehmen. Ein Widerspruch eines Dienstes bleibt bestehen (aus dem gespeicherten Ergebnis neu
  * bestimmt) – die Bestätigung löscht ihn nicht.
  */
-export function hinweisBestaetigen(wert: FaktWert, o: AngabeOptionen & { grund: string }): FaktWert {
+export function hinweisBestaetigen(wert: FaktWert, o: AngabeOptionen): FaktWert {
   // ueberHinweis gehört nur zur Auswertung (der Wert kommt oft von dort) – nie in die Projektdatei
   const { widerspruch: _w, bestaetigt: _b, ueberHinweis: _u, ueberWiderspruch: _uw, ausVorfrage: _v, ausFolge: _f, gegenFolge: _g, ...ohne } = wert;
-  const f: FaktWert = o.lage === null ? { ...ohne, grund: OHNE_LAGE } : { ...ohne, bestaetigt: { von: o.von, am: o.heute, grund: o.grund.trim(), ...(o.lage ? { lage: o.lage } : {}) } };
+  const f: FaktWert = o.lage === null ? { ...ohne, grund: OHNE_LAGE } : { ...ohne, bestaetigt: { von: o.von, am: o.heute, ...(o.grund?.trim() ? { grund: o.grund.trim() } : {}), ...(o.lage ? { lage: o.lage } : {}) } };
   return wert.dienst ? mitDienst(f, wert.dienst) : f;
 }

@@ -215,7 +215,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
     if (!p.festlegung) return;
     setAufgehoben({ id: p.id, f: p.festlegung });
     useBaurecht.getState().festlegungAufheben(p.id);
-    useBaurecht.getState().ansagen(`Festlegung aufgehoben – automatisch: „${AMPEL_TEXT[p.automatisch]}“${p.festlegung.bestaetigt ? '; beim Speichern noch einmal bestätigen' : ''}`);
+    useBaurecht.getState().ansagen(`Festlegung aufgehoben – automatisch: „${AMPEL_TEXT[p.automatisch]}“`);
   };
   // feste Fußzeile der Karte: Festlegen, Aufheben, Rückgängig
   const fuss = (
@@ -236,11 +236,11 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             className="small"
             onClick={() => {
               useBaurecht.getState().festlegungWiederherstellen(aufgehoben.id, aufgehoben.f);
-              // was jetzt im Stand steht (die Bestätigung entfällt, wenn sie vom Stand der Datei abweicht); wie beim
+              // was jetzt im Stand steht (Entwurf, wenn sie vom Stand der Datei abweicht); wie beim
               // Festlegen: ein „entfällt“, das noch nicht wirkt, sagt es dazu
               const wieder = useBaurecht.getState().pruefung.festlegungen[aufgehoben.id] ?? aufgehoben.f;
               const vorbehalt = wieder.ampel === 'gruen' ? p.entfaelltVorbehalt : undefined;
-              useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[wieder.ampel]}“${wieder.bestaetigt ? '' : ' (Entwurf)'}${vorbehalt ? `, noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“` : ''}`);
+              useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[wieder.ampel]}“${wieder.bestaetigt ? '' : ' (Entwurf, noch nicht gespeichert)'}${vorbehalt ? `, noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“` : ''}`);
               setAufgehoben(null);
               // der Knopf verschwindet – Fokus auf „Festlegung ändern …“
               setTimeout(() => festlegenKnopf.current?.focus(), 0);
@@ -276,7 +276,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             ? `Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'}`
             : p.festlegung.bestaetigt
               ? 'von Hand festgelegt'
-              : 'von Hand festgelegt · Entwurf (beim Speichern bestätigen)'}
+              : 'von Hand festgelegt · Entwurf (noch nicht gespeichert)'}
         </p>
       )}
       {p.ueberholt && (
@@ -294,7 +294,11 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         <h3>Begründung</h3>
         {p.festlegung && (
           <p className="br-festlegung-text">
-            <strong>Von Hand ({p.festlegung.von}, {datum(p.festlegung.am)}):</strong> {nb(p.festlegung.grund)}
+            {/* eine Begründung gibt es nur noch aus älteren Dateien */}
+            <strong>
+              Von Hand „{AMPEL_TEXT[p.festlegung.ampel]}“ ({p.festlegung.von}, {datum(p.festlegung.am)}){p.festlegung.grund ? ':' : ''}
+            </strong>
+            {p.festlegung.grund ? <> {nb(p.festlegung.grund)}</> : null}
             <br />
             <span className="br-leise">automatisch wäre: {AMPEL_TEXT[p.automatisch]}</span>
           </p>

@@ -28,7 +28,7 @@ describe('Ort: Festlegungen und Planungsrecht nach einem Adresswechsel', () => {
 
   it('die Festlegung trägt den Ort und wird nach einem Umzug überholt (nicht mehr grün)', () => {
     const st = useBaurecht.getState();
-    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'Begehung am 03.11.2026 ohne Befund', 'TP', {}, { 'merkmal:Vorhaben': 'Errichtung' });
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'TP', {}, { 'merkmal:Vorhaben': 'Errichtung' });
     const f = useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44'];
     expect(f.ort?.adresse).toMatch(/\|/);
     // der Ort landet auch in der Datei

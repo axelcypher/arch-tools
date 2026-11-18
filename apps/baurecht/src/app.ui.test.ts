@@ -92,8 +92,8 @@ const tippen = (el: HTMLTextAreaElement | HTMLInputElement, wert: string) =>
 /** die Prüfung des Antrags, wie sie in der zuletzt geschriebenen Datei steht */
 const inDatei = () => baurechtAusRoh(projektdateiRoh(geschrieben!)).pruefungen['BAUA 1'];
 
-/** ersten Paragrafen wählen und von Hand festlegen */
-function festlegen(host: HTMLElement, grund: string, ampel?: 'rot' | 'gelb' | 'gruen', id?: string): string {
+/** ersten Paragrafen wählen und von Hand festlegen – ein Klick, ohne Begründungstext */
+function festlegen(host: HTMLElement, ampel?: 'rot' | 'gelb' | 'gruen', id?: string): string {
   // ohne Kennung der erste Paragraf; mit Kennung genau dieser (die Liste ordnet nach Ampel um)
   act(() => host.querySelector<HTMLButtonElement>(id ? `[data-roving="p:${CSS.escape(id)}"]` : '.br-paragraf')!.click());
   act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
@@ -102,36 +102,17 @@ function festlegen(host: HTMLElement, grund: string, ampel?: 'rot' | 'gelb' | 'g
     const i = ['rot', 'gelb', 'gruen'].indexOf(ampel);
     act(() => dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[i].click());
   }
-  tippen(dialog.querySelector('textarea')!, grund);
   act(() => knopf(dialog, 'Festlegen')!.click());
   return useBaurecht.getState().auswahl!;
 }
 
-/** speichern und im Bestätigungsdialog antworten */
-async function speichernMit(antwort: 'Bestätigen und speichern' | 'Speichern, diese als Entwurf behalten' | 'Abbrechen'): Promise<HTMLElement> {
-  let fertig: Promise<boolean> | null = null;
-  await act(async () => {
-    fertig = speichern();
-  });
-  const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
-  expect(best).toBeTruthy();
-  const inhalt = best.cloneNode(true) as HTMLElement;
-  if (antwort === 'Bestätigen und speichern') {
-    expect(knopf(best, antwort)!.disabled).toBe(true);
-    act(() => best.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
-  }
-  await act(async () => {
-    knopf(best, antwort)!.click();
-    await fertig;
-  });
-  return inhalt;
-}
-
-/** speichern, wenn nichts zu bestätigen ist */
+/** speichern – ohne Rückfrage: es gibt keine zweite Bestätigung mehr, kein neuer Dialog erscheint */
 async function speichernOhneDialog(): Promise<void> {
+  const vorher = document.querySelectorAll('[role="dialog"]').length;
   await act(async () => {
-    await speichern();
+    expect(await speichern()).toBe(true);
   });
+  expect(document.querySelectorAll('[role="dialog"]').length, 'kein neuer Dialog beim Speichern').toBe(vorher);
 }
 
 describe('Baurecht – Oberfläche', () => {
@@ -191,7 +172,7 @@ describe('Baurecht – Oberfläche', () => {
     expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
   });
 
-  it('Paragraf wählen → Einzelheiten; von Hand festlegen nur mit Begründung; beim Speichern zweite Bestätigung', async () => {
+  it('Paragraf wählen → Einzelheiten; von Hand festlegen mit einem Klick (ohne Begründungsfeld); Speichern ohne Rückfrage', async () => {
     const host = render();
     const zeile = host.querySelector<HTMLButtonElement>('.br-paragraf')!;
     act(() => zeile.click());
@@ -201,87 +182,79 @@ describe('Baurecht – Oberfläche', () => {
     expect(dialog.textContent).toContain('von Hand festlegen');
     // Vorgabe ist die automatische Ampel (keine voreingestellte Herabstufung)
     expect(dialog.querySelector('.meldung.warnung')).toBeNull();
-    // ohne Begründung: Meldung, keine Festlegung
+    // kein Begründungsfeld, kein Pflichtfeld: „Festlegen“ übernimmt sofort
+    expect(dialog.querySelector('textarea')).toBeNull();
+    expect(dialog.querySelector('[required], [aria-required="true"]')).toBeNull();
     act(() => knopf(dialog, 'Festlegen')!.click());
-    expect(dialog.textContent).toMatch(/Bitte begründen/);
-    expect(Object.keys(useBaurecht.getState().pruefung.festlegungen)).toHaveLength(0);
-    tippen(dialog.querySelector('textarea')!, 'Abstimmung mit der Bauaufsicht am 05.11.2026');
-    act(() => knopf(dialog, 'Festlegen')!.click());
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
     const ids = Object.keys(useBaurecht.getState().pruefung.festlegungen);
     expect(ids).toHaveLength(1);
-    expect(host.querySelector('.br-marke-entwurf')).not.toBeNull();
+    const f = useBaurecht.getState().pruefung.festlegungen[ids[0]];
+    expect(f.von).toBeTruthy();
+    expect(f.am).toMatch(/^\d{4}-/);
+    expect(f.grund).toBeUndefined();
+    // bis zum Speichern als Entwurf erkennbar – und als „von Hand“
+    expect(host.querySelector('.br-marke-entwurf')?.textContent).toMatch(/von Hand/);
 
-    await speichernMit('Bestätigen und speichern');
-    // in der geschriebenen Datei: bestätigt
+    await speichernOhneDialog();
+    // in der geschriebenen Datei: mit Zeitpunkt des Speicherns, Wert, Namen und Datum
+    expect(inDatei().festlegungen[ids[0]]).toMatchObject({ ampel: f.ampel, von: f.von, am: f.am });
     expect(inDatei().festlegungen[ids[0]].bestaetigt).toMatch(/^\d{4}-/);
     expect(useBaurecht.getState().pruefung.festlegungen[ids[0]].bestaetigt).toMatch(/^\d{4}-/);
+    expect(host.querySelector('.br-marke-entwurf')).toBeNull();
   });
 
-  it('„Speichern, diese als Entwurf behalten“: Entwurf bleibt in der App, nicht in der Datei', async () => {
+  it('eine geänderte Festlegung übernimmt das Speichern ohne Rückfrage', async () => {
     const host = render();
-    festlegen(host, 'Sonderfall laut Vorbescheid vom 01.10.2026');
+    festlegen(host, 'rot');
     const id = Object.keys(useBaurecht.getState().pruefung.festlegungen)[0];
-    await speichernMit('Speichern, diese als Entwurf behalten');
-    expect(inDatei()?.festlegungen[id]).toBeUndefined();
-    const f = useBaurecht.getState().pruefung.festlegungen[id];
-    expect(f).toBeTruthy();
-    expect(f.bestaetigt).toBeUndefined();
-  });
-
-  it('geänderte bestätigte Festlegung „ohne“ gespeichert: in der Datei bleibt die bestätigte', async () => {
-    const host = render();
-    festlegen(host, 'Erste Festlegung, mit Bauaufsicht abgestimmt', 'rot');
-    const id = Object.keys(useBaurecht.getState().pruefung.festlegungen)[0];
-    await speichernMit('Bestätigen und speichern');
+    await speichernOhneDialog();
     expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'rot' });
-    // ändern (Herabstufung auf grün) und ohne Bestätigung speichern
-    festlegen(host, 'Zweite Festlegung, noch nicht abgestimmt', 'gruen', id);
-    expect(useBaurecht.getState().pruefung.festlegungen[id]).toMatchObject({ ampel: 'gruen' });
-    await speichernMit('Speichern, diese als Entwurf behalten');
-    expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'rot', grund: 'Erste Festlegung, mit Bauaufsicht abgestimmt' });
-    expect(inDatei().festlegungen[id].bestaetigt).toMatch(/^\d{4}-/);
-    // in der App bleibt der Entwurf
+    // ändern (Herabstufung auf grün) und speichern
+    festlegen(host, 'gruen', id);
     expect(useBaurecht.getState().pruefung.festlegungen[id]).toMatchObject({ ampel: 'gruen' });
     expect(useBaurecht.getState().pruefung.festlegungen[id].bestaetigt).toBeUndefined();
+    await speichernOhneDialog();
+    expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'gruen' });
+    expect(inDatei().festlegungen[id].bestaetigt).toMatch(/^\d{4}-/);
   });
 
-  it('Aufheben einer bestätigten Festlegung braucht die zweite Bestätigung', async () => {
+  it('Aufheben einer gespeicherten Festlegung übernimmt das Speichern ohne Rückfrage', async () => {
     const host = render();
-    festlegen(host, 'Festlegung mit Begründung aus der Abstimmung', 'rot');
+    festlegen(host, 'rot');
     const id = Object.keys(useBaurecht.getState().pruefung.festlegungen)[0];
-    await speichernMit('Bestätigen und speichern');
+    await speichernOhneDialog();
     act(() => knopf(host, /Festlegung aufheben/)!.click());
     expect(useBaurecht.getState().pruefung.festlegungen[id]).toBeUndefined();
-    const dialog = await speichernMit('Speichern, diese als Entwurf behalten');
-    expect(dialog.textContent).toMatch(/Festlegung aufgehoben/);
-    expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'rot' });
-    expect(useBaurecht.getState().pruefung.festlegungen[id]).toBeUndefined();
-    await speichernMit('Bestätigen und speichern');
+    await speichernOhneDialog();
     expect(inDatei().festlegungen[id]).toBeUndefined();
   });
 
-  it('Hinweis bestätigen nur mit Begründung; die Bestätigung wird beim Speichern noch einmal abgefragt', async () => {
+  it('Hinweis bestätigen mit einem Klick (ohne Begründungsfeld); im Protokoll mit Namen und Datum', async () => {
     const host = render();
     act(() => knopf(host, 'alle')?.click());
     const b = knopf(host, 'Bestätigen …');
     expect(b, 'mindestens eine Angabe ist nur Hinweis').toBeTruthy();
     act(() => b!.click());
-    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('bestätigen'))!;
+    expect(dialog.querySelector('textarea')).toBeNull();
+    // Startfokus auf „Bestätigen“ – ein Enter genügt
+    await vi.waitFor(() => expect(document.activeElement).toBe(knopf(dialog, 'Bestätigen')));
     act(() => knopf(dialog, 'Bestätigen')!.click());
-    expect(dialog.textContent).toMatch(/Bitte angeben, worauf/);
-    expect(Object.values(useBaurecht.getState().pruefung.fakten).some((f) => f.bestaetigt)).toBe(false);
-    tippen(dialog.querySelector('textarea')!, 'Flächen im Modell vollständig, geprüft am 12.11.2026');
-    act(() => knopf(dialog, 'Bestätigen')!.click());
-    const [id] = Object.entries(useBaurecht.getState().pruefung.fakten).find(([, f]) => f.bestaetigt)!;
-    const inhalt = await speichernMit('Speichern, diese als Entwurf behalten');
-    expect(inhalt.textContent).toMatch(/Hinweis bestätigt/);
-    expect(inDatei()?.fakten[id]?.bestaetigt).toBeUndefined();
-    expect(useBaurecht.getState().pruefung.fakten[id].bestaetigt?.grund).toMatch(/vollständig/);
-    await speichernMit('Bestätigen und speichern');
-    expect(inDatei().fakten[id].bestaetigt).toMatchObject({ grund: 'Flächen im Modell vollständig, geprüft am 12.11.2026' });
+    const [id, f] = Object.entries(useBaurecht.getState().pruefung.fakten).find(([, x]) => x.bestaetigt)!;
+    expect(f.bestaetigt).toMatchObject({ von: expect.any(String), am: expect.stringMatching(/^\d{4}-/) });
+    expect(f.bestaetigt!.grund).toBeUndefined();
+    await speichernOhneDialog();
+    expect(inDatei().fakten[id].bestaetigt).toMatchObject({ von: f.bestaetigt!.von, am: f.bestaetigt!.am });
+    // im Protokoll: gesichert von, am – ohne Spalte für einen Beleg
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Gesicherte Angaben'))!.nextElementSibling!;
+    expect(tabelle.textContent).toContain(f.bestaetigt!.von);
+    expect(tabelle.textContent).not.toMatch(/gestützt auf/);
   });
 
-  it('Vorfragen: oben in ihrer Gruppe, Einzelfragen eingeklappt; „unklar“ klappt sie auf; „Keine davon …“ mit einem Beleg je Vorfrage; Protokoll nennt, was entfällt', async () => {
+  it('Vorfragen: oben in ihrer Gruppe, Einzelfragen eingeklappt; „unklar“ klappt sie auf; „Keine davon …“ mit einem Klick (ohne Belegfelder); Protokoll nennt, was entfällt', async () => {
     const host = render();
     const gruppe = host.querySelector('#br-g-schutz')!.closest('section')!;
     // oben in der Gruppe: „Keine davon …“, dann die Vorfragen
@@ -309,24 +282,19 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(vf, 'unklar')!.click());
     expect(knopf(vf, 'unklar')!.getAttribute('aria-pressed')).toBe('false');
     expect(vf.querySelector('[data-fakt="schutz.ffh"]')).toBeNull();
-    // alle offenen Vorfragen der Gruppe auf einmal mit „nein“ – je Vorfrage ein Beleg
+    // alle offenen Vorfragen der Gruppe auf einmal mit „nein“ – der Dialog nennt jede, ohne Texteingabe
     const offen = [...gruppe.querySelectorAll<HTMLElement>('[data-vorfrage^="vorfrage."]')].filter((b) => b.querySelector('.br-fakt.br-offen[data-fakt^="vorfrage."]')).map((b) => b.dataset.vorfrage!);
     expect(offen.length).toBeGreaterThanOrEqual(2);
     act(() => knopf(gruppe, 'Keine davon …')!.click());
     const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vorfragen mit „nein“ beantworten'))!;
     expect(dialog.textContent).toMatch(/^Schutzgebiete und Denkmal: \d+ Vorfragen/);
-    const felder = dialog.querySelectorAll<HTMLTextAreaElement>('textarea');
-    expect(felder.length).toBe(offen.length);
-    await vi.waitFor(() => expect(document.activeElement).toBe(felder[0]));
-    // ein fehlender Beleg: nichts übernommen, Fokus auf das Feld
-    tippen(felder[0], 'Auskunft UNB vom 03.11.2026');
+    expect(dialog.querySelector('textarea')).toBeNull();
+    expect(dialog.querySelectorAll('.br-vorfragen-liste li').length).toBe(offen.length);
+    // Startfokus auf „Übernehmen“ – ein Klick bzw. Enter genügt
+    await vi.waitFor(() => expect(document.activeElement).toBe(knopf(dialog, 'Übernehmen')));
     act(() => knopf(dialog, 'Übernehmen')!.click());
-    expect(useBaurecht.getState().pruefung.fakten[offen[0]]).toBeUndefined();
-    expect(document.activeElement).toBe(felder[1]);
-    expect(felder[1].getAttribute('aria-invalid')).toBe('true');
-    felder.forEach((f, i) => tippen(f, `Beleg ${i + 1}: Auskunft vom 03.11.2026`));
-    act(() => knopf(dialog, 'Übernehmen')!.click());
-    offen.forEach((v, i) => expect(useBaurecht.getState().pruefung.fakten[v], v).toMatchObject({ wert: false, bestaetigt: { grund: `Beleg ${i + 1}: Auskunft vom 03.11.2026` } }));
+    offen.forEach((v) => expect(useBaurecht.getState().pruefung.fakten[v], v).toMatchObject({ wert: false, bestaetigt: { von: expect.any(String) } }));
+    offen.forEach((v) => expect(useBaurecht.getState().pruefung.fakten[v].bestaetigt!.grund, v).toBeUndefined());
     // Fokus auf die erste Vorfrage (der Knopf ist weg), eine Ansage für alle
     expect(host.querySelector(`[data-fakt="${offen[0]}"]`)!.contains(document.activeElement)).toBe(true);
     expect(useBaurecht.getState().ansage).toMatch(/Vorfragen mit „nein“ beantwortet/);
@@ -334,19 +302,20 @@ describe('Baurecht – Oberfläche', () => {
     expect(nachher.querySelector('[data-fakt="schutz.ffh"]')).toBeNull();
     expect(nachher.textContent).toMatch(/Entfallen wegen „nein“: .*FFH-Gebiet/);
     expect(knopf(host, 'Keine davon …')).toBeUndefined();
-    // im Protokoll: je Vorfrage die entfallenen Einzelfragen, die Vorfrage mit Beleg als Grund
+    // im Protokoll: je Vorfrage die entfallenen Einzelfragen, die Vorfrage mit wer und wann als Grund
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const h = [...d.querySelectorAll('h2')].find((x) => x.textContent?.startsWith('Wegen „nein“ in der Vorfrage entfallen'))!;
     expect(h).toBeTruthy();
     const tabelle = h.nextElementSibling as HTMLElement;
     const zeile = [...tabelle.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.startsWith('Natura 2000'))!;
-    expect(zeile.textContent).toMatch(/von Hand.*Beleg: Beleg \d: Auskunft vom 03\.11\.2026/);
+    expect(zeile.textContent).toMatch(/von Hand \(.+\), \d\d\.\d\d\.\d{4}/);
+    expect(zeile.textContent).not.toMatch(/Beleg/);
     expect(zeile.textContent).toMatch(/FFH-Gebiet.*Vogelschutzgebiet.*Natura-2000-Gebiet in der Nähe/);
     act(() => knopf(d, 'Schließen')!.click());
   });
 
-  it('Werte, die sich aus anderen ergeben: keine Frage, am Ende der Gruppe mit Grund; Überstimmen nur mit Beleg; Protokoll nennt sie', () => {
+  it('Werte, die sich aus anderen ergeben: keine Frage, am Ende der Gruppe mit Grund; Überstimmen über den Bestätigungsdialog; Protokoll nennt sie', () => {
     const host = render();
     const gruppe = host.querySelector('#br-g-gebaeude')!.closest('section')!;
     // Einfamilienhaus: keine Frage nach Besuchern, sondern „ergibt sich“
@@ -355,7 +324,7 @@ describe('Baurecht – Oberfläche', () => {
     expect(liste.querySelector('summary')!.textContent).toMatch(/^Ergibt sich aus anderen Angaben \(\d+\)$/);
     const zeile = liste.querySelector<HTMLElement>('li[data-fakt="gebaeude.besucher"]')!;
     expect(zeile.textContent).toMatch(/Besucher.*: 0 – reines Wohngebäude – keine Versammlungsstätte/);
-    // überstimmen: die Frage steht da, eine Antwort nur mit Beleg
+    // überstimmen: die Frage steht da, eine Antwort über den Bestätigungsdialog
     act(() => knopf(zeile, 'Überstimmen …')!.click());
     const frage = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.besucher"]')!;
     expect(frage).toBeTruthy();
@@ -364,23 +333,22 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(frage, 'nicht überstimmen')!.click());
     expect(host.querySelector('.br-fakt[data-fakt="gebaeude.besucher"]')).toBeNull();
     expect(host.querySelector('.br-ergibt li[data-fakt="gebaeude.besucher"]')).toBeTruthy();
-    // überstimmen mit Beleg (Sonderfall): „Aufenthaltsräume: nein“ im Einfamilienhaus – Dialog mit eigenem Text, danach
-    // gilt die Antwort ohne Widerspruch
+    // überstimmen (Sonderfall): „Aufenthaltsräume: nein“ im Einfamilienhaus – Dialog mit eigenem Text, danach gilt die
+    // Antwort ohne Widerspruch
     act(() => knopf(host.querySelector<HTMLElement>('.br-ergibt li[data-fakt="gebaeude.aufenthaltsraeume"]')!, 'Überstimmen …')!.click());
     const ar = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.aufenthaltsraeume"]')!;
     act(() => knopf(ar, 'nein')!.click());
     const dlg = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((x) => x.textContent?.includes('von Hand setzen'))!;
     expect(dlg.textContent).toMatch(/ergibt sich sonst aus anderen Angaben/);
-    tippen(dlg.querySelector('textarea')!, 'Nur Lagerraum, Bauantrag vom 03.11.2026');
     act(() => knopf(dlg, 'Übernehmen')!.click());
-    expect(useBaurecht.getState().pruefung.fakten['gebaeude.aufenthaltsraeume']).toMatchObject({ wert: false, bestaetigt: { grund: 'Nur Lagerraum, Bauantrag vom 03.11.2026' } });
+    expect(useBaurecht.getState().pruefung.fakten['gebaeude.aufenthaltsraeume']).toMatchObject({ wert: false, bestaetigt: { von: expect.any(String) } });
     const arNach = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.aufenthaltsraeume"]')!;
     expect(arNach.querySelector('.br-widerspruch')).toBeNull();
-    // eine abweichende ältere Antwort ohne Beleg: Widerspruch, „Mit Beleg übernehmen …“
+    // eine abweichende ältere Antwort ohne Bestätigung: Widerspruch, „Als Sonderfall übernehmen …“
     act(() => useBaurecht.getState().faktSetzen('gebaeude.besucher', 300, 'TP'));
     const alt = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.besucher"]')!;
     expect(alt.querySelector('.br-widerspruch')).toBeTruthy();
-    expect(knopf(alt, 'Mit Beleg übernehmen …')).toBeTruthy();
+    expect(knopf(alt, 'Als Sonderfall übernehmen …')).toBeTruthy();
     // im Protokoll: „Ergibt sich aus anderen Angaben“ mit Grund
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
@@ -390,7 +358,7 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(d, 'Schließen')!.click());
   });
 
-  it('Schutzgebiet von Hand setzen nur mit Beleg; ändert sich die Angabe währenddessen, wird abgebrochen', async () => {
+  it('Schutzgebiet von Hand setzen über den Bestätigungsdialog (ohne Texteingabe); ändert sich die Angabe währenddessen, wird abgebrochen', async () => {
     // die Einzelfrage steht unter ihrer Vorfrage – aufgeklappt („Einzelfragen zeigen“)
     act(() => useBaurecht.setState({ vorfragenAuf: { 'vorfrage.naturschutz': true } }));
     const host = render();
@@ -398,19 +366,18 @@ describe('Baurecht – Oberfläche', () => {
     const zeile = host.querySelector<HTMLElement>('[data-fakt="schutz.lsg"]')!;
     expect(zeile, 'Zeile Landschaftsschutzgebiet').toBeTruthy();
     act(() => knopf(zeile, 'nein')!.click());
-    // noch nichts gesetzt – erst der Dialog mit Begründung
+    // noch nichts gesetzt – erst der Dialog mit den Folgen
     expect(useBaurecht.getState().pruefung.fakten['schutz.lsg']).toBeUndefined();
     const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand setzen'))!;
     expect(dialog.textContent).toMatch(/Vorschrift|ändert dadurch/);
-    tippen(dialog.querySelector('textarea')!, 'Auskunft UNB vom 03.11.2026, Az. 61-123');
+    expect(dialog.querySelector('textarea')).toBeNull();
     // währenddessen liefert „Lage abfragen“ einen Treffer
     act(() => useBaurecht.getState().geoFakten({ 'schutz.lsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS' } }));
     act(() => knopf(dialog, 'Übernehmen')!.click());
     expect(dialog.textContent).toMatch(/inzwischen geändert/);
     expect(useBaurecht.getState().pruefung.fakten['schutz.lsg']).toMatchObject({ wert: true, herkunft: 'geodienst' });
-    // Dialog schließen (getippte Begründung: erst nachfragen, dann verwerfen)
+    // Dialog schließen: ohne Rückfrage (nichts getippt, nichts zu verwerfen)
     act(() => knopf(dialog, 'Abbrechen')!.click());
-    act(() => knopf(dialog, 'Verwerfen')!.click());
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
@@ -458,7 +425,7 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(host, 'alle Angaben')?.click());
     const zeile = host.querySelector<HTMLElement>('[data-fakt="schutz.nsg"]')!;
     act(() => knopf(zeile, 'Bestätigen …')!.click());
-    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('bestätigen'))!;
     const m = /Stuft (\d+) Vorschrift/.exec(dialog.textContent ?? '');
     expect(m, 'Vorschau mit Zahl').toBeTruthy();
     const s = useBaurecht.getState();
@@ -579,7 +546,7 @@ describe('Baurecht – Oberfläche', () => {
 
   it('Festlegung aufheben: Fokus auf „Von Hand festlegen …“, Rückgängig stellt sie wieder her', () => {
     const host = render();
-    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    const id = festlegen(host, 'rot');
     const vorher = structuredClone(useBaurecht.getState().pruefung.festlegungen[id]);
     act(() => knopf(host, 'Festlegung aufheben')!.click());
     expect(useBaurecht.getState().pruefung.festlegungen[id]).toBeUndefined();
@@ -592,7 +559,7 @@ describe('Baurecht – Oberfläche', () => {
 
   it('Prüfprotokoll: Name des Dialogs, Festlegungen und gesicherte Angaben vor den offenen Punkten, Sperrgrund sichtbar', () => {
     const host = render();
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    festlegen(host, 'rot');
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(d.getAttribute('aria-label')).toMatch(/^Baurechtliche Prüfung vor dem Einreichen – BAUA 1/);
@@ -602,7 +569,11 @@ describe('Baurecht – Oberfläche', () => {
     expect(i('Festlegungen von Hand')).toBeLessThan(i('Gesicherte Angaben'));
     expect(i('Gesicherte Angaben')).toBeLessThan(i('Offene Punkte'));
     expect(d.querySelector('.br-protokoll-offen thead')?.textContent).toMatch(/Was fehlt.*Anzahl.*Paragrafen/);
-    expect(d.textContent).toMatch(/Angaben von Hand ohne Beleg/);
+    expect(d.textContent).toMatch(/Angaben von Hand ohne eigene Bestätigung/);
+    // die Festlegung mit Ampel, Namen und Datum – ohne Spalte „Begründung“ (es gibt keine)
+    const fl = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Festlegungen von Hand'))!.nextElementSibling!;
+    expect(fl.querySelector('thead')!.textContent).not.toMatch(/Begründung/);
+    expect(fl.querySelector('tbody')!.textContent).toMatch(/gilt.*\d\d\.\d\d\.\d{4}.*Entwurf – noch nicht gespeichert/);
     // Entwurf: Abschließen gesperrt, der Grund steht sichtbar daneben
     expect(knopf(d, 'Prüfung abschließen')!.disabled).toBe(true);
     expect(d.querySelector('.br-sperre')?.textContent).toMatch(/Erst speichern/);
@@ -672,22 +643,16 @@ describe('Baurecht – Oberfläche', () => {
     expect(document.activeElement?.closest('.br-fakt')?.textContent).toMatch(/Gemeinde/);
   });
 
-  it('Verlassen mit Entwürfen: „als Entwurf behalten“ meldet nicht „gespeichert“, die Entwürfe bleiben', async () => {
+  it('Verlassen mit Entwürfen: speichert ohne Rückfrage, danach bleibt nichts offen', async () => {
     const host = render();
-    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    let ergebnis: Promise<boolean> | null = null;
+    const id = festlegen(host, 'rot');
+    let ergebnis = false;
     await act(async () => {
-      ergebnis = speichernVollstaendig();
+      ergebnis = await speichernVollstaendig();
     });
-    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
-    await act(async () => knopf(best, 'Speichern, diese als Entwurf behalten')!.click());
-    // Meldung: die Entwürfe bleiben offen – erst nach „OK“ kommt das Ergebnis
-    const meldung = [...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="alertdialog"]')].find((d) => d.textContent?.includes('Entwürfe bleiben offen'));
-    expect(meldung, 'Meldung „Entwürfe bleiben offen“').toBeTruthy();
-    await act(async () => knopf(meldung!, /OK/)!.click());
-    expect(await ergebnis!).toBe(false);
-    expect(useBaurecht.getState().pruefung.festlegungen[id]).toBeTruthy();
-    expect(useBaurecht.getState().pruefung.festlegungen[id].bestaetigt).toBeUndefined();
+    expect(ergebnis).toBe(true);
+    expect(document.querySelector('[role="dialog"], [role="alertdialog"]')).toBeNull();
+    expect(inDatei().festlegungen[id].bestaetigt).toMatch(/^\d{4}-/);
   });
 
   it('Vorschau mit Widerspruch: der Bestätigen-Dialog sagt, dass der Widerspruch bleibt', async () => {
@@ -698,7 +663,7 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(host, 'alle Angaben')?.click());
     const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Gemeindeschlüssel/.test(z.textContent ?? '') && !!knopf(z, 'Bestätigen …'))!;
     act(() => knopf(zeile, 'Bestätigen …')!.click());
-    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('bestätigen'))!;
     expect(dialog.textContent).toMatch(/Widerspruch bleibt: ALKIS meldet „05974036“/);
     act(() => knopf(dialog, 'Abbrechen')!.click());
   });
@@ -772,22 +737,15 @@ describe('Baurecht – Oberfläche', () => {
     expect(document.activeElement).toBe(mehr);
   });
 
-  it('zweite Bestätigung: eine überholte Festlegung wird angesagt und lässt sich so nicht bestätigen', async () => {
+  it('eine überholte Festlegung bleibt auch nach dem Speichern als überholt gekennzeichnet (kein falsches Grün)', async () => {
     const host = render();
-    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'gelb');
+    const id = festlegen(host, 'gelb');
     const fl = useBaurecht.getState().pruefung.festlegungen[id];
     // eine beteiligte Angabe hat sich seit dem Festlegen geändert (damals „Beseitigung“): die Festlegung ist überholt
     act(() => useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, festlegungen: { [id]: { ...fl, fakten: { ...fl.fakten, 'merkmal:Vorhaben': 'Beseitigung' } } } } }));
-    let fertig: Promise<boolean> | null = null;
-    await act(async () => {
-      fertig = speichern();
-    });
-    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
-    expect(best.textContent).toMatch(/Überholt:/);
-    expect(best.querySelector<HTMLInputElement>('input[type="checkbox"]')!.disabled).toBe(true);
-    expect(knopf(best, 'Bestätigen und speichern')!.disabled).toBe(true);
-    await act(async () => knopf(best, 'Abbrechen')!.click());
-    expect(await fertig!).toBe(false);
+    await speichernOhneDialog();
+    expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'gelb' });
+    await vi.waitFor(() => expect(host.querySelector('.br-detail-festlegung')?.textContent).toMatch(/Festlegung „prüfen“ überholt/), LANGSAME_RUNNER);
   });
 
   it('nach „Bestätigen“ einer Angabe bleibt der Fokus in ihrer Zeile', () => {
@@ -799,8 +757,7 @@ describe('Baurecht – Oberfläche', () => {
     expect(b.getAttribute('aria-label')).toMatch(/ bestätigen …$/);
     act(() => b.focus());
     act(() => b.click());
-    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
-    tippen(dialog.querySelector('textarea')!, 'Modell vollständig geprüft am 12.11.2026');
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('bestätigen'))!;
     vi.useFakeTimers();
     act(() => knopf(dialog, 'Bestätigen')!.click());
     act(() => void vi.runAllTimers());
@@ -995,9 +952,9 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
     act(() => knopf(hinweis, 'Für diesen Ort bestätigen')!.click());
     const nachher = auswertungMit(useBaurecht.getState().pruefung.fakten).paragrafen.filter((p) => vorher.get(p.id) !== p.ampel);
     expect(nachher.length).toBe(n);
-    // am Merkmal: Entwurf (zählt schon, zweite Bestätigung beim Speichern), zurücknehmbar
+    // am Merkmal: Entwurf (zählt schon, noch nicht gespeichert), zurücknehmbar
     const merkmal = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"]')!;
-    expect(merkmal.querySelector('.br-merkmal-marken')?.textContent).toMatch(/Entwurf – beim Speichern bestätigen/);
+    expect(merkmal.querySelector('.br-merkmal-marken')?.textContent).toMatch(/für diesen Ort bestätigt · Entwurf/);
     // im Protokoll als Entwurf, mit der Zahl der Paragrafen, die nur daran hängen
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
@@ -1119,55 +1076,37 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(merkmalZeile).toContain('Planungsrecht: „Gemengelage“ – passt nicht zur Liste, nicht gewertet');
   });
 
-  it('Speichern mit zwei Bestätigungen, die dieselben Vorschriften entscheiden: je Punkt allein, Überschneidung, zusammen', async () => {
-    const { auswertungMit, folgenBeimSpeichern } = await import('./pruefung');
+  it('zwei Bestätigungen, die dieselben Vorschriften entscheiden: das Protokoll zählt sie einmal; Speichern ohne Rückfrage', async () => {
+    const { auswertungMit, herabstufungen, anUngespeichertem } = await import('./pruefung');
     const { offeneBestaetigungen, PLANUNGSRECHT } = await import('./store');
     const s = useBaurecht.getState();
-    const ags = auswertungMit(s.pruefung.fakten).fakten['lage.ags'];
+    const vorher = auswertungMit(s.pruefung.fakten);
+    const ags = vorher.fakten['lage.ags'];
     expect(ags?.sicherheit).toBe('hinweis');
     act(() => {
-      s.faktBestaetigen('lage.ags', ags, 'TP', 'Auskunft der Gemeinde vom 12.11.2026');
+      s.faktBestaetigen('lage.ags', ags, 'TP');
       useBaurecht.getState().planungsrechtBestaetigen();
     });
     const ids = offeneBestaetigungen(useBaurecht.getState());
     expect(ids).toEqual(expect.arrayContaining(['lage.ags', PLANUNGSRECHT]));
-    const jetzt = auswertungMit(useBaurecht.getState().pruefung.fakten);
-    const fb = folgenBeimSpeichern(ids, jetzt);
-    const zusammen = new Set(fb.zusammen.map((h) => h.id));
-    // nichts geht verloren: was ein Punkt allein bewirkt, steht auch unter „zusammen“ (hier wirken beide in dieselbe
-    // Richtung – gegenläufige Bestätigungen könnten sich aufheben) …
-    for (const id of ids) for (const h of fb.je[id].herab) expect(zusammen.has(h.id)).toBe(true);
-    // … und Überschneidungen sind vermerkt
-    expect(ids.some((id) => (fb.je[id].auch?.anzahl ?? 0) > 0)).toBe(true);
-    expect(fb.zusammen.length).toBeGreaterThanOrEqual(Math.max(...ids.map((id) => fb.je[id].herab.length)));
-    // das Protokoll zählt dieselben Paragrafen (gegenüber dem Stand ohne diese Bestätigungen)
-    const { anUngespeichertem } = await import('./pruefung');
+    const jetzt = auswertungMit(useBaurecht.getState().pruefung.fakten, { planungsrechtOrt: useBaurecht.getState().pruefung.planungsrechtOrt });
+    // das Protokoll zählt die Paragrafen gegenüber dem Stand ohne diese Bestätigungen – jeden einmal
     const n = anUngespeichertem(ids, jetzt);
-    expect(n).toBe(fb.zusammen.length);
-    // der Dialog zeigt die Zeile „Zusammen“
+    expect(n).toBeGreaterThan(0);
+    expect(n).toBe(herabstufungen(auswertungMit(s.pruefung.fakten, { planungsrechtOrt: s.pruefung.planungsrechtOrt }), jetzt).length);
     const host = render();
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     expect(document.querySelector('.br-protokoll')!.textContent).toContain(`${n} Paragrafen hängen an noch nicht gespeicherten Bestätigungen`);
     act(() => knopf(document.querySelector('.br-protokoll')!, 'Schließen')!.click());
-    let fertig: Promise<boolean> | null = null;
-    await act(async () => {
-      fertig = speichern();
-    });
-    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
-    expect(best.querySelector('.br-folgen-zusammen')?.textContent).toMatch(new RegExp(`Stuft ${fb.zusammen.length} Vorschriften( auf „entfällt“)? herab`));
-    expect(best.getAttribute('aria-describedby')).toBe('br-bestaetigen-einleitung');
-    // Startfokus: das Häkchen, nicht die Aufklappzeile
-    await warten(50);
-    expect((document.activeElement as HTMLInputElement | null)?.type).toBe('checkbox');
-    await act(async () => {
-      knopf(best, 'Abbrechen')!.click();
-      await fertig;
-    });
+    await speichernOhneDialog();
+    expect(inDatei().fakten['lage.ags'].bestaetigt).toMatchObject({ von: 'TP' });
+    expect(inDatei().planungsrechtOrt?.von).toBeTruthy();
+    expect(offeneBestaetigungen(useBaurecht.getState())).toEqual([]);
   });
 
   it('Sammelaktion „ohne Ortsangabe“: die Meldung gilt nur für den Filterstand, den sie gesetzt hat', async () => {
     const host = render();
-    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    const id = festlegen(host, 'rot');
     // wie aus einer älteren Datei: ohne Ort, bestätigt
     act(() => {
       const p = structuredClone(useBaurecht.getState().pruefung);
@@ -1281,15 +1220,28 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     }
   });
 
-  it('Speichern-Dialog: eine geänderte Festlegung nennt den bisherigen Stand mit Datum; der Pfeil ist Text für Screenreader', async () => {
+  it('Begründung aus einer älteren Datei: in Einzelheiten, Liste, Dialog und Protokoll weiter zu lesen', async () => {
     const host = render();
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    const id = Object.keys(useBaurecht.getState().pruefung.festlegungen)[0];
-    await speichernMit('Bestätigen und speichern');
-    festlegen(host, 'Neue Unterlagen vom 10.11.2026', 'gruen', id);
-    const inhalt = await speichernMit('Speichern, diese als Entwurf behalten');
-    expect(inhalt.textContent).toMatch(/bisher: gilt \(TP|bisher: gilt \([^,]+, \d\d\.\d\d\.\d{4}: Begehung/);
-    expect(inhalt.querySelector('[aria-label="wird zu"]')).toBeNull();
+    const id = festlegen(host, 'rot');
+    const fl = useBaurecht.getState().pruefung.festlegungen[id];
+    // wie aus einer Datei, als die Begründung noch Pflicht war
+    act(() => useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, festlegungen: { [id]: { ...fl, grund: 'Begehung am 03.11.2026 ohne Befund', bestaetigt: '2026-11-03T10:00:00Z' } } } }));
+    await speichernOhneDialog();
+    expect(inDatei().festlegungen[id].grund).toBe('Begehung am 03.11.2026 ohne Befund');
+    expect(host.querySelector('.br-festlegung-text')?.textContent).toMatch(/Von Hand „gilt“ \(.+\): Begehung am 03\.11\.2026 ohne Befund/);
+    expect(host.querySelector(`[data-roving="p:${CSS.escape(id)}"]`)?.textContent).toMatch(/Von Hand: Begehung am 03\.11\.2026/);
+    // „Festlegung ändern …“ nennt sie, bevor eine neue Festlegung sie ersetzt
+    act(() => knopf(host, 'Festlegung ändern …')!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
+    expect(dialog.textContent).toMatch(/Bisherige Begründung \(.+\): Begehung am 03\.11\.2026 ohne Befund – eine neue Festlegung ersetzt sie/);
+    act(() => knopf(dialog, 'Abbrechen')!.click());
+    // im Protokoll: Spalte „Begründung“, weil es eine gibt
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Festlegungen von Hand'))!.nextElementSibling!;
+    expect(tabelle.querySelector('thead')!.textContent).toMatch(/Begründung/);
+    expect(tabelle.querySelector('tbody')!.textContent).toMatch(/Begehung am 03\.11\.2026 ohne Befund/);
+    act(() => knopf(d, 'Schließen')!.click());
   });
 
   it('Angaben-Suche: Ansage entprellt in der stehenden Region, auch „Keine Angabe“', async () => {
@@ -1302,7 +1254,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(region()).toMatch(/Keine Angabe zu „zzzz“/);
   });
 
-  it('Rückmeldung nach dem Speichern: Entwürfe zuerst, sonst „keine Änderungen“ bzw. „Gespeichert“', async () => {
+  it('Rückmeldung nach dem Speichern: „keine Änderungen“ bzw. „Gespeichert“ – auch mit einer neuen Festlegung', async () => {
     const host = render();
     const text = () => host.querySelector('.br-gespeichert')?.textContent;
     await speichernOhneDialog();
@@ -1310,9 +1262,9 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => useBaurecht.getState().merkmalSetzen('Gebäudeart', 'Doppelhaushälfte'));
     await speichernOhneDialog();
     expect(text()).toBe('Gespeichert');
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    await speichernMit('Speichern, diese als Entwurf behalten');
-    expect(text()).toBe('Gespeichert – ein Entwurf bleibt offen');
+    festlegen(host, 'rot');
+    await speichernOhneDialog();
+    expect(text()).toBe('Gespeichert');
   });
 
   it('Sprungziel zu einem Merkmal während einer Suche, die ein anderes Merkmal trifft: Fokus am Ziel', async () => {
@@ -1458,7 +1410,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const host = render();
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne Beleg'))!.nextElementSibling!;
+    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne eigene Bestätigung'))!.nextElementSibling!;
     expect(tabelle.textContent).not.toMatch(/Umfang der Beseitigung/);
     expect(d.textContent).toMatch(/Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\): [^·]*Umfang der Beseitigung: Teilabbruch/);
   });
@@ -1535,7 +1487,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(!!host.querySelector('.br-angaben [data-fakt="planung.innen"]')).toBe(gestellt);
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne Beleg'))!.nextElementSibling!.textContent ?? '';
+    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne eigene Bestätigung'))!.nextElementSibling!.textContent ?? '';
     const ohneWirkung = /Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\):[^\n]*Lage in der zusammenhängenden Bebauung/.test(d.textContent ?? '');
     // die Antwort steht im Protokoll – je nachdem in der Tabelle oder unter „ohne Wirkung“, nie gar nicht
     expect(/Lage in der zusammenhängenden Bebauung/.test(tabelle) || ohneWirkung).toBe(true);
@@ -1544,9 +1496,9 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
 
   it('Protokoll: „Jetzt speichern“ neben „Erst speichern …“, Rückmeldung in der Live-Region; Festlegung wird angesagt', async () => {
     const host = render();
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    expect(useBaurecht.getState().ansage).toMatch(/von Hand „gilt“ festgelegt – Entwurf/);
-    await speichernMit('Bestätigen und speichern');
+    festlegen(host, 'rot');
+    expect(useBaurecht.getState().ansage).toMatch(/von Hand „gilt“ festgelegt$/);
+    await speichernOhneDialog();
     act(() => useBaurecht.getState().merkmalSetzen('Gebäudeart', 'Doppelhaushälfte'));
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
@@ -1560,43 +1512,6 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(d.querySelector('.br-sperre')).toBeNull();
     expect(d.querySelector('#br-abgelegt-text')?.textContent).toBe('Gespeichert – die Prüfung lässt sich jetzt abschließen.');
     expect(d.contains(document.activeElement)).toBe(true);
-  });
-
-  it('Speichern-Dialog: Häkchen und Knöpfe im festen Fuß, Inhalt in einem Scrollbereich', async () => {
-    const host = render();
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    let fertig: Promise<boolean> | null = null;
-    await act(async () => {
-      fertig = speichern();
-    });
-    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
-    expect(best.querySelector('.br-bestaetigen-fuss input[type="checkbox"]')).not.toBeNull();
-    expect(best.querySelector('.br-bestaetigen-fuss .dialog-buttons')).not.toBeNull();
-    expect(best.querySelector('.br-bestaetigen-inhalt .br-bestaetigen-liste')).not.toBeNull();
-    await act(async () => {
-      knopf(best, 'Abbrechen')!.click();
-      await fertig;
-    });
-  });
-
-  it('Speichern-Dialog: der Scrollbereich ist ein benannter Tabstopp; Startfokus bleibt am Häkchen', async () => {
-    const host = render();
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    let fertig: Promise<boolean> | null = null;
-    await act(async () => {
-      fertig = speichern();
-    });
-    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
-    const bereich = best.querySelector<HTMLElement>('.br-bestaetigen-inhalt')!;
-    expect(bereich.getAttribute('tabindex')).toBe('0');
-    expect(bereich.getAttribute('role')).toBe('region');
-    expect(bereich.getAttribute('aria-label')).toBe('Änderungen seit dem letzten Speichern');
-    await warten(50);
-    expect((document.activeElement as HTMLInputElement | null)?.type).toBe('checkbox');
-    await act(async () => {
-      knopf(best, 'Abbrechen')!.click();
-      await fertig;
-    });
   });
 
   it('Protokoll: nach Abschließen und Strg+S bleibt die genaue Meldung, der Fokus im Dialog', async () => {
@@ -1616,33 +1531,30 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
 
   it('Festlegen ohne geprüften Text und Aufheben werden angesagt', () => {
     const host = render();
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'gruen');
+    festlegen(host, 'gruen');
     expect(useBaurecht.getState().ansage).toMatch(/festgelegt – noch nicht wirksam \(Text der Norm nicht verfügbar\), es bleibt bei/);
     act(() => knopf(host.querySelector('.br-detail')!, /Festlegung aufheben/)!.click());
     expect(useBaurecht.getState().ansage).toMatch(/^Festlegung aufgehoben – automatisch: „/);
   });
 
-  it('Protokoll: „Jetzt speichern“ abgebrochen – Knopf wieder bereit, ein späteres Strg+S verschiebt den Fokus nicht', async () => {
+  it('Protokoll: „Jetzt speichern“ speichert ohne Rückfrage; ein späteres Strg+S verschiebt den Fokus nicht', async () => {
     const host = render();
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    festlegen(host, 'rot');
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    const jetzt = () => knopf(d, 'Jetzt speichern')!;
+    const jetzt = () => knopf(d, 'Jetzt speichern');
     await act(async () => {
-      jetzt().click();
-      await warten(20);
-    });
-    expect(jetzt().getAttribute('aria-disabled')).toBe('true');
-    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((x) => x.textContent?.includes('Vor dem Speichern bestätigen'))!;
-    await act(async () => {
-      knopf(best, 'Abbrechen')!.click();
+      jetzt()!.click();
       await warten(50);
     });
-    expect(jetzt().getAttribute('aria-disabled')).toBeNull();
+    // kein Dialog über dem Protokoll; die Festlegung ist gespeichert
+    expect([...document.querySelectorAll('[role="dialog"]')].filter((x) => !x.closest('.report-backdrop'))).toHaveLength(0);
+    expect(inDatei().festlegungen[useBaurecht.getState().auswahl!].bestaetigt).toMatch(/^\d{4}-/);
     // der Fokus woanders im Protokoll – ein Speichern von anderswo (Strg+S) lässt ihn dort
+    act(() => useBaurecht.getState().merkmalSetzen('Gebäudeart', 'Doppelhaushälfte'));
     const haken = d.querySelector<HTMLInputElement>('.br-protokoll-aktionen input[type="checkbox"]')!;
     act(() => haken.focus());
-    await speichernMit('Speichern, diese als Entwurf behalten');
+    await speichernOhneDialog();
     await warten(50);
     expect(document.activeElement).toBe(haken);
   });
@@ -1685,9 +1597,8 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     // aktuell geprüft: keine Warnung, die Ansage ohne „noch nicht wirksam“
     text(new Date().toISOString());
     expect(warnung()).toBe('');
-    tippen(dialog.querySelector('textarea')!, 'Begehung am 03.11.2026 ohne Befund');
     act(() => knopf(dialog, 'Festlegen')!.click());
-    expect(useBaurecht.getState().ansage).toMatch(/von Hand „entfällt“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen$/);
+    expect(useBaurecht.getState().ansage).toMatch(/von Hand „entfällt“ festgelegt$/);
   });
 
   it('Festlegen bei veraltetem Text: die Ansage nennt den Grund', () => {
@@ -1714,14 +1625,14 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
         geprueft: '2025-01-01T08:00:00Z',
       }),
     );
-    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'gruen', id);
+    festlegen(host, 'gruen', id);
     expect(useBaurecht.getState().ansage).toMatch(/festgelegt – noch nicht wirksam \(Rechtsstand nicht aktuell an der Quelle bestätigt\), es bleibt bei/);
   });
 
   it('„Rückgängig“ nach Aufheben: angesagt, mit dem Stand nach dem Wiederherstellen (Entwurf, wenn nicht gespeichert)', () => {
     const host = render();
-    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    // bestätigt, aber nicht gespeichert (z. B. Speichern abgebrochen): beim Wiederherstellen wieder Entwurf
+    const id = festlegen(host, 'rot');
+    // mit Vermerk, aber nicht gespeichert (weicht vom Stand der Datei ab): beim Wiederherstellen wieder Entwurf
     act(() => {
       const p = structuredClone(useBaurecht.getState().pruefung);
       p.festlegungen[id].bestaetigt = '2026-11-12T10:00:00Z';
@@ -1730,7 +1641,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(host.querySelector('.br-detail')!, /Festlegung aufheben/)!.click());
     act(() => knopf(host.querySelector('.br-detail')!, 'Rückgängig')!.click());
     expect(useBaurecht.getState().pruefung.festlegungen[id]?.bestaetigt).toBeUndefined();
-    expect(useBaurecht.getState().ansage).toBe('Festlegung wiederhergestellt – „gilt“ (Entwurf)');
+    expect(useBaurecht.getState().ansage).toBe('Festlegung wiederhergestellt – „gilt“ (Entwurf, noch nicht gespeichert)');
   });
 
   it('Angaben-Suche: interne Kennungen treffen nicht', () => {
@@ -1770,9 +1681,8 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
     act(() => dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[2].click());
     expect(dialog.textContent).not.toMatch(/greift „entfällt“ nicht|greift noch nicht/);
-    tippen(dialog.querySelector('textarea')!, 'Abstimmung mit der UNB ohne Befund');
     act(() => knopf(dialog, 'Festlegen')!.click());
-    expect(useBaurecht.getState().ansage).toMatch(/von Hand „entfällt“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen$/);
+    expect(useBaurecht.getState().ansage).toMatch(/von Hand „entfällt“ festgelegt$/);
   });
 });
 
@@ -1787,7 +1697,7 @@ describe('Designsystem: Dialogkopf, Enter, Druckvorschau, Symbole', () => {
     document.body.innerHTML = '';
   });
 
-  it('„Von Hand festlegen“: Titel im Kopf (benennt den Dialog), Enter sendet über das Formular; zu kurze Begründung hält den Dialog offen', () => {
+  it('„Von Hand festlegen“: Titel im Kopf (benennt den Dialog), Enter sendet über das Formular – auch mit leerem Namen', () => {
     const host = render();
     act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
     act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
@@ -1801,14 +1711,12 @@ describe('Designsystem: Dialogkopf, Enter, Druckvorschau, Symbole', () => {
     expect(form.lastElementChild?.classList.contains('dialog-buttons')).toBe(true);
     expect(knopf(dialog, 'Festlegen')!.type).toBe('submit');
     const absenden = () => act(() => void form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-    tippen(dialog.querySelector('textarea')!, 'kurz');
-    absenden();
-    expect(dialog.isConnected).toBe(true);
-    expect(dialog.textContent).toContain('mindestens 10 Zeichen');
-    tippen(dialog.querySelector('textarea')!, 'Begehung am 03.11.2026 ohne Befund');
+    // „Festgelegt von“ ist kein Pflichtfeld: leer gilt der gemerkte Name bzw. der aus den Stammdaten
+    tippen(dialog.querySelector<HTMLInputElement>('#br-festlegen-von')!, '');
     absenden();
     expect(dialog.isConnected).toBe(false);
-    expect(Object.keys(useBaurecht.getState().pruefung.festlegungen ?? {})).toContain(useBaurecht.getState().auswahl);
+    const f = useBaurecht.getState().pruefung.festlegungen[useBaurecht.getState().auswahl!];
+    expect(f.von.trim()).not.toBe('');
   });
 
   it('Prüfprotokoll: „Drucken / PDF …“ ist der Hauptknopf rechts außen, „Schließen“ steht links davon', () => {
@@ -1829,35 +1737,17 @@ describe('Designsystem: Dialogkopf, Enter, Druckvorschau, Symbole', () => {
     expect(host.querySelector('.br-norm-pfeil svg.symbol')).not.toBeNull();
   });
 
-  it('Verwerfen-Abfrage: Absenden (Enter) legt nichts fest, der Dialog bleibt offen', () => {
-    const host = render();
-    act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
-    act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
-    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
-    tippen(dialog.querySelector('textarea')!, 'Begehung am 03.11.2026 ohne Befund');
-    act(() => knopf(dialog, 'Abbrechen')!.click());
-    const abfrage = dialog.querySelector<HTMLElement>('.br-verwerfen .meldung.warnung[role="alert"]')!;
-    expect(abfrage.textContent).toContain('Verwerfen?');
-    act(() => void dialog.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-    expect(dialog.isConnected).toBe(true);
-    expect(Object.keys(useBaurecht.getState().pruefung.festlegungen)).not.toContain(useBaurecht.getState().auswahl);
-  });
-
-  it('„Angabe bestätigen“: Titel im Kopf, Absenden prüft die Begründung und übernimmt', () => {
+  it('„Angabe bestätigen“: Titel im Kopf, Absenden übernimmt sofort (kein Pflichtfeld)', () => {
     const host = render();
     act(() => knopf(host, 'alle')?.click());
     act(() => knopf(host, 'Bestätigen …')!.click());
-    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('bestätigen'))!;
     const kopf = dialog.querySelector<HTMLElement>('.modal-kopf')!;
     expect(kopf.textContent).toMatch(/bestätigen$/);
     expect(dialog.getAttribute('aria-labelledby')).toBe(kopf.id);
     expect(knopf(dialog, 'Bestätigen')!.type).toBe('submit');
-    const absenden = () => act(() => void dialog.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-    absenden();
-    expect(dialog.isConnected).toBe(true);
-    expect(dialog.textContent).toMatch(/Bitte angeben, worauf/);
-    tippen(dialog.querySelector('textarea')!, 'Flächen im Modell vollständig, geprüft am 12.11.2026');
-    absenden();
+    expect(dialog.querySelector('textarea, [aria-required="true"], [required]')).toBeNull();
+    act(() => void dialog.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
     expect(dialog.isConnected).toBe(false);
     expect(Object.values(useBaurecht.getState().pruefung.fakten).some((f) => f.bestaetigt)).toBe(true);
   });
@@ -1909,7 +1799,7 @@ describe('Rückfrage, die nur über einen Hinweis gestellt wird', () => {
     );
     expect(document.activeElement?.hasAttribute('data-bestaetigen')).toBe(true);
     // ist der Umfang bestätigt, verschwindet die Marke
-    act(() => useBaurecht.getState().faktBestaetigen('vorhaben.beseitigung_umfang', useBaurecht.getState().pruefung.fakten['vorhaben.beseitigung_umfang'], 'TP', 'Formular geprüft'));
+    act(() => useBaurecht.getState().faktBestaetigen('vorhaben.beseitigung_umfang', useBaurecht.getState().pruefung.fakten['vorhaben.beseitigung_umfang'], 'TP'));
     expect(host.querySelector('.br-angaben .br-ausloeser-marke')).toBeNull();
   });
 });

@@ -140,6 +140,24 @@ describe('Angaben zur Lage von Hand', () => {
   });
 });
 
+describe('Bestätigen ohne Begründungstext', () => {
+  it('Angabe von Hand im Dialog bestätigt: mit Namen, Datum und Lage, ohne Beleg – ohne Bestätigung keine', () => {
+    const f = angabeVonHand(undefined, 'schutz.lsg', false, { von: 'TP', bestaetigt: true, lage: '438091,5713737', heute: '2026-11-18' });
+    expect(f).toMatchObject({ wert: false, herkunft: 'manuell', sicherheit: 'sicher', bestaetigt: { von: 'TP', am: '2026-11-18', lage: '438091,5713737' } });
+    expect(f.bestaetigt).not.toHaveProperty('grund');
+    expect(angabeVonHand(undefined, 'schutz.lsg', false, { von: 'TP', heute: '2026-11-18' }).bestaetigt).toBeUndefined();
+    // Gemeindeschlüssel: bestätigt gesichert, sonst nur Hinweis; ohne Koordinaten bleibt er Hinweis
+    expect(angabeVonHand(undefined, 'lage.ags', '05974040', { von: 'TP', bestaetigt: true, heute: '2026-11-18' })).toMatchObject({ sicherheit: 'sicher', bestaetigt: { von: 'TP' } });
+    expect(angabeVonHand(undefined, 'lage.ags', '05974040', { von: 'TP', heute: '2026-11-18' }).sicherheit).toBe('hinweis');
+    expect(angabeVonHand(undefined, 'schutz.lsg', false, { von: 'TP', bestaetigt: true, lage: null, heute: '2026-11-18' })).toMatchObject({ sicherheit: 'hinweis', grund: expect.stringMatching(/ohne Koordinaten/) });
+  });
+
+  it('Hinweis bestätigen ohne Beleg: gesichert mit Namen und Datum', () => {
+    const f = hinweisBestaetigen({ wert: false, herkunft: 'geodienst', sicherheit: 'hinweis', quelle: 'LINFOS' }, { von: 'TP', heute: '2026-11-18' });
+    expect(f.bestaetigt).toEqual({ von: 'TP', am: '2026-11-18' });
+  });
+});
+
 describe('Begründung nennt den tragenden, sicheren Teil', () => {
   it('bei „und = nein“ mit sicherem und unsicherem Nein: der sichere wird genannt', async () => {
     const { tragendeBlaetter } = await import('./kurz');

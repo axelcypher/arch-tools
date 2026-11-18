@@ -23,9 +23,6 @@
 .br-warn-text {
   color: var(--warn-text);
 }
-.br-fehler-text {
-  color: var(--fehler-text);
-}
 .br-link {
   border: none;
   background: none;
@@ -965,14 +962,13 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   margin: var(--s2) 0;
   line-height: 1.4;
 }
-.br-verwerfen {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--s2);
+/* „Keine davon“: die Vorfragen, die mit „nein“ beantwortet werden */
+.br-vorfragen-liste {
+  margin: var(--s1) 0 var(--s2);
+  padding-left: var(--s3);
 }
-.br-verwerfen .meldung {
-  margin: 0 auto 0 0;
+.br-vorfragen-liste li {
+  margin-bottom: var(--s1);
 }
 /* Folgen einer Angabe in den Dialogen */
 .br-folgen {
@@ -1026,52 +1022,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-wahl-zeile .br-ampel {
   width: 80px;
   flex: none;
-}
-.modal textarea {
-  width: 100%;
-  font: inherit;
-  padding: var(--s1) var(--s2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-s);
-  background: var(--input-bg);
-  color: var(--text);
-  resize: vertical;
-}
-.modal textarea[aria-invalid='true'] {
-  /* Fehlerrand mit 3:1 (Grafik-Kontrast) */
-  border-color: var(--danger);
-}
-.br-bestaetigen-liste {
-  /* nur der Dialog scrollt – keine verschachtelten Scrollbereiche */
-  list-style: none;
-  padding: 0;
-  margin: var(--s2) 0;
-}
-.br-bestaetigen-liste > li {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-s);
-  padding: var(--s2);
-  margin-bottom: var(--s1);
-}
-.br-bestaetigen-liste > li.br-herab {
-  border-color: var(--warn-border);
-  background: var(--warn-bg);
-}
-.br-bestaetigen-kopf {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s2);
-  margin-bottom: var(--s1);
-}
-.br-bestaetigen-ampeln {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s1);
-}
-.br-geprueft {
-  margin-top: var(--s1);
-  font-weight: 600;
 }
 
 /* Protokoll */
@@ -1633,23 +1583,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   color: var(--muted);
   white-space: nowrap;
 }
-/* Speichern-Dialog: Kopf und Fuß (Häkchen, Knöpfe) stehen fest, dazwischen ein einziger Scrollbereich */
-.modal.br-bestaetigen {
-  display: flex;
-  flex-direction: column;
-  /* im Grenzfall (sehr niedriges Fenster, hoher Zoom) scrollt der ganze Dialog, statt den Fuß abzuschneiden */
-  overflow: auto;
-}
-.br-bestaetigen-inhalt {
-  flex: 1 1 auto;
-  min-height: 60px;
-  overflow: auto;
-}
-.br-bestaetigen-fuss {
-  flex: 0 0 auto;
-  border-top: 1px solid var(--line-soft);
-  padding-top: var(--s1);
-}
 /* Prüfprotokoll in schmalen Fenstern (Zoom): die Aktionsleiste bricht um, nichts wird angeschnitten */
 .br-protokoll-aktionen {
   flex-wrap: wrap;
@@ -1693,36 +1626,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   .br-paragraf.br-gewaehlt {
     outline: 2px solid Highlight;
     outline-offset: -2px;
-  }
-}
-/* Speichern-Dialog: der Scrollbereich ist ein Tabstopp (Pfeiltasten scrollen) – sichtbarer Fokus */
-.br-bestaetigen-inhalt:focus-visible {
-  outline: 2px solid var(--fokus);
-  outline-offset: 2px;
-}
-/* Knöpfe brechen um; schmal untereinander in voller Breite */
-.br-bestaetigen-fuss .dialog-buttons {
-  flex-wrap: wrap;
-}
-@media screen and (max-width: 660px) {
-  .modal.br-bestaetigen {
-    width: calc(100vw - 16px);
-    padding: var(--s3);
-  }
-}
-@media screen and (max-width: 600px) {
-  .br-bestaetigen-fuss .dialog-buttons {
-    flex-direction: column;
-  }
-  .br-bestaetigen-fuss .dialog-buttons > button {
-    width: 100%;
-  }
-}
-/* sehr niedrige Fenster: der ganze Dialog scrollt, der Inhalt ohne eigenen Scroller (nichts wird abgeschnitten) */
-@media screen and (max-height: 420px) {
-  .br-bestaetigen-inhalt {
-    flex: none;
-    overflow: visible;
   }
 }
 /* Prüfprotokoll ≤ 600 px: die klebende Leiste passt zum schmalen Rand; Tabellenköpfe brechen um; erste Spalte der

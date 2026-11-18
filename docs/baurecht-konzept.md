@@ -15,7 +15,8 @@ dem Einreichen eines Antrags**.
 | **gelb** | von Hand prüfen | eine Angabe fehlt oder ist unsicher, Einzelfall/Ermessen, die Regel ist an der neuen Fassung noch nicht geprüft, es gibt noch keine Regel |
 | **grün** | entfällt auf jeden Fall | die Regel trifft nach **gesicherten** Angaben sicher nicht zu – oder das Gesetz schließt es ausdrücklich aus |
 
-Von Hand festlegen darf jeder (Sonderfälle) – mit Begründung, und beim Speichern noch einmal bestätigt.
+Von Hand festlegen darf jeder (Sonderfälle) – mit einem Klick, ohne Begründungstext und ohne zweite Bestätigung beim
+Speichern (geändert auf Wunsch der Nutzer, siehe Abschnitt 8); das Protokoll vermerkt Ampel, Namen und Datum.
 
 ---
 
@@ -504,7 +505,7 @@ Der Wächter (4.8) meldet, wann das nötig ist.
 - **Regeln und Module pflegen wir im Repo** (`packages/baurecht-regeln`) – mit Tests, Review und signierter
   Auslieferung. Eine Bearbeitungsansicht für Regeln in der App gibt es nicht, ebenso keine eigenen Module im
   Konfigurationsordner.
-- **In der App wird nur von Hand festgelegt** (Abschnitt 8): Ampel je Paragraf mit Begründung, Fakten bestätigen,
+- **In der App wird nur von Hand festgelegt** (Abschnitt 8): Ampel je Paragraf, Fakten bestätigen,
   eigene Normen für einen Einzelfall im Projekt. Das gilt je Projekt und ändert keine Regel.
 - Fehlt ein Modul für eine Gemeinde, sagt die App das; bis es im Paket ist, bleibt das Ortsrecht gelb und wird von Hand
   beurteilt.
@@ -608,24 +609,21 @@ Rot heißt „gilt“, nicht „wird geprüft“. Jeder rote Paragraf zeigt zus�
 
 ## 8. Von Hand festlegen
 
-**Jeder darf festlegen** – und bestätigt dafür zweimal:
+**Jeder darf festlegen** – mit einem Klick. Ursprünglich waren eine Begründung (Pflicht) und eine zweite Bestätigung
+beim Speichern vorgesehen; beides ist auf Wunsch der Nutzer entfallen (kein Pflichtfeld, keine doppelte Bestätigung):
 
-1. **Beim Festlegen:** Am Paragrafen „Von Hand festlegen …“ → Ampel wählen, **Begründung (Pflicht)** →
-   „Festlegen“. Gespeichert werden Name (aus den Einstellungen bzw. der Bearbeitung), Datum, die automatische Ampel zu
-   diesem Zeitpunkt, die Fakten, an denen die Regel hängt, und die Prüfsummen der Fundstellen.
-2. **Beim Speichern der Projektdatei:** Gibt es neue oder geänderte Festlegungen seit dem letzten Speichern, zeigt
-   die App sie alle in einer Liste – automatische und festgelegte Ampel nebeneinander, Begründung, Herabstufungen
-   (rot → gelb/grün, gelb → grün) hervorgehoben. „**Festlegungen bestätigen und speichern**“ speichert alles;
-   „Ohne diese Festlegungen speichern“ speichert den Rest und behält die Festlegungen als Entwurf; „Abbrechen“
-   speichert nichts. Enter löst keine Bestätigung aus.
+1. **Beim Festlegen:** Am Paragrafen „Von Hand festlegen …“ → Ampel wählen → „Festlegen“. Gespeichert werden Name (aus
+   den Einstellungen bzw. der Bearbeitung), Datum, die automatische Ampel zu diesem Zeitpunkt, die Fakten, an denen die
+   Regel hängt, und die Prüfsummen der Fundstellen. Herabstufungen nennt der Dialog vorher.
+2. **Beim Speichern der Projektdatei:** ohne Rückfrage; die Festlegung bekommt den Zeitpunkt des Speicherns. Bis dahin
+   ist sie Entwurf und lässt sich zurücknehmen. Begründungen aus älteren Dateien bleiben erhalten und im Protokoll.
 
 Danach:
 
 - Die Festlegung geht vor. Sie wird **überholt**, wenn die automatische Ampel danach strenger wird als damals und als die Festlegung, wenn sich ein beteiligter Fakt oder
   eine Fundstelle ändert. Dann steht ⚠ daran („Automatisch jetzt rot: Landschaftsschutzgebiet seit Abfrage am …“),
-  und das Protokoll zählt sie als offen, bis sie erneut festgelegt (wieder mit beiden Bestätigungen) oder aufgehoben
-  ist.
-- Festlegungen sind in der Liste immer sichtbar (eigenes Zeichen), filterbar, stehen im Protokoll mit Begründung, und
+  und das Protokoll zählt sie als offen, bis sie erneut festgelegt oder aufgehoben ist.
+- Festlegungen sind in der Liste immer sichtbar (eigenes Zeichen), filterbar, stehen im Protokoll mit Namen und Datum, und
   im Verlauf (Rückgängig/Wiederholen wie in den anderen Apps).
 - Eigene Normen für einen Einzelfall (z. B. eine Auflage aus einem Vorbescheid) lassen sich im Projekt mit Titel und
   Fundstelle anlegen – ohne Regel, also gelb, bis festgelegt.
