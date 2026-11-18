@@ -3034,7 +3034,8 @@ button.ungespeichert::after {
 /* ---------- Stammdaten-Knopf in Seitenleisten ---------- */
 
 /* nie breiter als der Behälter, auch wenn ein Elternteil nicht streckt (align-items: flex-start): sonst wüchse die
-   Auswahl der Planungsphase auf die Breite ihres längsten Eintrags */
+   Auswahl der Planungsphase auf die Breite ihres längsten Eintrags; abgeschnitten bleibt der volle Name im title der
+   Auswahl (Stammdaten.tsx) lesbar */
 .sd-knopf {
   margin-bottom: var(--s2);
   max-width: 100%;
