@@ -452,19 +452,10 @@
   margin-top: var(--s3);
 }
 
-/* Betrag als schreibgeschützte Angabe (.feld-wert.num aus core, rechtsbündig): die Beschriftung steht mit darüber, wie
-   der Kopf einer Zahlenspalte */
-.field:has(> .feld-wert.num) > .field-label {
-  text-align: right;
-}
-
-/* Dreierreihen der Seitenkarte „Eigenschaften“ (.feldraster.buendig aus core, den Abstand gibt der gap der
-   Seitenkarte): kleine Mindestbreite, damit drei Felder nebeneinander passen und die Reihe in schmaler Karte umbricht.
-   auto-fit statt auto-fill: in breit gezogener Karte (bis 560px) bleiben keine leeren Spuren, die drei Felder füllen
-   die Breite */
-.feldraster.ava-feld-reihe {
+/* Dreierreihen der Seitenkarte „Eigenschaften“ (.feldraster.buendig.fuellend aus core): kleine Mindestbreite, damit
+   drei Felder nebeneinander passen und die Reihe in schmaler Karte umbricht */
+.ava-feld-reihe {
   --feld-min: 80px;
-  grid-template-columns: repeat(auto-fit, minmax(min(var(--feld-min), 100%), 1fr));
 }
 
 .ava-reihe {

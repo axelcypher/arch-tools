@@ -362,19 +362,22 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 - **Feldraster** (`.feldraster`) für Formulare mit mehreren Angaben nebeneinander (Planangaben, Antragsdaten,
   Adressen):
   - Kinder: beschriftete Felder – `label` mit `.field-label` und genau einem Feld, `Field`, oder für schreibgeschützte
-    Angaben ein `div` mit `.field-label` und `.feld-wert` (mittig zur Feldhöhe, mit `.num` rechtsbündig für Beträge;
-    `.feld-wert` taugt auch außerhalb des Rasters für einen Wert neben Feldern).
-    Die Beschriftung steht über dem Feld, darunter wahlweise `.field-hint` und `.feld-meldung`; weitere Elemente
-    (Einheit, Knopf) lägen in der Spur des Felds übereinander und gehören mit dem Feld in eine Hülle. Ein
-    `label.toggle` (Kästchen mit Text) steht in der Spur der Felder.
+    Angaben ein `div` mit `.field-label` und `.feld-wert` (mittig zur Feldhöhe, mit `.num` rechtsbündig für Beträge samt
+    der Beschriftung darüber, wie der Kopf einer Zahlenspalte; `.feld-wert` taugt auch außerhalb des Rasters für einen
+    Wert neben Feldern). Die Beschriftung steht über dem Feld, darunter wahlweise `.field-hint` und `.feld-meldung`;
+    weitere Elemente (Einheit, Knopf) lägen in der Spur des Felds übereinander und gehören mit dem Feld in eine Hülle.
+    Ein `label.toggle` (Kästchen mit Text) steht in der Spur der Felder.
   - Spalten und Abstände: so viele Spalten, wie Platz ist (Mindestbreite 200px, abweichend über `--feld-min`, auch für
-    eine schmale Seitenleiste statt fester Spaltenzahl); Felder füllen ihre Spalte und sind `--ctl-h` hoch. Die Felder
-    einer Zeile fluchten, auch wenn eine Beschriftung umbricht oder nur ein Feld einen Hinweis hat. `--s3` zwischen
-    den Spalten, `--s2` zwischen den Zeilen und unter der letzten (darauf verlassen sich Behälter mit Rahmen oder
-    Innenabstand). Steht das Raster in einem Behälter mit `gap`, der den Abstand selbst setzt, nimmt es `.buendig`:
-    dann ohne Abstand unter der letzten Zeile (nicht als letztes Kind eines Rollbehälters ohne Innenabstand unten,
-    sonst schnitte er den Fokusrahmen der letzten Felder ab – außer im Rumpf von `Karte buendig`, dort liegen die
-    Fokusrahmen innen).
+    eine schmale Seitenleiste statt fester Spaltenzahl); Felder füllen ihre Spalte und sind `--ctl-h` hoch. Mit
+    `.fuellend` füllen wenige Felder die Breite (leere Spalten fallen zusammen, z. B. in einer aufziehbaren
+    Seitenkarte); ohne bleibt ein einzelnes Feld in einer breiten Fläche so schmal wie eine Spalte. Ein Feld über die
+    ganze Zeile (`-breit` oder `-zwei` in einem Raster mit nur einer Spalte) belegt alle Spalten, dann füllt `.fuellend`
+    nicht – solche Felder gehören unter das Raster. Die Felder einer Zeile fluchten, auch wenn eine Beschriftung
+    umbricht oder nur ein Feld einen Hinweis hat. `--s3` zwischen den Spalten, `--s2` zwischen den Zeilen und unter der
+    letzten (darauf verlassen sich Behälter mit Rahmen oder Innenabstand). Steht das Raster in einem Behälter mit `gap`,
+    der den Abstand selbst setzt, nimmt es `.buendig`: dann ohne Abstand unter der letzten Zeile (nicht als letztes Kind
+    eines Rollbehälters ohne Innenabstand unten, sonst schnitte er den Fokusrahmen der letzten Felder ab – außer im
+    Rumpf von `Karte buendig`, dort liegen die Fokusrahmen innen).
   - `.feldraster-breit` (bzw. `Field breite="breit"`) nimmt die ganze Zeile, z. B. für Textbereiche oder eine
     Knopfzeile. `.feldraster-zwei` (`breite="zwei"`) nimmt zwei Spalten, z. B. für Auswahlen mit langen Einträgen
     oder ein `label.toggle`, dessen Text in einer Spalte umbräche (ein ganzer Satz neben dem Kästchen nimmt
