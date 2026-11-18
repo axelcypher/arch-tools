@@ -81,9 +81,9 @@ describe('Feldraster', () => {
   });
 
   it('gesperrtes Kästchen mit Text: kein Zeiger, Text gedämpft', () => {
-    const i = css.indexOf("\n.toggle:has(> input:disabled),\n.toggle:has(> input[aria-disabled='true']) {");
-    expect(i).toBeGreaterThan(-1);
-    const r = css.slice(i, css.indexOf('}', i));
+    const m = css.match(/\n\.toggle:has\(> input:disabled\),\s*\.toggle:has\(> input\[aria-disabled='true'\]\)\s*\{([^}]*)\}/);
+    expect(m).not.toBeNull();
+    const r = m![1];
     expect(r).toMatch(/cursor:\s*default/);
     expect(r).toMatch(/color:\s*var\(--muted\)/);
   });
