@@ -117,7 +117,14 @@ Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`spa
 Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
 stehen auf `--bg` mit `--radius-s`; bricht eine Bezeichnung um, bleiben die Werte einer Zeile auf einer Linie (Wert und
 Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie brechen in schmalen Karten um
-(Wunschbreite 9em, nie schmaler als ihr Inhalt). Mehr als vier oder fünf Kacheln gehören in eine Tabelle.
+(Wunschbreite 9em, nie schmaler als ihr Inhalt). Eine Einheit am Wert steht als `small` im `strong` (`--fs-s`, normal,
+`--muted`). Kennzahl mit Prüfergebnis (`.metric.pruefung`, Wunschbreite 12em): oben ein Kopf (`.metric-kopf`) aus
+Bezeichnung und Marke rechts (`.marke` mit Variante), gleich darunter der Wert, dann mehrere Nebenzeilen (`small`); der
+Wert steht hier oben, damit er in Kacheln mit unterschiedlich vielen Nebenzeilen auf einer Linie bleibt; in einer Zeile
+deshalb nicht mit einfachen Kacheln mischen. Zustand der Kachel: `.metric.warnung` bzw. `.metric.alarm` als Innenrand in
+`--warn-punkt` bzw. `--danger` (verschiebt nichts); der Zustand steht immer auch als Text (Marke oder Nebentext), die
+Farbe allein reicht nicht. Mehr als vier oder fünf Kacheln gehören nicht nebeneinander: die wichtigsten Werte als
+Kacheln, die übrigen in einer Tabelle darunter.
 
 ## Überschriften
 

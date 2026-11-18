@@ -1108,6 +1108,37 @@ textarea:focus {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+/* Einheit am Wert: <strong>0,42 <small>m²</small></strong> */
+.metric > strong small {
+  font-size: var(--fs-s);
+  font-weight: normal;
+  color: var(--muted);
+}
+
+/* Kennzahl mit Prüfergebnis: Kopf aus Bezeichnung und Marke (rechts), darunter gleich der Wert, dann mehrere
+   Nebenzeilen – der Wert steht oben, damit die Werte nebeneinanderstehender Kacheln auf einer Linie bleiben */
+.metric.pruefung {
+  flex-basis: 12em;
+}
+.metric > .metric-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s1);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.metric.pruefung > strong {
+  margin-top: 0;
+}
+
+/* Zustand der Kachel als Innenrand (verschiebt nichts); der Zustand steht zusätzlich als Text (Marke, Nebentext) */
+.metric.warnung {
+  box-shadow: inset 0 0 0 1px var(--warn-punkt);
+}
+.metric.alarm {
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
 
 .points-editor {
   margin-top: 8px;
