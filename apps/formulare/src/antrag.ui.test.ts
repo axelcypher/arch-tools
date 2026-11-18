@@ -672,7 +672,8 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     });
     expect(panel().querySelector('.bd-satz')!.textContent).toBe('Erforderlich, wenn Gebäudeklasse 4 oder 5 und (Sonderbau ja oder Verfahren Baugenehmigungsverfahren)');
     // die Merkmale fehlen im Projekt: offen, gilt als erforderlich (R-01)
-    expect(panel().querySelector('.bd-jetzt')!.textContent).toBe('offen – Merkmal nicht festgelegt');
+    expect(panel().querySelector('.bd-jetzt')!.firstChild!.textContent).toBe('offen – Merkmal nicht festgelegt');
+    expect(panel().querySelector('.bd-jetzt .nur-vorlesen')!.textContent).toContain('gilt die Angabe als erforderlich');
     // gleiche Bedeutung wie „ungeklärt“ in der Gliederung: Warnmarke; die Erklärung im Tooltip
     expect(panel().querySelector('.bd-jetzt')!.className).toBe('marke bd-jetzt warnung');
     expect(panel().querySelector('.bd-jetzt')!.getAttribute('title')).toContain('gilt die Angabe als erforderlich');

@@ -5,7 +5,7 @@ import { useFormulare } from '../store';
 import { Modal } from '@core/ui/Dialog';
 
 const ZUSTAND: Record<SperrBewertung['art'], string> = { benutzt: 'In Gebrauch', verwaist: 'Verwaist', unklar: 'Nicht prüfbar' };
-/** Variante der Marke aus core: in Gebrauch ist ein Fehlerzustand, verwaist ein Hinweis, nicht prüfbar neutral */
+/** Variante der Marke aus core: in Gebrauch ist ein Fehlerzustand, verwaist ein Hinweis (Variante `.info`), nicht prüfbar neutral */
 const VARIANTE: Record<SperrBewertung['art'], string> = { benutzt: 'fehler', verwaist: 'info', unklar: '' };
 
 /** Wer, wo, seit wann – aus der Sperrdatei */

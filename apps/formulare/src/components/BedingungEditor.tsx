@@ -39,7 +39,7 @@ function anPfad(g: BedingungGruppe, pfad: Pfad, f: (t: BedingungTeil) => Bedingu
   return { ...g, teile };
 }
 
-/** Erklärung zur Marke „offen“ (Tooltip und für Screenreader) */
+/** Erklärung zur Marke „offen“ (Tooltip; für Vorleseprogramme als verborgener Text in der Marke) */
 const OFFEN_ERKLAERT = 'Ein Antragsmerkmal der Bedingung ist nicht festgelegt – bis dahin gilt die Angabe als erforderlich.';
 
 /**
@@ -48,7 +48,6 @@ const OFFEN_ERKLAERT = 'Ein Antragsmerkmal der Bedingung ist nicht festgelegt �
  * Wert oder nicht – oder wieder Gruppen. Felder lassen sich auch durch Klick ins Formular wählen. Darunter steht die
  * Bedingung in Worten und ob sie gerade zutrifft.
  */
-
 export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontext, imFormularWaehlen }: Props) {
   const wahl = (felder ?? []).filter((f) => !ohne?.includes(f.feld.schluessel));
   const nachSchluessel = new Map((felder ?? []).map((f) => [f.feld.schluessel, f]));
@@ -111,12 +110,9 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
           {bedingungText(wurzel, name)}
         </p>
         {jetzt !== undefined && (
-          <span
-            className={`marke bd-jetzt${jetzt === 'ja' ? ' ok' : jetzt === 'offen' ? ' warnung' : ''}`}
-            title={jetzt === 'offen' ? OFFEN_ERKLAERT : undefined}
-            aria-description={jetzt === 'offen' ? OFFEN_ERKLAERT : undefined}
-          >
+          <span className={`marke bd-jetzt${jetzt === 'ja' ? ' ok' : jetzt === 'offen' ? ' warnung' : ''}`} title={jetzt === 'offen' ? OFFEN_ERKLAERT : undefined}>
             {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Merkmal nicht festgelegt' : 'trifft gerade nicht zu'}
+            {jetzt === 'offen' && <span className="nur-vorlesen"> – {OFFEN_ERKLAERT}</span>}
           </span>
         )}
         <button type="button" className="small bd-weg" onClick={() => onChange(undefined)}>
