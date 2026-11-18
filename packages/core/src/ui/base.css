@@ -371,6 +371,10 @@ body,
   gap: var(--s1);
   margin-left: auto;
 }
+/* ein Kästchen mit Text am Ende schließt bündig mit dem Innenabstand der Karte ab */
+.karte-aktionen > .toggle:last-child {
+  margin-right: 0;
+}
 .karte-rumpf {
   /* positioniert: absolut gesetzte Kinder (z. B. .nur-vorlesen in breiten Tabellen) bleiben im Rollbereich der Karte
      und machen die Seite nicht breiter */
@@ -693,7 +697,7 @@ button.link:focus-visible {
   gap: 4px;
   cursor: pointer;
   user-select: none;
-  margin-right: 6px;
+  margin-right: var(--s2);
 }
 /* Kästchen nie stauchen, auch bei langem Text daneben */
 .toggle > input:is([type='checkbox'], [type='radio']) {
@@ -929,13 +933,15 @@ textarea:focus {
 }
 
 /* Bedienelemente in Leisten, Knopfreihen, Dialogen und Feldern mindestens --ctl-h hoch; kleine und Symbolknöpfe
-   --ctl-h-s. :where() hält die Spezifität bei null – App-Regeln mit eigener min-height gehen vor; height allein reicht
-   nicht (min-height setzt sich gegen ein kleineres height immer durch). */
-:where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button),
-:where(.toolbar, .field, .feldraster) :where(select, input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])) {
+   --ctl-h-s. Steuerzeilen wie der feste Kopf der rollenden Spalte (.rollend-kopf) und die Leiste unter dem Kartenkopf
+   (.karte-leiste) zählen wie .toolbar, damit Suchfeld, Segment und Knöpfe darin gleich hoch sind. :where() hält die
+   Spezifität bei null – App-Regeln mit eigener min-height gehen vor; height allein reicht nicht (min-height setzt sich
+   gegen ein kleineres height immer durch). */
+:where(.toolbar, .rollend-kopf, .karte-leiste, .button-row, .dialog-buttons, .section-head) :where(button),
+:where(.toolbar, .rollend-kopf, .karte-leiste, .field, .feldraster) :where(select, input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])) {
   min-height: var(--ctl-h);
 }
-:where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
+:where(.toolbar, .rollend-kopf, .karte-leiste, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
   min-height: var(--ctl-h-s);
 }
 /* in der Werkzeugleiste stehen Symbolknöpfe neben Knöpfen mit Text (Datei, Hauptknopf) und neben den Symbolknöpfen
@@ -3025,12 +3031,13 @@ button.ungespeichert::after {
   /* Höhe kommt aus min-height (unten), nicht aus dem Innenabstand */
   padding-block: 2px;
 }
-/* außerhalb der Leisten 24px; in .toolbar gilt deren 30px (beide mit Spezifität null, die Leiste steht vorher) */
+/* außerhalb der Leisten 24px; in .toolbar und den Steuerzeilen (.rollend-kopf, .karte-leiste) gilt deren 30px (beide
+   mit Spezifität null, die Leiste steht vorher) */
 :where(.segment) > :where(button) {
   /* der Rahmen des Segments (2 × 1px) zählt mit: außen 24px bzw. in Leisten 30px wie die übrigen Knöpfe */
   min-height: calc(var(--ctl-h-s) - 2px);
 }
-:where(.toolbar) :where(.segment) > :where(button) {
+:where(.toolbar, .rollend-kopf, .karte-leiste) :where(.segment) > :where(button) {
   min-height: calc(var(--ctl-h) - 2px);
 }
 .segment > button + button {
