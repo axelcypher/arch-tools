@@ -1120,6 +1120,23 @@ end
 - Was ganz außerhalb seines Rahmens liegt (etwa ein Textfeld mit negativem `Top`), schneidet Delphi ab – die App
   zeigt es nicht und zählt es nicht. Gesperrte Textfelder (`Enabled = False`) rechnet FORMA aus (Summen, Kopfzeilen
   der Folgeblätter); man trägt dort nichts ein, und sie zählen nicht für den Füllstand.
+- **Summenfelder** (`src/summen.ts`): Manche dieser Summen rechnet die App selbst, sobald sich eine Angabe ändert –
+  bisher die Stellplätze der Baubeschreibung (nw010010, Nr. 5 Stellplätze und Nr. 7 Fahrradstellplätze, eine Regel
+  für beide, Begriffe wie im Vordruck): „insgesamt auf dem Baugrundstück“ = in Garagen + im Freien, „Summe“ =
+  insgesamt auf dem Baugrundstück + auf fremdem Grundstück mit Baulast + durch Ablösung („davon für Menschen mit
+  Behinderungen“ bleibt eine eigene Angabe). Sind alle Angaben leer, bleibt die Summe leer; ist eine gefüllt, zählen
+  leere als 0. Angaben sind ganze Zahlen (Leerzeichen außen und Tausendertrennung mit Punkt oder Leerzeichen erlaubt);
+  steht etwas anderes darin („ca. 3“, „2-3“, „2 3“), bleibt die Summe leer, und ein Hinweis nennt das Feld.
+  Summenfelder sind schreibgeschützt, aber fokussierbar (auch wenn ein Vordruck sie nicht sperrt), heben sich mit
+  gestricheltem Rand ohne Feldgrund ab und nennen unter dem Feld kurz, woraus sie bestehen (am Feld als Beschreibung
+  verknüpft, ausführlich im Tooltip). Steht in einer Datei eine andere Summe (von Hand oder aus einer älteren Fassung),
+  überschreibt die App sie beim Öffnen nicht: Ein Hinweis nennt beide Werte, „Neu berechnen“ unter dem Feld übernimmt
+  die Summe (ein Schritt im Verlauf); sonst wird erst neu gerechnet, wenn sich eine Angabe ändert. Rückgängig und
+  Wiederholen gelten für die Angaben, die Summe folgt; sind die Angaben wieder wie in der Datei, gilt wieder deren
+  Summe. Gerechnet wird nur im geöffneten Formular: Änderungen an nicht geöffneten Formularen („Daten aktualisieren“,
+  `formularAendern`) und Neuladen rechnen keine Summen nach – beim nächsten Öffnen meldet ein Hinweis eine Abweichung.
+  Wer Angaben dort schreibt, gibt die Summen mit (`summenNachAenderung` mit den Werten der Datei bzw. des Entwurfs);
+  bisher zeigt keine Zuordnung der Projektkarte auf die Teile.
 - Beschriftungen: über dem Feld (Höhe nach den Textzeilen, nicht nach `Height`), sonst links daneben; bei
   Kästchen rechts daneben – außer in Zeilen, deren Beschriftungen links vor den Kästchen stehen
   („1 ☐ 2 ☐ 3 ☐“). „☐ 3-fach Lageplan …“ ergibt „Lageplan … (3-fach)“; Tabellenzellen bekommen den Spaltenkopf.
