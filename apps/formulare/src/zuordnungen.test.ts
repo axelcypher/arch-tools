@@ -161,6 +161,16 @@ describe('Baubeschreibung (nw010010): Nr. 2 Art der Nutzung aus der Projektkarte
     expect(auto(mitNutzung(nutzung(100, 'Wohnen'), { gruppe: 101, id: 90, typ: 1, titel: 'Leer:', text: '', zahl: null }), ['Memo5=0101aedt090'])).toBeUndefined();
   });
 
+  it('Titel in anderer Schreibweise, Auswahl-Eintrag und mehrere Einträge gleichen Titels', () => {
+    expect(auto(mitNutzung({ gruppe: 101, id: 100, typ: 1, titel: '  art der  NUTZUNG : ', text: 'Handel', zahl: null }))?.wert).toBe('Handel');
+    const auswahl = { gruppe: 101, id: 100, typ: 4, titel: 'Art der Nutzung:', text: '\r\nWohnen\r\nGastronomie', zahl: 1 };
+    expect(auto(mitNutzung(auswahl))?.wert).toBe('Gastronomie');
+    // der erste mit Wert gilt, ein leerer davor nicht
+    const leer = { ...nutzung(100, ''), gruppe: 102 };
+    expect(auto(mitNutzung(leer, nutzung(110, 'Beherbergung')))?.wert).toBe('Beherbergung');
+    expect(auto(mitNutzung(nutzung(100, 'Wohnen'), nutzung(110, 'Beherbergung')))?.wert).toBe('Wohnen');
+  });
+
   it('ohne Eintrag oder ohne Wert bleibt das Feld ohne Auto-Wert', () => {
     expect(auto(mitNutzung())).toBeUndefined();
     expect(auto(mitNutzung(nutzung(100, '')))).toBeUndefined();

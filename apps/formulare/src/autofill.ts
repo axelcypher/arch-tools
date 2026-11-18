@@ -61,8 +61,9 @@ function quelle(teile: Teil[], pk: Projektkarte): string {
 
 /**
  * Felder mit Zuordnung zur Projektkarte (Textfelder) – unabhängig davon, ob die Projektkarte etwas hat. Verweist ein
- * Vordruck auf die falsche Beteiligten-Gruppe, gilt die Korrektur aus `vorgaben/zuordnungen.ts`. `ersatz` ist der Titel
- * des Eintrags, der gilt, wenn die Zuordnung keinen Eintrag der Projektkarte trifft (siehe `autoWerte`).
+ * Vordruck auf die falsche Beteiligten-Gruppe, gilt die Korrektur aus `vorgaben/zuordnungen.ts`. Enthalten sind auch
+ * Felder, die nur einen Ersatz nach Titel haben: `ersatz` ist der Titel des Eintrags, der gilt, wenn die Zuordnung
+ * keinen Eintrag der Projektkarte trifft (siehe `autoWerte`).
  */
 export function autofillFelder(formular: Formular, felder: Feld[][]): Map<string, { feld: Feld; teile: Teil[]; ersatz?: string }> {
   const out = new Map<string, { feld: Feld; teile: Teil[]; ersatz?: string }>();
@@ -87,8 +88,15 @@ export function autofillFelder(formular: Formular, felder: Feld[][]): Map<string
   return out;
 }
 
-/** Eintrag der Projektkarte mit diesem Titel (ohne Doppelpunkt, Groß- und Kleinschreibung egal), sonst undefined */
-const nachTitel = (pk: Projektkarte, titel: string) => pk.eintraege.find((e) => normiert(pkTitel(e.titel)).toLowerCase() === normiert(titel).toLowerCase());
+/**
+ * Eintrag der Projektkarte mit diesem Titel (ohne Doppelpunkt, Groß- und Kleinschreibung und Leerzeichen egal), sonst
+ * undefined. Gibt es mehrere, gilt der erste mit Wert – sonst der erste.
+ */
+function nachTitel(pk: Projektkarte, titel: string) {
+  const gesucht = normiert(titel).toLowerCase();
+  const treffer = pk.eintraege.filter((e) => normiert(pkTitel(e.titel)).toLowerCase() === gesucht);
+  return treffer.find((e) => pkWert(pk, e.gruppe, e.id).trim()) ?? treffer[0];
+}
 
 /**
  * Zuordnung, mit der ein Feld ausgefüllt wird: die aus FORMA (bzw. korrigiert); trifft sie keinen Eintrag, den die
