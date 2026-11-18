@@ -956,24 +956,10 @@ button.icon.fo-gl-zaehlt.an {
 .fo-feld input[type='text'] {
   width: 100%;
   font-family: inherit;
+}
+/* berechnete Felder (.berechnet aus core) behalten ihre feste Höhe */
+.fo-feld textarea:not(.berechnet) {
   resize: vertical;
-}
-/* berechnete Felder (von FORMA gesperrt bzw. Summen der App, schreibgeschützt): ohne Feldgrund, gestrichelt – die Schrift
-   bleibt in Textfarbe, damit der Wert lesbar bleibt */
-.fo-feld :is(textarea, input[type='text']).berechnet {
-  background: var(--bg);
-  border-style: dashed;
-  border-color: var(--border);
-  color: var(--text);
-  cursor: default;
-  resize: none;
-  opacity: 1;
-}
-.fo-summe-aus {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s2);
 }
 .fo-feld.geaendert {
   border-left-color: var(--sel);
@@ -1937,10 +1923,15 @@ button.icon.fo-gl-zaehlt.an {
   outline: 1px solid var(--accent);
   background: var(--p-feld-fokus);
 }
-.fo-papier .fo-memo:disabled,
-.fo-papier .fo-memo:read-only:not(:focus) {
+/* schreibgeschützt (berechnet; :read-only gilt auch für gesperrte Felder im gesperrten Formular): ohne Feldgrund, auch
+   mit Fokus – der Fokus zeigt sich als gestrichelte Umrandung, passend zu berechneten Feldern */
+.fo-papier .fo-memo:read-only {
   background: transparent;
   opacity: 1;
+  cursor: default;
+}
+.fo-papier .fo-memo:read-only:focus {
+  outline: 1px dashed var(--accent);
 }
 .fo-papier .fo-memo.geaendert,
 .fo-papier .fo-check.geaendert {
@@ -2990,8 +2981,8 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-check.offen input {
   background: var(--p-offen);
 }
-.fo-feld.offen input,
-.fo-feld.offen textarea {
+.fo-feld.offen input:not(.berechnet),
+.fo-feld.offen textarea:not(.berechnet) {
   background: var(--warn-bg);
   border-color: var(--warn-border);
 }
@@ -3098,7 +3089,7 @@ button.icon.fo-gl-bed.gesetzt {
 }
 /* aus dem Projektmerkmal vorbelegt (U-05): als Vorschlag gekennzeichnet */
 .fo-papier .fo-check.vorbelegt input,
-.fo-feld.vorbelegt input {
+.fo-feld.vorbelegt input:not(.berechnet) {
   outline: 1.5px dashed var(--accent);
   outline-offset: 1px;
 }

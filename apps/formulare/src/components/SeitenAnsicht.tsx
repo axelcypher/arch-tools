@@ -6,6 +6,7 @@ import { abschnitte, kaesten, ohneKuerzel } from '../forma/felder';
 import { bild, blatt, drehung, farbe, lage, seitenMasse } from '../forma/darstellung';
 import { umgebend, useMarkierung } from '../markierung';
 import { feldTasten } from '../navigation';
+import { IM_VORDRUCK_GESPERRT } from '../summen';
 import { abschnittId, alleFelder, feldTitel, gruppeVon, leeresProfil, profilSchluessel } from '../profil';
 import { hatBedingung } from '../bedingung';
 import { feldId, useEinrichten } from '../einrichten';
@@ -444,9 +445,11 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${autofill ? ` ${autofill}` : ''}`}
           style={{ ...pos, ...schrift(k), textAlign: AUSRICHTUNG[bezeichner(k.o, 'Alignment') ?? ''] }}
           value={typeof wert === 'string' ? wert : ''}
-          disabled={gesperrt || (feld.berechnet && !feld.summe)}
-          readOnly={feld.summe}
-          title={autofill ? `${titel} – ${AUTOFILL_TEXT[autofill]}` : titel}
+          disabled={gesperrt}
+          readOnly={feld.berechnet}
+          // von FORMA gesperrte Felder ohne Summe: keine Tab-Stopps, aber per Klick und Sprung erreichbar
+          tabIndex={feld.berechnet && !feld.summe ? -1 : undefined}
+          title={autofill ? `${titel} – ${AUTOFILL_TEXT[autofill]}` : feld.berechnet && !feld.summe ? `${titel} – ${IM_VORDRUCK_GESPERRT}` : titel}
           aria-label={feld.beschriftung}
           data-feld={feld.schluessel}
           spellCheck={false}

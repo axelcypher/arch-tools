@@ -1601,8 +1601,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     wertSetzen: (feld, wert) => {
       const o = get().offen;
-      // Summenfelder rechnet die App (summen.ts) – Eingaben dort nur über „Neu berechnen“ (werteSetzen)
-      if (!o || bearbeitungGesperrt(o) || feld.summe) return;
+      // berechnete Felder (FORMA bzw. Summen der App, summen.ts) nehmen keine Eingaben an – Summen nur über „Neu berechnen“
+      if (!o || bearbeitungGesperrt(o) || feld.berechnet) return;
       const vorher = wertVon(o, feld);
       if (vorher === wert) return;
       const verlauf = eintragen(o.verlauf, feld.schluessel, vorher, wert, Date.now());
@@ -1612,7 +1612,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     feldVerlassen: (feld) => {
       const o = get().offen;
-      if (!o || feld.art !== 'text' || feld.summe || wertVon(o, feld) !== '') return;
+      // berechnete Felder: zweite Sicherung (wertSetzen hält sie ohnehin auf)
+      if (!o || feld.art !== 'text' || feld.berechnet || wertVon(o, feld) !== '') return;
       const auto = autoWerteVon(o, get().karte)?.get(feld.schluessel)?.wert ?? autofillAnbindung.zustand(formularDatei(o.pfad))?.felder[feld.schluessel]?.auto;
       if (auto) get().wertSetzen(feld, auto);
     },

@@ -17,6 +17,9 @@
 
 import type { Plausi } from './plausibel';
 
+/** Hinweis zu im Vordruck gesperrten Feldern ohne Summe der App (berechnet oder von anderer Stelle auszufüllen) */
+export const IM_VORDRUCK_GESPERRT = 'Im Vordruck schreibgeschützt – hier nicht einzutragen';
+
 export interface Summe {
   /** Feldschlüssel der Summe (`<Seite>:<Name>`) */
   ziel: string;

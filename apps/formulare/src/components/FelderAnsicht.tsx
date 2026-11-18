@@ -18,7 +18,7 @@ import { useVorbelegt } from '../merkmalAbgleich';
 import { springeZuFeld } from '../navigation';
 import { anzahl } from '../text';
 import { kennung } from '../forma/formular';
-import { herkunft, rechne, summenVon } from '../summen';
+import { herkunft, IM_VORDRUCK_GESPERRT, rechne, summenVon } from '../summen';
 import { Karte, useRollendKopf } from '@core/ui/Karte';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
@@ -313,11 +313,14 @@ function FeldEingabe({
   };
   const berechnet = summe && rechne(summe.teile, textVon);
   const neuBerechnen = summe && berechnet && !berechnet.ungueltig.length && typeof wert === 'string' && wert.trim() !== berechnet.wert ? berechnet.wert : undefined;
-  // von FORMA berechnete Felder trägt man nicht ein
-  const gesperrt = gesperrtFormular || (feld.berechnet && !summe);
-  const nurLesen = !!summe;
+  // berechnete Felder (von FORMA oder Summen der App) trägt man nicht ein: schreibgeschützt, aber fokussierbar und vorlesbar
+  // (Kästchen kennen kein readOnly – dort bleibt disabled); ganz gesperrt nur im gesperrten Formular
+  const gesperrt = gesperrtFormular || (feld.berechnet && feld.art === 'kreuz');
+  const nurLesen = feld.berechnet;
   const summeAus = summe && herkunft(summe, titelVon);
-  const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? 'wird berechnet'}` : feld.hinweis;
+  // im Vordruck gesperrte Felder: berechnet (Summen, Kopfzeilen) oder von anderer Stelle auszufüllen (z. B. der Behörde) –
+  // die App weiß nicht, welches von beiden, deshalb neutral (die Oberfläche nennt kein anderes Programm)
+  const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? IM_VORDRUCK_GESPERRT}` : feld.hinweis;
 
   if (feld.art === 'kreuz') {
     // echte Entweder-oder-Fälle (Regel „genau eine“, z. B. Bauantrag/Vorbescheid, ja/nein) als Optionsfelder (U-04) –
@@ -352,35 +355,38 @@ function FeldEingabe({
   const eingabe = einzeilig ? (
     <input
       type="text"
-      id={summe ? feldId : undefined}
+      id={feld.berechnet ? feldId : undefined}
       className={feld.berechnet ? 'berechnet' : undefined}
       value={text}
       disabled={gesperrt}
       readOnly={nurLesen}
       aria-label={titel}
-      aria-describedby={summe ? hinweisId : undefined}
+      aria-describedby={feld.berechnet ? hinweisId : undefined}
+      tabIndex={feld.berechnet && !summe ? -1 : undefined}
       data-feld={feld.schluessel}
       onChange={(e) => wertSetzen(feld, e.target.value)}
       onBlur={() => useFormulare.getState().feldVerlassen(feld)}
     />
   ) : (
     <textarea
-      id={summe ? feldId : undefined}
+      id={feld.berechnet ? feldId : undefined}
       className={feld.berechnet ? 'berechnet' : undefined}
       value={text}
       disabled={gesperrt}
       readOnly={nurLesen}
       aria-label={titel}
-      aria-describedby={summe ? hinweisId : undefined}
+      aria-describedby={feld.berechnet ? hinweisId : undefined}
+      tabIndex={feld.berechnet && !summe ? -1 : undefined}
       data-feld={feld.schluessel}
       rows={Math.max(2, Math.min(12, text.split('\n').length + 1, Math.round(feld.kasten.h / 18)))}
       onChange={(e) => wertSetzen(feld, e.target.value)}
       onBlur={() => useFormulare.getState().feldVerlassen(feld)}
     />
   );
-  // Summenfeld: Hülle ohne <label> – Herkunft und „Neu berechnen“ stehen als Geschwister unter dem Feld, der Knopf gehört
-  // nicht zur Beschreibung des Felds
-  if (summe)
+  // berechnetes Feld: Hülle ohne <label> – Herkunft (und bei Summen „Neu berechnen“) stehen als Geschwister unter dem Feld,
+  // der Knopf gehört nicht zur Beschreibung des Felds. Von FORMA gesperrte Felder ohne Summe sind keine Tab-Stopps
+  // (Tabellen hätten sonst Dutzende zwischen den Eingaben), bleiben aber per Klick und Sprung erreichbar
+  if (feld.berechnet)
     return (
       <div className={klasse} title={hinweis} style={breite}>
         {!ohneBeschriftung && (
@@ -391,11 +397,11 @@ function FeldEingabe({
         )}
         {ohneBeschriftung && info}
         {eingabe}
-        <div className="fo-summe-aus">
+        <div className="feld-herkunft">
           <span className="field-hint" id={hinweisId}>
-            {herkunft(summe, titelVon, true)}
+            {summe ? herkunft(summe, titelVon, true) : 'Im Vordruck gesperrt'}
           </span>
-          {neuBerechnen !== undefined && !gesperrtFormular && (
+          {summe && neuBerechnen !== undefined && !gesperrtFormular && (
             <button
               type="button"
               className="small"

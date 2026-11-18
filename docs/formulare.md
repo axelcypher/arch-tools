@@ -1124,7 +1124,14 @@ end
   (`object TLabel`).
 - Was ganz außerhalb seines Rahmens liegt (etwa ein Textfeld mit negativem `Top`), schneidet Delphi ab – die App
   zeigt es nicht und zählt es nicht. Gesperrte Textfelder (`Enabled = False`) rechnet FORMA aus (Summen, Kopfzeilen
-  der Folgeblätter); man trägt dort nichts ein, und sie zählen nicht für den Füllstand.
+  der Folgeblätter); man trägt dort nichts ein, und sie zählen nicht für den Füllstand. In der App sind sie
+  schreibgeschützt, aber fokussierbar und vorlesbar (berechnete Felder aus core: Grund der Fläche, gestrichelter
+  Rahmen, darunter kurz „Im Vordruck gesperrt“, im Tooltip – auch auf dem Papier – „Im Vordruck schreibgeschützt –
+  hier nicht einzutragen“; neutral, weil FORMA auch Felder sperrt, die die Behörde ausfüllt, und ohne Programmnamen);
+  gesperrt (`disabled`) ist nur das ganze Formular. Sie sind keine Tab-Stopps (Tabellenformulare hätten sonst Dutzende
+  zwischen den Eingaben), bleiben aber per Klick und Sprung aus Prüfliste oder Gliederung erreichbar; die Summenfelder
+  der App sind Tab-Stopps. Auf dem Papier hat ein fokussiertes schreibgeschütztes Feld keinen Feldgrund und einen
+  gestrichelten Rahmen.
 - **Summenfelder** (`src/summen.ts`): Manche dieser Summen rechnet die App selbst, sobald sich eine Angabe ändert –
   bisher die Stellplätze der Baubeschreibung (nw010010, Nr. 5 Stellplätze und Nr. 7 Fahrradstellplätze, eine Regel
   für beide, Begriffe wie im Vordruck): „insgesamt auf dem Baugrundstück“ = in Garagen + im Freien, „Summe“ =
@@ -1133,7 +1140,7 @@ end
   leere als 0. Angaben sind ganze Zahlen (Leerzeichen außen und Tausendertrennung mit Punkt oder Leerzeichen erlaubt);
   steht etwas anderes darin („ca. 3“, „2-3“, „2 3“), bleibt die Summe leer, und ein Hinweis nennt das Feld.
   Summenfelder sind schreibgeschützt, aber fokussierbar (auch wenn ein Vordruck sie nicht sperrt), heben sich mit
-  gestricheltem Rand ohne Feldgrund ab und nennen unter dem Feld kurz, woraus sie bestehen (am Feld als Beschreibung
+  gestricheltem Rand ohne Feldgrund ab und nennen unter dem Feld kurz (`.feld-herkunft` aus core), woraus sie bestehen (am Feld als Beschreibung
   verknüpft, ausführlich im Tooltip). Steht in einer Datei eine andere Summe (von Hand oder aus einer älteren Fassung),
   überschreibt die App sie beim Öffnen nicht: Ein Hinweis nennt beide Werte, „Neu berechnen“ unter dem Feld übernimmt
   die Summe (ein Schritt im Verlauf); sonst wird erst neu gerechnet, wenn sich eine Angabe ändert. Rückgängig und

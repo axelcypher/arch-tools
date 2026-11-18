@@ -103,8 +103,8 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['5', '6']);
     const summe = eingabe(host, '0:Memo14');
     expect(summe.value).toBe('5');
-    // schreibgeschützt, aber fokussierbar; die kurze Herkunft hängt am Feld, die lange steht im Tooltip
-    expect([summe.readOnly, summe.disabled]).toEqual([true, false]);
+    // schreibgeschützt, aber fokussierbar (und Tab-Stopp); die kurze Herkunft hängt am Feld, die lange steht im Tooltip
+    expect([summe.readOnly, summe.disabled, summe.tabIndex]).toEqual([true, false, 0]);
     const herkunft = summe.closest('.fo-feld')!.querySelector('.field-hint')!;
     expect(herkunft.textContent).toBe('Summe aus „in Garagen“ und „im Freien“');
     expect(summe.getAttribute('aria-describedby')).toBe(herkunft.id);
@@ -144,6 +144,66 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     act(() => useFormulare.getState().feldVerlassen(feldVon('0:Memo14')));
     await warte();
     expect(wert('0:Memo14')).toBe('');
+  });
+
+  it('im Vordruck gesperrte Felder: schreibgeschützt (fokussierbar), kein Tab-Stopp, neutraler Hinweis – und ohne Eingaben', async () => {
+    // Blatt 2: eine freie Angabe, die gesperrte Kopfzeile (mit Zuordnung zur Projektkarte) und noch eine freie Angabe
+    datei.bytes = synthetischesFormular(
+      'nw010010',
+      '2024G',
+      [
+        [],
+        [
+          {
+            name: 'Panel1',
+            titel: 'Kopf Blatt 2',
+            felder: [
+              { art: 'memo', name: 'Memo2', text: 'Bauantrag vom' },
+              { art: 'memo', name: 'Memo1', text: 'Bauherrschaft', berechnet: true },
+              { art: 'memo', name: 'Memo3', text: 'in Garagen' },
+            ],
+          },
+        ],
+      ],
+      {},
+      { 1: ['Memo1=0201aedt040', 'Memo3=0201aedt040'] },
+    );
+    const host = await oeffnen();
+    const kopf = eingabe(host, '1:Memo1');
+    expect([kopf.readOnly, kopf.disabled, kopf.classList.contains('berechnet'), kopf.tabIndex]).toEqual([true, false, true, -1]);
+    // Herkunft am Feld, neutral (der Vordruck sperrt auch Felder, die die Behörde ausfüllt); kein anderes Programm genannt
+    const hinweis = document.getElementById(kopf.getAttribute('aria-describedby')!)!;
+    expect(hinweis.textContent).toBe('Im Vordruck gesperrt');
+    expect(kopf.closest('.fo-feld')!.getAttribute('title')).toBe('Bauherrschaft (Blatt 2) – Im Vordruck schreibgeschützt – hier nicht einzutragen');
+    expect(host.textContent).not.toContain('FORMA');
+    // Tab überspringt das gesperrte Feld (die App steuert Tab selbst)
+    eingabe(host, '1:Memo2').focus();
+    act(() => void eingabe(host, '1:Memo2').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })));
+    expect(document.activeElement).toBe(eingabe(host, '1:Memo3'));
+    // Eingabe und Verlassen tragen nichts ein – auch nicht den Wert aus der Projektkarte, den ein freies Feld bekommt
+    const projekt = { root: 'C:/Projekte', ordner: 'BS9', titel: 'Muster' };
+    useFormulare.setState({
+      offen: { ...offen(), projekt },
+      karte: {
+        projekt,
+        karte: { gruppen: [{ id: 201, typ: 1, text: 'Bauherr' }], eintraege: [{ gruppe: 201, id: 40, typ: 1, titel: 'Name/Firma:', text: 'Mustermann', zahl: null }] },
+        aenderungen: {},
+        verlauf: { schritte: [], position: 0 },
+        gesichert: null,
+      },
+    });
+    await tippe('1:Memo1', 'X');
+    act(() => useFormulare.getState().feldVerlassen(feldVon('1:Memo1')));
+    act(() => useFormulare.getState().feldVerlassen(feldVon('1:Memo3')));
+    await warte();
+    expect([wert('1:Memo1'), wert('1:Memo3')]).toEqual(['', 'Mustermann']);
+  });
+
+  it('Summenfelder bleiben Tab-Stopps', async () => {
+    const host = await oeffnen();
+    eingabe(host, '0:Memo13').focus();
+    act(() => void eingabe(host, '0:Memo13').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })));
+    expect(document.activeElement).toBe(eingabe(host, '0:Memo14'));
   });
 
   it('Fahrradstellplätze mit derselben Regel', async () => {
