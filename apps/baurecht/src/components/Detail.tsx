@@ -274,10 +274,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         <p className="br-leise br-detail-festlegung">
           {p.ueberholt || p.unwirksam
             ? `Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'}`
-            : p.festlegung.bestaetigt
-              ? 'von Hand festgelegt'
-              : // ohne Zeitpunkt nur aus einer älteren Datei (früher ein Entwurf): zählt für Verweise erst nach erneutem Festlegen
-                'von Hand festgelegt · ältere Datei ohne Zeitpunkt – bitte erneut festlegen'}
+            : 'von Hand festgelegt'}
         </p>
       )}
       {p.ueberholt && (

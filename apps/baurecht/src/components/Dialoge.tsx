@@ -128,7 +128,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
             Festgelegt von
           </label>
           <input id="br-festlegen-von" value={von} onChange={(e) => setVon(e.target.value)} placeholder={benutzer()} aria-describedby="br-festlegen-von-hinweis" />
-          <NameHinweis id="br-festlegen-von-hinweis" />
+          <NameHinweis id="br-festlegen-von-hinweis" leer={!von.trim()} />
         </div>
         <div className="dialog-buttons">
           <button type="button" onClick={schliessen}>
@@ -143,10 +143,13 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
   );
 }
 
-/** Hinweis am Namensfeld: es ist kein Pflichtfeld – leer gilt der vorbelegte Name (gemerkt bzw. aus den Stammdaten) */
-function NameHinweis({ id }: { id: string }) {
+/**
+ * Hinweis am Namensfeld: es ist kein Pflichtfeld – leer gilt der vorbelegte Name (gemerkt bzw. aus den Stammdaten).
+ * Sichtbar nur bei leerem Feld (vorbelegt wiederholte er den Inhalt); für Screenreader immer da.
+ */
+function NameHinweis({ id, leer }: { id: string; leer: boolean }) {
   return (
-    <span id={id} className="field-hint br-leise">
+    <span id={id} className={leer ? 'field-hint br-leise' : 'unsichtbar'}>
       Leer: „{benutzer()}“
     </span>
   );
@@ -296,7 +299,7 @@ export function VorfragenNeinDialog({ folgen }: { folgen: FolgenRechner }) {
             Angegeben von
           </label>
           <input id="br-vn-von" value={von} onChange={(e) => setVon(e.target.value)} placeholder={benutzer()} aria-describedby="br-vn-von-hinweis" />
-          <NameHinweis id="br-vn-von-hinweis" />
+          <NameHinweis id="br-vn-von-hinweis" leer={!von.trim()} />
         </div>
         <div className="dialog-buttons">
           <button type="button" onClick={() => schliessen()}>
@@ -440,7 +443,7 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
             {ziel.modus === 'setzen' ? 'Angegeben von' : 'Bestätigt von'}
           </label>
           <input id="br-fakt-von" value={von} onChange={(e) => setVon(e.target.value)} placeholder={benutzer()} aria-describedby="br-fakt-von-hinweis" />
-          <NameHinweis id="br-fakt-von-hinweis" />
+          <NameHinweis id="br-fakt-von-hinweis" leer={!von.trim()} />
         </div>
         <div className="dialog-buttons">
           <button type="button" onClick={schliessen}>

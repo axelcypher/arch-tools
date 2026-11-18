@@ -193,9 +193,10 @@ describe('Baurecht – Oberfläche', () => {
     expect(f.von).toBeTruthy();
     expect(f.am).toMatch(/^\d{4}-/);
     expect(f.grund).toBeUndefined();
-    // gilt sofort: Zeitpunkt gesetzt, als „von Hand“ erkennbar, kein Entwurf
+    // gilt sofort: Zeitpunkt gesetzt, als „von Hand“ erkennbar, bis zum Speichern „geändert“ – kein Entwurf
     expect(f.bestaetigt).toMatch(/^\d{4}-/);
-    expect([...host.querySelectorAll('.br-marke')].some((m) => m.textContent === 'von Hand')).toBe(true);
+    const marken = () => [...host.querySelectorAll('.br-marke')].map((m) => m.textContent);
+    expect(marken()).toContain('von Hand · geändert');
     expect([...host.querySelectorAll('.br-marke, .br-detail-festlegung')].some((m) => /Entwurf/.test(m.textContent ?? ''))).toBe(false);
 
     await speichernOhneDialog();
@@ -203,6 +204,8 @@ describe('Baurecht – Oberfläche', () => {
     expect(inDatei().festlegungen[ids[0]]).toMatchObject({ ampel: f.ampel, von: f.von, am: f.am });
     expect(inDatei().festlegungen[ids[0]].bestaetigt).toMatch(/^\d{4}-/);
     expect(useBaurecht.getState().pruefung.festlegungen[ids[0]].bestaetigt).toBe(f.bestaetigt);
+    expect(marken()).toContain('von Hand');
+    expect(marken()).not.toContain('von Hand · geändert');
   });
 
   it('eine geänderte Festlegung übernimmt das Speichern ohne Rückfrage', async () => {
@@ -953,9 +956,9 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
     act(() => knopf(hinweis, 'Für diesen Ort bestätigen')!.click());
     const nachher = auswertungMit(useBaurecht.getState().pruefung.fakten).paragrafen.filter((p) => vorher.get(p.id) !== p.ampel);
     expect(nachher.length).toBe(n);
-    // am Merkmal: gilt sofort (wer, wann), bis zum Speichern zurücknehmbar
+    // am Merkmal: gilt sofort (wer, wann), bis zum Speichern „geändert“ und zurücknehmbar
     const merkmal = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"]')!;
-    expect(merkmal.querySelector('.br-merkmal-marken')?.textContent).toMatch(/^für diesen Ort bestätigt \(.+, \d\d\.\d\d\.\d{4}\)zurücknehmen$/);
+    expect(merkmal.querySelector('.br-merkmal-marken')?.textContent).toMatch(/^für diesen Ort bestätigt \(.+, \d\d\.\d\d\.\d{4}\)geändertzurücknehmen$/);
     // im Protokoll als noch nicht gespeichert, mit der Zahl der Paragrafen, die nur daran hängen
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;

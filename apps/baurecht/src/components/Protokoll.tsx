@@ -64,9 +64,9 @@ function nachNorm(ps: ParagrafErgebnis[], normen: { id: string; def: { kurz: str
 }
 
 /** Vermerk „nicht gespeichert“ als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen
- *  Text) – genau wie auf dem Bildschirm („NICHT GESPEICHERT – die Bestätigung des Planungsrechts ist noch nicht gespeichert“) */
-const ungespeichertDruck = (text: string, eins: boolean) =>
-  `@media print { @page { margin-top: 20mm; @top-center { content: '${`NICHT GESPEICHERT – ${text} ${eins ? 'ist' : 'sind'} noch nicht gespeichert`.replace(/['\\]/g, '')}'; font: 700 12pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
+ *  Text) – wie auf dem Bildschirm („Nicht gespeichert: die Bestätigung des Planungsrechts“) */
+const ungespeichertDruck = (text: string) =>
+  `@media print { @page { margin-top: 20mm; @top-center { content: '${`Nicht gespeichert: ${text}`.replace(/['\\]/g, '')}'; font: 700 12pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
 /** Modulstände sind Daten (JJJJ-MM-TT) – im Protokoll wie alle Daten als TT.MM.JJJJ */
 const stand = (v: string) => (/^\d{4}-\d\d-\d\d$/.test(v) ? datum(v) : v);
 
@@ -238,8 +238,6 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const ungespeichertText = aufzaehlen(ungespeichertTeile);
   const offen = a.paragrafen.filter((p) => p.ampel === 'gelb');
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
-  // Festlegungen ohne Zeitpunkt (ältere Datei), die die Ampel tragen (nicht überholt, nicht „noch nicht wirksam“)
-  const ausAlterDatei = vonHand.filter((p) => !p.festlegung!.bestaetigt && !p.ueberholt && !p.unwirksam);
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt && p.ampel !== 'gelb');
   // dasselbe Kriterium wie Leiste und Kern: nur gestellte Angaben tragen Ampeln; nicht gestellte stehen gesondert
   // („ohne Wirkung“), auch wenn der Kern sie nicht ableitet (Bezug einer Tabelle außerhalb seines Gebiets)
@@ -333,10 +331,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   // Stand einer Festlegung von Hand: gespeichert bzw. noch nicht gespeichert und wirksam/überholt/nicht wirksam
   const festlegungNeu = new Set(offeneF ? offeneF.split('|') : []);
   const festlegungStand = (q: ParagrafErgebnis) =>
-    [
-      !q.festlegung!.bestaetigt ? 'ältere Datei ohne Zeitpunkt – zählt erst nach erneutem Festlegen' : festlegungNeu.has(q.id) ? 'noch nicht gespeichert' : 'gespeichert',
-      q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : '',
-    ]
+    [festlegungNeu.has(q.id) ? 'noch nicht gespeichert' : 'gespeichert', q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : '']
       .filter(Boolean)
       .join(' · ');
   // Zeilen der offenen Punkte, fehlende Angaben nach ihrer Gruppe (Lage, Gebäude …) – ab 15 Zeilen mit Zwischenzeilen
@@ -393,7 +388,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   return (
     <div className="report-backdrop br-protokoll-hintergrund">
       <div className="report br-protokoll" role="dialog" aria-modal="true" aria-label={titel} ref={fenster} tabIndex={-1}>
-        {nichtGespeichert > 0 && <style>{ungespeichertDruck(ungespeichertText, nichtGespeichert === 1)}</style>}
+        {nichtGespeichert > 0 && <style>{ungespeichertDruck(ungespeichertText)}</style>}
         <div className="report-actions no-print br-protokoll-aktionen">
           <label className="toggle">
             <input type="checkbox" checked={nurRelevant} onChange={(e) => setNurRelevant(e.target.checked)} /> ohne „entfällt“
@@ -522,7 +517,6 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               <td>Ergebnis</td>
               <td className="strong">
                 {a.zaehler.rot} gilt · {a.zaehler.gelb} prüfen · {a.zaehler.gruen} entfällt
-                {ausAlterDatei.length > 0 && <span className="br-entwurf-text"> – davon {ausAlterDatei.length} aus Festlegungen einer älteren Datei ohne Zeitpunkt</span>}
                 {nurRelevant && a.zaehler.gruen > 0 && <span className="br-leise"> – Vorschriften mit „entfällt“ ({a.zaehler.gruen}) sind in diesem Ausdruck nicht aufgeführt</span>}
                 {anOffenem > 0 && (
                   <span className="br-entwurf-text">
@@ -565,7 +559,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                   <td>
                     {p.festlegung!.von}, {datum(p.festlegung!.am)}
                   </td>
-                  <td className={p.festlegung!.bestaetigt && !festlegungNeu.has(p.id) && !p.ueberholt && !p.unwirksam ? '' : 'br-entwurf-text'}>{festlegungStand(p)}</td>
+                  <td className={!festlegungNeu.has(p.id) && !p.ueberholt && !p.unwirksam ? '' : 'br-entwurf-text'}>{festlegungStand(p)}</td>
                 </tr>
               ))}
             </tbody>

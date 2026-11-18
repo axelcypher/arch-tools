@@ -145,6 +145,14 @@ describe('Zustand der App', () => {
     expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toEqual(f);
   });
 
+  it('Festlegung ohne Zeitpunkt aus einer älteren Datei: nicht „ungespeichert“ (sie ist überholt, das sagt der Kern)', () => {
+    const fl = { ampel: 'gruen' as const, grund: 'Begehung', von: 'TP', am: '2026-11-03', automatisch: 'rot' as const };
+    const p = { ...useBaurecht.getState().pruefung, festlegungen: { 'bund/bnatschg/44': fl } };
+    useBaurecht.setState({ pruefung: structuredClone(p), pruefungDatei: structuredClone(p) });
+    expect(offeneFestlegungen(useBaurecht.getState())).toEqual([]);
+    expect(istGeaendert(useBaurecht.getState())).toBe(false);
+  });
+
   it('Rückgängig nach dem Speichern: die Festlegung gilt unverändert wieder, bis zum nächsten Speichern ungespeichert', () => {
     const st = useBaurecht.getState();
     st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'TP', {}, {});

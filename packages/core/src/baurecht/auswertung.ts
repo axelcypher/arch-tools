@@ -718,6 +718,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // eine Festlegung von Hand gilt für den Ort, an dem sie getroffen wurde (Begehung, Abstimmung, Planstand)
       const ortWeg = ortGeaendert(fl.ort, e.ort);
       if (ortWeg) gruende2.push(fl.ort ? ortWeg : 'ohne Ortsangabe getroffen – ältere Datei');
+      // ohne Zeitpunkt (ältere Datei, früher ein Entwurf bis zur zweiten Bestätigung): trägt die Ampel nicht (zur sicheren Seite)
+      if (!fl.bestaetigt) gruende2.push('ohne Zeitpunkt getroffen – ältere Datei');
       // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text. Fehlt der Systemstand,
       // ist es „noch nicht wirksam“ (erneut festlegen hilft nicht); wurde ohne Text festgelegt und liegt er jetzt vor,
       // ist es überholt (jetzt am Text erneut festlegen)

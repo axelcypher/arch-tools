@@ -282,6 +282,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     for (const id of ids) {
       const f = p.festlegungen[id];
       if (!f || f.ort) continue;
+      // eine bewusste Handlung: gilt ab jetzt für diesen Ort – der alte Zeitpunkt wird absichtlich ersetzt
       p.festlegungen[id] = { ...f, ort, bestaetigt: new Date().toISOString() };
     }
     set({ pruefung: p });
@@ -335,10 +336,11 @@ export function istGeaendert(s: Pick<Zustand, 'pruefung' | 'pruefungDatei' | 'me
  */
 export function offeneFestlegungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
   const jetzt = s.pruefung.festlegungen;
-  // offen: alles ohne Zeitpunkt (ältere Datei) oder abweichend vom Stand der Datei
+  // offen: alles, was vom Stand der Datei abweicht (eine Festlegung ohne Zeitpunkt aus der Datei ist nicht ungespeichert,
+  // sondern überholt – das sagt der Kern)
   const datei = s.pruefungDatei.festlegungen;
   const neu = Object.entries(jetzt)
-    .filter(([id, f]) => !f.bestaetigt || JSON.stringify(f) !== JSON.stringify(datei[id]))
+    .filter(([id, f]) => JSON.stringify(f) !== JSON.stringify(datei[id]))
     .map(([id]) => id);
   const aufgehoben = Object.keys(s.pruefungDatei.festlegungen).filter((id) => !jetzt[id]);
   return [...neu, ...aufgehoben];

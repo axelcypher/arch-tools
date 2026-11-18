@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Ampel, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen';
 import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baurecht/typen';
 import type { Pruefstand } from '../pruefung';
-import { useBaurecht } from '../store';
+import { offeneFestlegungen, useBaurecht } from '../store';
 import { suchNorm, textPasst } from '../suche';
 import { FlaechenSpalte, Karte } from '@core/ui/Karte';
 import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb, scrollBereich, STATUSPUNKT } from './Ampel';
@@ -31,12 +31,13 @@ function merken(w: { gruppierung: Gruppierung; ampeln: Ampel[] }) {
   }
 }
 
-/** Marke „von Hand“ – eine Festlegung gilt sofort (kein Entwurf) */
+/** Marke „von Hand“ – eine Festlegung gilt sofort (kein Entwurf); seit dem letzten Speichern „geändert“ wie an den Merkmalen */
 function VonHand({ p }: { p: ParagrafErgebnis }) {
+  const neu = useBaurecht((s) => offeneFestlegungen(s).includes(p.id));
   if (!p.festlegung) return null;
   return (
-    <span className="br-marke" title={`von Hand festgelegt (${p.festlegung.von})`}>
-      von Hand
+    <span className="br-marke" title={`von Hand festgelegt (${p.festlegung.von})${neu ? ' – gilt schon, noch nicht gespeichert' : ''}`}>
+      {neu ? 'von Hand · geändert' : 'von Hand'}
     </span>
   );
 }

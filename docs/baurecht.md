@@ -57,7 +57,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   ein Umzug (Anschrift, Grundstück, Koordinaten) zeigen oben einen Hinweis; was daran hängt, kann bis dahin nicht sicher
   entfallen (in den Begründungen und im Protokoll „Nicht gesichert: Planungsrecht …“). Die Bestätigung sagt ihre Wirkung
   an („30 Vorschriften entfallen jetzt“), gilt sofort („für diesen Ort bestätigt (Name, Datum)“ am Merkmal, bis zum
-  Speichern mit „zurücknehmen“; im Protokoll „für diesen Ort bestätigt …; noch nicht gespeichert“ und beim Ergebnis, wie viele
+  Speichern mit „geändert“ und „zurücknehmen“; im Protokoll „für diesen Ort bestätigt …; noch nicht gespeichert“ und beim Ergebnis, wie viele
   Paragrafen an noch nicht Gespeichertem hängen) und steht mit Name und Datum im Protokoll. Gespeichert wird sie wie
   alles andere, ohne Rückfrage. Ein Wert außerhalb der Liste lässt sich nicht für den Ort
   bestätigen – er zählt ohnehin nicht. Angaben von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative
@@ -162,7 +162,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Sätzen steht bei der Anzeige nach „§“, „Abs.“, „Nr.“ ein geschütztes Leerzeichen.
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
   Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis tragen).
-  Darüber steht die Karte „Ergebnis“ (siehe oben). Marken: „von Hand“, „überholt“, „nicht wirksam“,
+  Darüber steht die Karte „Ergebnis“ (siehe oben). Marken: „von Hand“ (bis zum Speichern „von Hand · geändert“), „überholt“, „nicht wirksam“,
   „Text geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht). Hängt eine Regel an einem anderen Paragrafen,
   der selbst offen ist, heißt es „hängt an § … – dort offen“; in den Einzelheiten steht das unter „Hängt an“ (getrennt
   von den fehlenden Angaben). Ist die Mitte schmaler als 900 px, steht der Grund unter dem Titel.
@@ -362,9 +362,12 @@ Nutzer: kein Pflichtfeld, keine doppelte Bestätigung):
 1. **Beim Festlegen:** „Von Hand festlegen …“ → Ampel wählen → „Festlegen“. „Festgelegt von“ ist vorbelegt und kein
    Pflichtfeld (leer gilt der gemerkte Name bzw. der aus den Stammdaten, sonst „Bearbeitung“; das Feld zeigt ihn als
    Platzhalter). Herabstufungen (gilt → prüfen/entfällt, prüfen → entfällt) nennt der Dialog vorher. Die Festlegung
-   gilt sofort (Marke „von Hand“, kein Entwurf) und trägt den Zeitpunkt (`bestaetigt`).
+   gilt sofort (kein Entwurf) und trägt den Zeitpunkt (`bestaetigt`). Bis zum Speichern heißt die Marke „von Hand ·
+   geändert“, wie „geändert“ an den Merkmalen; danach „von Hand“.
 2. **Beim Speichern:** gespeichert wird ohne Dialog. Aufheben und „Rückgängig“ bleiben möglich, wie im Rest der App.
-   Festlegungen ohne Zeitpunkt (aus älteren Dateien, früher „Entwurf“) zählen erst nach dem Speichern.
+   Festlegungen ohne Zeitpunkt (aus älteren Dateien, früher „Entwurf“) gelten zur sicheren Seite als **überholt** („ohne
+   Zeitpunkt getroffen – ältere Datei“): Sie tragen die Ampel nicht, ein „entfällt“ wird mindestens „prüfen“; erneut
+   festlegen oder aufheben.
 
 **Nachvollziehbarkeit:** Jede Festlegung steht weiter mit Ampel, automatischer Ampel, Namen, Datum und Stand
 (gespeichert/noch nicht gespeichert, überholt, noch nicht wirksam) im Prüfprotokoll und ist in Liste, Einzelheiten und Protokoll als
@@ -406,7 +409,7 @@ dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen –
 ohne Begründungstext (der Fokus steht schon darauf). Der Dialog zeigt vorher, wie viele Vorschriften dadurch
 herabgestuft werden – mit genau der Rechnung, die danach gilt. Widerspricht ein Dienst der Angabe, bleibt der
 Widerspruch auch nach der Bestätigung bestehen; der Dialog sagt das. Die Bestätigung steht mit Namen und Datum im
-Prüfprotokoll und gilt sofort (kein Entwurf); gespeichert wird ohne Rückfrage. Danach wird angesagt, was übernommen
+Prüfprotokoll und gilt sofort (kein Entwurf; bis zum Speichern mit der Marke „geändert“); gespeichert wird ohne Rückfrage. Danach wird angesagt, was übernommen
 ist. Ein Beleg aus einer älteren Datei
 bleibt lesbar (Protokoll: Spalte „gestützt auf“ bzw. „Beleg: …“, nur wenn es einen gibt). Eine bestätigte Angabe aus
 dem Modell bzw. aus einer Tabelle des Regelmoduls gilt nur für genau diesen Wert – ändert sich das Modell bzw. die
@@ -491,7 +494,7 @@ Paragrafen je Ebene mit Ampel, Begründung und Fassung, Quellen der Geodaten, Hi
 von Hand ohne eigene Bestätigung stehen in einer eigenen Tabelle („Weitere Angaben von Hand“) (mit wer und wann), ebenso die **wegen „nein“ in der
 Vorfrage entfallenen Einzelfragen** (je Vorfrage mit Antwort, wer und wann; ein Beleg aus einer älteren Datei dazu). Die offenen Punkte zählen wie „Klärt am meisten“
 (ein Paragraf kann unter mehreren Angaben stehen); Punkte mit nur einem Paragrafen stehen gesammelt unter „Weitere“.
-Ist etwas noch nicht gespeichert, steht „NICHT GESPEICHERT …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
+Ist etwas noch nicht gespeichert, steht „Nicht gespeichert: …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
 Überschriften werden nicht von ihrer Tabelle getrennt. Warum „Prüfung abschließen“ gesperrt ist, steht sichtbar neben
 dem Knopf. „Drucken / PDF …“ ist der Hauptknopf rechts außen (wie in allen Druckvorschauen), „Schließen“ steht links
 davon. „Drucken / PDF …“ schlägt den Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. Am Bildschirm klebt die
