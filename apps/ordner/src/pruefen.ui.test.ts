@@ -144,6 +144,20 @@ describe('Prüfbericht', () => {
     expect(meldungen.at(-1)).toBeNull();
   });
 
+  it('Marken der Art: Projektdatei vorhanden als .ok, nicht lesbare Projektdatei als .fehler', async () => {
+    const fs = await projekt('2026-03-01');
+    const marke = (host: Element, titel: string) => [...host.querySelectorAll('.po-befunde > li')].find((li) => li.textContent?.includes(titel))!.querySelector('.po-befund-art')!;
+    let host = await pruefen(fs);
+    expect(marke(host, 'Projektdatei vorhanden').className).toBe('marke ok po-befund-art');
+    expect(marke(host, 'Projektdatei vorhanden').textContent).toBe('in Ordnung');
+    act(() => root!.unmount());
+    // Projektdatei durch unlesbaren Inhalt ersetzen
+    fs.eintraege.set('P:/Projekte/MUS Haus/00 Projekt/MUS.oap', new TextEncoder().encode('kaputt'));
+    host = await pruefen(fs);
+    expect(marke(host, 'Projektdatei (.oap) ist nicht lesbar').className).toBe('marke fehler po-befund-art');
+    expect(marke(host, 'Projektdatei (.oap) ist nicht lesbar').textContent).toBe('Fehler');
+  });
+
   it('Teilstand nach Fehler beim Anlegen: Bericht neu geprüft und Fehler mit Zahl genannt', async () => {
     const fs = await projekt('2026-03-01');
     const host = await pruefen(fs);

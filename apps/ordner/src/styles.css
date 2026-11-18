@@ -585,7 +585,7 @@
   font-family: Consolas, 'Cascadia Mono', monospace;
   font-size: var(--fs-s);
   background: var(--code-bg);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-s); /* Kasten im Dialog: Ebene Kasten in einer Fläche */
 }
 .po-schemata h3 {
   margin: var(--s3) 0 var(--s1);
