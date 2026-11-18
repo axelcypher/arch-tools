@@ -28,3 +28,12 @@ describe('Marken', () => {
     expect(css).not.toMatch(/\n\.einst-app \{/);
   });
 });
+
+describe('Radien von Meldungen', () => {
+  it('Meldung im Inhalt und .warning --radius-s, schwebender Hinweis --radius', () => {
+    const r = (sel: string) => regel(sel).match(/border-radius:\s*([^;]+);/)?.[1];
+    expect(r('.meldung')).toBe('var(--radius-s)');
+    expect(r('.warning')).toBe('var(--radius-s)');
+    expect(r('.hinweis')).toBe('var(--radius)');
+  });
+});

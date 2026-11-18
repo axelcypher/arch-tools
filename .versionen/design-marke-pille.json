@@ -1,10 +1,10 @@
 {
-  "flaechenrechner": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen (Marken der Apps in den Einstellungen)." },
-  "ava": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen (Marken der Apps in den Einstellungen)." },
-  "grz": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen (Marken der Apps in den Einstellungen)." },
-  "kosten": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen (Marken der Apps in den Einstellungen)." },
-  "ordner": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen (Marken der Apps in den Einstellungen)." },
-  "entzerrung": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen (Marken der Apps in den Einstellungen)." },
-  "formulare": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen (Marken der Apps in den Einstellungen)." },
-  "baurecht": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen (Marken der Apps in den Einstellungen)." }
+  "flaechenrechner": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen: Marken der Apps in den Einstellungen, schwebende Hinweise runden wie Dialoge." },
+  "ava": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen: Marken der Apps in den Einstellungen, schwebende Hinweise runden wie Dialoge." },
+  "grz": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen: Marken der Apps in den Einstellungen, schwebende Hinweise runden wie Dialoge." },
+  "kosten": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen: Marken der Apps in den Einstellungen, schwebende Hinweise runden wie Dialoge." },
+  "ordner": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen: Marken der Apps in den Einstellungen, schwebende Hinweise runden wie Dialoge." },
+  "entzerrung": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen: Marken der Apps in den Einstellungen, schwebende Hinweise runden wie Dialoge." },
+  "formulare": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen: Marken der Apps in den Einstellungen, schwebende Hinweise runden wie Dialoge." },
+  "baurecht": { "stufe": "patch", "notiz": "Gemeinsame Gestaltung angeglichen: Marken der Apps in den Einstellungen, schwebende Hinweise runden wie Dialoge." }
 }

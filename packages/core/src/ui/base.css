@@ -1058,7 +1058,7 @@ textarea:focus {
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
   padding: 6px 8px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-s);
   font-size: 12px;
 }
 
@@ -2959,7 +2959,9 @@ button.ph-lokal {
   right: auto;
   left: calc(var(--s4) - var(--s3));
 }
+/* schwebende Ebene: rundet wie eine Fläche (die Meldung im Inhalt bleibt bei --radius-s) */
 .hinweis {
+  border-radius: var(--radius);
   pointer-events: auto;
   display: flex;
   align-items: flex-start;
