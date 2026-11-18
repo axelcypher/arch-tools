@@ -555,7 +555,7 @@
 .po-chips-schnell {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: var(--s1);
 }
 .po-chips-schnell button {
   padding: 0 var(--s2);
@@ -583,7 +583,7 @@
 }
 .po-baustein-knoepfe {
   display: flex;
-  gap: 3px;
+  gap: var(--s1);
 }
 .po-baustein-knoepfe button {
   padding: 1px var(--s2);
@@ -1344,7 +1344,7 @@
 .po-mail-text {
   max-height: 220px;
   overflow: auto;
-  margin: var(--s1) 0 var(--s1);
+  margin: var(--s1) 0;
   padding: var(--s2);
   white-space: pre-wrap;
   font-family: inherit;
