@@ -1,0 +1,3 @@
+{
+  "ava": { "stufe": "patch", "notiz": "Positionseigenschaften: Mengen- und Positionsangaben brechen in schmaler Seitenkarte um, statt abgeschnitten zu werden, und füllen eine breit gezogene; gesperrte Kästchen sind gedämpft; die Beschriftung über dem Bruttobetrag steht rechtsbündig." }
+}

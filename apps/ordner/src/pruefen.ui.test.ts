@@ -84,6 +84,11 @@ describe('Prüfbericht', () => {
     const host = await pruefen(await projekt('2026-03-01'));
     expect(host.querySelector('.po-bericht-kopf h3')?.textContent).toContain('1 Abweichung');
     const befund = [...host.querySelectorAll('.po-befunde > li')].find((li) => li.textContent?.includes('Ordner der Struktur fehlen'))!;
+    // Art als Marke aus core, Abweichung in der Variante .warnung
+    expect(befund.querySelector('.po-befund-art')?.className).toBe('marke warnung po-befund-art');
+    expect(befund.querySelector('.po-befund-art')?.textContent).toBe('Abweichung');
+    // die Zeile trägt keine Klasse der Art (.hinweis wäre die schwebende Hinweis-Meldung aus core)
+    expect(befund.className).toBe('');
     expect(befund.querySelector('details summary')?.textContent).toBe('7 Ordner anzeigen');
     expect(befund.querySelector('details')?.hasAttribute('open')).toBe(false);
     expect(knopf(befund, '7 fehlende Ordner anlegen')).toBeTruthy();
@@ -137,6 +142,20 @@ describe('Prüfbericht', () => {
     expect(gespeichert[0].contents).toContain('MUS Haus');
     act(() => knopf(host, 'Zur Projektliste').click());
     expect(meldungen.at(-1)).toBeNull();
+  });
+
+  it('Marken der Art: Projektdatei vorhanden als .ok, nicht lesbare Projektdatei als .fehler', async () => {
+    const fs = await projekt('2026-03-01');
+    const marke = (host: Element, titel: string) => [...host.querySelectorAll('.po-befunde > li')].find((li) => li.textContent?.includes(titel))!.querySelector('.po-befund-art')!;
+    let host = await pruefen(fs);
+    expect(marke(host, 'Projektdatei vorhanden').className).toBe('marke ok po-befund-art');
+    expect(marke(host, 'Projektdatei vorhanden').textContent).toBe('in Ordnung');
+    act(() => root!.unmount());
+    // Projektdatei durch unlesbaren Inhalt ersetzen
+    fs.eintraege.set('P:/Projekte/MUS Haus/00 Projekt/MUS.oap', new TextEncoder().encode('kaputt'));
+    host = await pruefen(fs);
+    expect(marke(host, 'Projektdatei (.oap) ist nicht lesbar').className).toBe('marke fehler po-befund-art');
+    expect(marke(host, 'Projektdatei (.oap) ist nicht lesbar').textContent).toBe('Fehler');
   });
 
   it('Teilstand nach Fehler beim Anlegen: Bericht neu geprüft und Fehler mit Zahl genannt', async () => {
