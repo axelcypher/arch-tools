@@ -16,6 +16,9 @@
   --fs-m: 13px;
   --fs-l: 15px;
   --fs-xl: 18px;
+  /* Radien: --radius für Flächen (Karte, Dialog), --radius-s für Knöpfe und Kästen in einer Karte, --radius-xs für Felder,
+     Code und kleine Kästen; verschachtelte Kästen runden kleiner als ihre Umgebung */
+  --radius-xs: 4px;
   --radius-s: 6px;
   --radius: 8px;
   --ctl-h: 30px;
@@ -898,7 +901,7 @@ select {
   font: inherit;
   padding: 4px 6px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--input-bg);
   color: var(--text);
   width: 100%;
@@ -998,7 +1001,7 @@ textarea:focus {
   align-items: center;
   gap: 6px;
   padding: 4px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
 }
 
@@ -1043,7 +1046,7 @@ textarea:focus {
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
   padding: 6px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 12px;
 }
 
@@ -1435,7 +1438,7 @@ code {
   font-size: 11.5px;
   background: var(--code-bg);
   padding: 0 3px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 
 .busy {
@@ -1484,7 +1487,7 @@ code {
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 /* Meldung, die sich per Klick schließt (Hand nur dort) */
@@ -2160,7 +2163,7 @@ code {
   max-height: 180px;
   overflow: auto;
   background: var(--bg);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font: inherit;
   font-size: 12px;
   white-space: pre-wrap;
@@ -2183,7 +2186,7 @@ code {
   min-width: 16px;
   margin-left: 4px;
   padding: 0 4px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--danger);
   /* dunkles Schema: dunkle Schrift auf dem helleren Rot (Kontrast) */
   color: var(--on-accent);
@@ -2302,7 +2305,7 @@ code {
   flex: 1;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--input-bg);
   font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
   font-size: 12px;
@@ -2690,7 +2693,7 @@ svg[tabindex]:focus:not(:focus-visible) {
   overflow: auto;
   background: var(--code-bg);
   padding: 6px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   user-select: text;
 }
 

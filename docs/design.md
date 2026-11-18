@@ -41,8 +41,12 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--fs-l`  | 15px | Kartenkopf (`h2`), Dialogtitel                             |
 | `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl                  |
 
-Weitere: `--radius-s` 6px (Felder, Knöpfe), `--radius` 8px (Dialoge, Karten), `--ctl-h` 30px und `--ctl-h-s` 24px
-(Höhe der Bedienelemente).
+Radien: `--radius` 8px für Flächen (Karte, Dialog), `--radius-s` 6px für Knöpfe, Segmente und kartenartige Kästen
+innerhalb einer Karte (Kennzahl, Planeintrag, Ziel), `--radius-xs` 4px für Felder, Code, Listen und kleine Kästen
+(Hinweis, Protokoll). Verschachtelte Kästen runden kleiner als ihre Umgebung, damit die Ecken ineinander liegen. Kleiner
+als 4px nur für Kleinstteile (Farbfeld, Einfügemarke), Pillen mit `999px`.
+
+Weitere: `--ctl-h` 30px und `--ctl-h-s` 24px (Höhe der Bedienelemente).
 
 Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, `input.num`).
 

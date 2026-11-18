@@ -5,3 +5,5 @@ Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen
 sich auf den Stand beim Eintragen.
 
 Zurzeit nichts offen.
+
+- **Radien aus der Skala** (design.md „Skalen“): In `styles.css` stehen 13 feste Radien in px. 4px wird `var(--radius-xs)`, 6px `var(--radius-s)`, 8px `var(--radius)`. Kartenartige Kästen innerhalb einer Karte nehmen `--radius-s`, also kleiner als die Karte. Unter 4px bleibt nur für Kleinstteile, Pillen bleiben bei `999px`.

@@ -1,0 +1,10 @@
+{
+  "flaechenrechner": { "stufe": "patch", "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)." },
+  "ava": { "stufe": "patch", "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)." },
+  "grz": { "stufe": "patch", "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)." },
+  "kosten": { "stufe": "patch", "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)." },
+  "ordner": { "stufe": "patch", "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)." },
+  "entzerrung": { "stufe": "patch", "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)." },
+  "formulare": { "stufe": "patch", "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)." },
+  "baurecht": { "stufe": "patch", "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)." }
+}
