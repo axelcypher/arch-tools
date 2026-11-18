@@ -2837,7 +2837,7 @@ dependencies = [
 
 [[package]]
 name = "projektordner"
-version = "0.43.11"
+version = "0.43.12"
 dependencies = [
  "base64 0.22.1",
  "log",
