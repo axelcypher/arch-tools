@@ -24,7 +24,6 @@
   flex: none;
   margin-top: 2px;
 }
-/* Stammdaten-Knopf: Abstand zum folgenden Feld (app-seitig, bis base.css nachzieht) */
 /* Vollgeschoss-Tabelle: feste Spalten, bemessen an der Zellschrift (--fs-m: „−0,20“, „100 %“) bzw. am längsten
    Kopfwort („Geschoss“); die Einstufung nimmt den Rest. Köpfe höchstens zweizeilig („über / Gel.“), die Einheit steht
    im Tooltip – ein längeres Kopfwort braucht eine breitere Spalte. So passen die Zahlen auch, wenn die Nachweis-Karte
