@@ -78,7 +78,7 @@ export function FormularHinzufuegenDialog({ onClose }: { onClose: () => void }) 
                 {v.geaendert ? ` · ${datum(v.geaendert)}` : ''}
               </span>
             </span>
-            {vorhanden.has(v.name.toLowerCase()) && <span className="fh-da">schon im Projekt</span>}
+            {vorhanden.has(v.name.toLowerCase()) && <span className="marke fh-da">schon im Projekt</span>}
           </button>
         ))}
       </div>

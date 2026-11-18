@@ -609,7 +609,7 @@ function GruppenEditor({
             </button>
           )}
           {adresse && istVorgabe && (
-            <span className="pk-marke" title="Diese Adresse ist die Vorgabe für die Rolle">
+            <span className="marke ok pk-marke" title="Diese Adresse ist die Vorgabe für die Rolle">
               <Symbol name="haken" /> Vorgabe
             </span>
           )}
@@ -1051,7 +1051,7 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
               <td>{z.inKarte || <span className="muted">leer</span>}</td>
               <td className="pk-abgleich-knoepfe">
                 {z.gleich ? (
-                  <span className="pk-marke">
+                  <span className="marke ok pk-marke">
                     <Symbol name="haken" /> gleich
                   </span>
                 ) : (

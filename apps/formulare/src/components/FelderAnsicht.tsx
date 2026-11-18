@@ -165,7 +165,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                   Seite {o.seite + 1} · {o.abschnitt}
                 </span>
                 {o.ungeklaert && (
-                  <span className="fo-gl-offen" title={`hängt ab von: ${o.fehlend.join(', ')} (nicht festgelegt)`}>
+                  <span className="marke warnung fo-gl-offen" title={`hängt ab von: ${o.fehlend.join(', ')} (nicht festgelegt)`}>
                     ungeklärt
                   </span>
                 )}
@@ -179,7 +179,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                 Hinweise <span className="muted">{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>
               </h3>
               {hinweise.map((h, i) => (
-                <div key={i} className={`fo-pruef-zeile hinweis${h.art === 'fehler' ? ' fehler' : ''}`}>
+                <div key={i} className={`fo-pruef-zeile warnung${h.art === 'fehler' ? ' fehler' : ''}`}>
                   <div className="fo-pruef-kopf">
                     <strong>{h.art === 'fehler' ? 'Widerspruch' : 'Hinweis'}</strong>
                     <span>{h.text}</span>

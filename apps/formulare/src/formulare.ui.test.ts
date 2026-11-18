@@ -296,7 +296,7 @@ describe('Formulare', () => {
     // FORMA auf diesem Rechner abgestürzt: Prozess 67802 läuft nicht mehr
     ds.dateien.set(SPERRE, cp1252Schreiben('[Zugriff]\r\nUser=t.test\r\nComputer=HELEN\r\nAngemeldet=09.11.2026 10:17:12\r\nInGebrauch=67802\r\n\r\n'));
     const host = await oeffneMuster();
-    expect(host.querySelector('.fo-meldung.hinweis')!.textContent).toContain('Verwaist');
+    expect(host.querySelector('.fo-meldung.warnung')!.textContent).toContain('Verwaist');
     expect(host.textContent).toContain('kein Programm mit der Nummer 67802 mehr');
     await klick(knopf(host, 'Sperre aufheben'));
     expect(dialogMit('Sperre aufheben?')!.textContent).toContain('t.test auf HELEN');
@@ -312,12 +312,12 @@ describe('Formulare', () => {
     ds.dateien.set(SPERRE, cp1252Schreiben('[Zugriff]\r\nUser=t.test\r\nComputer=HELEN\r\nAngemeldet=09.11.2026 10:17:12\r\nInGebrauch=67802\r\n\r\n'));
     const host = await oeffneMuster();
     expect(host.textContent).toContain('Auf diesem Rechner läuft SJOffice.exe');
-    expect(host.querySelector('.fo-meldung.hinweis')!.textContent).toContain('In Gebrauch');
+    expect(host.querySelector('.fo-meldung.warnung')!.textContent).toContain('In Gebrauch');
     // FORMA schließt das Formular
     ds.dateien.delete(SPERRE);
     await klick(knopfGenau(host, 'Erneut prüfen'));
     expect(feld(host, 'Bauherrschaft', 1).disabled).toBe(false);
-    expect(host.querySelector('.fo-meldung.hinweis')).toBeNull();
+    expect(host.querySelector('.fo-meldung.warnung')).toBeNull();
   });
 
   it('Übersicht der Sperren: auch Sperrdateien ohne Formular, aufheben nach Bestätigung', async () => {
@@ -335,6 +335,9 @@ describe('Formulare', () => {
     expect(knopf(zeilen[0], 'Aufheben').disabled).toBe(true);
     expect(zeilen[1].textContent).toContain('(kein Formular dazu)');
     expect(zeilen[1].textContent).toContain('Verwaist');
+    // Zustand als Marke aus core: in Gebrauch als Fehler, verwaist als Hinweis
+    expect(zeilen[0].querySelector('.fo-sperr-marke')!.className).toBe('marke fo-sperr-marke fehler');
+    expect(zeilen[1].querySelector('.fo-sperr-marke')!.className).toBe('marke fo-sperr-marke info');
     await klick(knopf(zeilen[1], 'Aufheben'));
     await klick(knopfGenau(host, 'Sperre aufheben'));
     await warte();
@@ -721,6 +724,7 @@ describe('Formulare', () => {
     expect(host.textContent).toContain('„Mustermann, Max“ ist jetzt die Vorgabe für Bauherr');
     expect(useFormulare.getState().rollenVorgaben['201']).toBe(useFormulare.getState().adressbuch!.adressen[0].schluessel);
     expect(host.querySelector('.pk-marke')!.textContent).toContain('Vorgabe');
+    expect(host.querySelector('.pk-marke')!.classList).toContain('ok');
 
     // leere Gruppen bekommen die Vorgabe mit „Vorgaben eintragen“ (ein Schritt)
     await klick(knopfGenau(host, 'Leeren'));
