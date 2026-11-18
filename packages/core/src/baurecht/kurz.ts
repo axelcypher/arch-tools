@@ -35,12 +35,24 @@ export interface Bewertung {
 }
 
 const leer = (): Bewertung => ({ w: 'ja', offen: [], unsicher: [], widerspruch: [], verwendet: [] });
+/** Kennungen aller Teile ohne Doppelte, in der Reihenfolge des ersten Auftretens (meist leer: dann ohne Set) */
+function sammeln(teile: Bewertung[], feld: 'offen' | 'unsicher' | 'widerspruch' | 'verwendet'): string[] {
+  let erster: string[] | undefined;
+  let mehrere = false;
+  for (const t of teile) {
+    if (!t[feld].length) continue;
+    if (erster) mehrere = true;
+    else erster = t[feld];
+  }
+  if (!erster) return [];
+  return [...new Set(mehrere ? teile.flatMap((t) => t[feld]) : erster)];
+}
 const vereinen = (w: Wahrheit, teile: Bewertung[]): Bewertung => ({
   w,
-  offen: [...new Set(teile.flatMap((t) => t.offen))],
-  unsicher: [...new Set(teile.flatMap((t) => t.unsicher))],
-  widerspruch: [...new Set(teile.flatMap((t) => t.widerspruch))],
-  verwendet: [...new Set(teile.flatMap((t) => t.verwendet))],
+  offen: sammeln(teile, 'offen'),
+  unsicher: sammeln(teile, 'unsicher'),
+  widerspruch: sammeln(teile, 'widerspruch'),
+  verwendet: sammeln(teile, 'verwendet'),
 });
 
 const aus = (b: boolean): Wahrheit => (b ? 'ja' : 'nein');
@@ -58,17 +70,22 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
     // leeres „und“ ist wahr, leeres „oder“ falsch (paketPruefen meldet beide als Fehler)
     if (!teile.length) return 'und' in k ? leer() : { ...leer(), w: 'nein' };
     const entscheidet: Wahrheit = 'und' in k ? 'nein' : 'ja';
-    const ws = teile.map((t) => t.w);
+    let hatEntscheidend = false;
+    let hatOffen = false;
+    for (const t of teile) {
+      if (t.w === entscheidet) hatEntscheidend = true;
+      else if (t.w === 'offen') hatOffen = true;
+    }
     // nur die Teile, die das Ergebnis tragen, zählen für offen/unsicher – und von ihnen der sicherste: ein einziger
     // gesicherter Teil entscheidet „und = nein“ bzw. „oder = ja“ sicher, unsichere Nebenteile werten das nicht ab
     // (z. B. „Innenbereich“ schließt einen Landschaftsplan aus, auch wenn der Plan im Gemeindegebiet nur Hinweis ist)
-    if (ws.includes(entscheidet)) {
+    if (hatEntscheidend) {
       const tragend = teile.filter((t) => t.w === entscheidet);
       const gewicht = (t: Bewertung) => t.unsicher.length + t.widerspruch.length;
       const best = tragend.reduce((a, b) => (gewicht(b) < gewicht(a) ? b : a));
-      return { ...vereinen(entscheidet, [best]), verwendet: [...new Set(tragend.flatMap((t) => t.verwendet))] };
+      return { w: entscheidet, offen: sammeln([best], 'offen'), unsicher: sammeln([best], 'unsicher'), widerspruch: sammeln([best], 'widerspruch'), verwendet: sammeln(tragend, 'verwendet') };
     }
-    if (ws.includes('offen')) return vereinen('offen', teile);
+    if (hatOffen) return vereinen('offen', teile);
     return vereinen('und' in k ? 'ja' : 'nein', teile);
   }
   if ('nicht' in k && !('m' in k)) {

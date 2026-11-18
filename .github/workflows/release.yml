@@ -181,6 +181,10 @@ jobs:
       # Tests dieser App und der Pakete, die sie einbindet (den gemeinsamen Kern bindet jede App ein; LEXIO dazu das
       # Regelpaket) – ein schwankender Test einer anderen App soll dieses Release nicht kippen; die PR-CI testet ohnehin
       # das ganze Repo. Arkly bettet alle Apps ein: alle Tests. Projektname = Kennung der App (test.name in vite.config.ts).
+      # Die volle Fallmatrix des Regelpakets prüft der LEXIO-Job desselben Laufs; Arkly nimmt die feste Stichprobe
+      # (REGELN_STICHPROBE, packages/baurecht-regeln/test/gemeinsam.ts) statt sie ein zweites Mal ganz zu rechnen.
+      # Zwei Worker: Vitest nimmt sonst Kerne − 1, auf dem Windows-Läufer mit zwei Kernen also einen – alle Dateien
+      # liefen nacheinander.
       - name: Tests (App und eingebundene Pakete)
         # Windows-Läufer: ohne Angabe wäre es PowerShell
         shell: bash
@@ -188,9 +192,9 @@ jobs:
           APP: ${{ matrix.app }}
         run: |
           case "$APP" in
-            suite) npm test ;;
-            baurecht) npx vitest run --project core --project regeln --project baurecht ;;
-            *) npx vitest run --project core --project "$APP" ;;
+            suite) REGELN_STICHPROBE=1 npx vitest run --maxWorkers=2 ;;
+            baurecht) npx vitest run --maxWorkers=2 --project core --project regeln --project baurecht ;;
+            *) npx vitest run --maxWorkers=2 --project core --project "$APP" ;;
           esac
       - uses: tauri-apps/tauri-action@v0
         env:
