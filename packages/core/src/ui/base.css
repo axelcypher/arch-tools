@@ -2191,13 +2191,19 @@ code {
   /* Nicht-Text braucht 3:1 gegen die Leiste: das dunklere Warnorange statt der Auswahlfarbe */
   color: var(--warn-text);
 }
+/* nur für Screenreader (Tabellentitel, Beschriftungen): unsichtbar, aber im Barrierebaum; clip-path ist die heutige Form,
+   clip bleibt als Rückfall */
 .unsichtbar,
 .titlebar-unsichtbar {
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
