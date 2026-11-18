@@ -26,8 +26,8 @@ function ParagrafText({ p, absaetze, geaendert }: { p: Paragraf; absaetze: Set<s
         const hervor = absaetze.has(abs) || absaetze.has('');
         return (
           <p key={i} className={`${hervor ? 'br-text-hervor' : ''}${geaendert.has(abs) ? ' br-text-geaendert' : ''}`}>
-            {hervor && n ? <span className="br-unsichtbar">Fundstelle der Regel: </span> : null}
-            {geaendert.has(abs) && n ? <span className="br-unsichtbar">seit der Prüfung geändert: </span> : null}
+            {hervor && n ? <span className="unsichtbar">Fundstelle der Regel: </span> : null}
+            {geaendert.has(abs) && n ? <span className="unsichtbar">seit der Prüfung geändert: </span> : null}
             {z}
           </p>
         );
@@ -98,7 +98,7 @@ function Stand({ w, unsicher }: { w?: KurzKnoten['w']; unsicher?: boolean }) {
   return (
     <span className={`br-stand br-stand-${unsicher ? 'unsicher' : w}`} title={wort}>
       <span aria-hidden="true">{unsicher ? <>({STAND[w].zeichen})</> : STAND[w].zeichen}</span>
-      <span className="br-unsichtbar">{wort}: </span>
+      <span className="unsichtbar">{wort}: </span>
     </span>
   );
 }
@@ -261,9 +261,9 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         // nennt § und Norm mit (optisch als Zeile darüber)
         <span className="br-detail-titel" tabIndex={-1} data-f6-ziel="">
           {/* der Name der Karte für Vorleseprogramme: „Einzelheiten: § … – …“ */}
-          <span className="br-unsichtbar">Einzelheiten: </span>
+          <span className="unsichtbar">Einzelheiten: </span>
           <span className="br-detail-nr">{nb(einheit.nr ? titel : norm.def.kurz)}</span>
-          <span className="br-unsichtbar"> – </span>
+          <span className="unsichtbar"> – </span>
           <span>{nb(einheit.titel || titel)}</span>
         </span>
       }

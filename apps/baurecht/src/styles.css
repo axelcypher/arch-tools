@@ -17,16 +17,6 @@
   --br-gruen-rand: var(--ok-border);
 }
 
-.br-unsichtbar {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 .br-leise {
   color: var(--muted);
 }
@@ -183,12 +173,17 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 @container app (max-width: 1199px) {
   /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip). „Speichern“ kürzt
      die Werkzeugleiste selbst (Kompaktstufe, `tb-text`) */
+  /* nur noch für Screenreader – wie .unsichtbar aus core (base.css), hier nur unter dieser Breite */
   .br-kopf-label {
     position: absolute;
     width: 1px;
     height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
     overflow: hidden;
     clip: rect(0 0 0 0);
+    clip-path: inset(50%);
     white-space: nowrap;
   }
 }
@@ -1181,14 +1176,19 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   display: flex;
   gap: var(--s1);
 }
+/* Sprungmarken: ohne Fokus nur für Screenreader (wie .unsichtbar aus core), mit Fokus voll sichtbar über dem Inhalt
+   (docs/design.md „Fokus und Tastatur“) – nie display: none */
 .br-sprung button:not(:focus) {
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
   padding: 0;
   overflow: hidden;
-  clip: rect(0 0 0 0);
   border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Zielgrößen mindestens 24 px */

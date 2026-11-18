@@ -51,7 +51,7 @@ export function AmpelMarke({ ampel, klein = false, ohneText = false, vonHand = f
     <span className={`br-ampel br-ampel-${ampel}${klein ? ' br-ampel-klein' : ''}`} title={`${AMPEL_LANG[ampel]}${vonHand ? ' (von Hand festgelegt)' : ''}`}>
       <span className={`statuspunkt ${STATUSPUNKT[ampel]}`} aria-hidden="true" />
       {!ohneText && <span className="br-ampel-text">{AMPEL_TEXT[ampel]}</span>}
-      {ohneText && <span className="br-unsichtbar">{AMPEL_TEXT[ampel]}</span>}
+      {ohneText && <span className="unsichtbar">{AMPEL_TEXT[ampel]}</span>}
     </span>
   );
 }

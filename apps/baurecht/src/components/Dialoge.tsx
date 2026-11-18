@@ -412,7 +412,7 @@ function Pfeil() {
   return (
     <>
       <Symbol name="pfeilRechts" />
-      <span className="br-unsichtbar"> wird zu </span>
+      <span className="unsichtbar"> wird zu </span>
     </>
   );
 }
