@@ -1924,9 +1924,16 @@ button.icon.fo-gl-zaehlt.an {
   background: var(--p-feld-fokus);
 }
 .fo-papier .fo-memo:disabled,
-.fo-papier .fo-memo:read-only:not(:focus) {
+.fo-papier .fo-memo:read-only {
   background: transparent;
   opacity: 1;
+}
+/* schreibgeschützt (berechnet): ohne Feldgrund, auch mit Fokus – gestrichelter Rahmen wie bei berechneten Feldern */
+.fo-papier .fo-memo:read-only {
+  cursor: default;
+}
+.fo-papier .fo-memo:read-only:focus {
+  outline: 1px dashed var(--accent);
 }
 .fo-papier .fo-memo.geaendert,
 .fo-papier .fo-check.geaendert {
@@ -2976,8 +2983,8 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-check.offen input {
   background: var(--p-offen);
 }
-.fo-feld.offen input,
-.fo-feld.offen textarea {
+.fo-feld.offen input:not(.berechnet),
+.fo-feld.offen textarea:not(.berechnet) {
   background: var(--warn-bg);
   border-color: var(--warn-border);
 }
@@ -3084,7 +3091,7 @@ button.icon.fo-gl-bed.gesetzt {
 }
 /* aus dem Projektmerkmal vorbelegt (U-05): als Vorschlag gekennzeichnet */
 .fo-papier .fo-check.vorbelegt input,
-.fo-feld.vorbelegt input {
+.fo-feld.vorbelegt input:not(.berechnet) {
   outline: 1.5px dashed var(--accent);
   outline-offset: 1px;
 }

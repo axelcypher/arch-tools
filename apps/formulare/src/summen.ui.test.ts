@@ -103,8 +103,8 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['5', '6']);
     const summe = eingabe(host, '0:Memo14');
     expect(summe.value).toBe('5');
-    // schreibgeschützt, aber fokussierbar; die kurze Herkunft hängt am Feld, die lange steht im Tooltip
-    expect([summe.readOnly, summe.disabled]).toEqual([true, false]);
+    // schreibgeschützt, aber fokussierbar (und Tab-Stopp); die kurze Herkunft hängt am Feld, die lange steht im Tooltip
+    expect([summe.readOnly, summe.disabled, summe.tabIndex]).toEqual([true, false, 0]);
     const herkunft = summe.closest('.fo-feld')!.querySelector('.field-hint')!;
     expect(herkunft.textContent).toBe('Summe aus „in Garagen“ und „im Freien“');
     expect(summe.getAttribute('aria-describedby')).toBe(herkunft.id);
@@ -150,7 +150,10 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     datei.bytes = synthetischesFormular('nw010010', '2024G', [[], [{ name: 'Panel1', titel: 'Kopf Blatt 2', felder: [{ art: 'memo', name: 'Memo1', text: 'Bauherrschaft', berechnet: true }] }]]);
     const host = await oeffnen();
     const kopf = eingabe(host, '1:Memo1');
-    expect([kopf.readOnly, kopf.disabled, kopf.classList.contains('berechnet')]).toEqual([true, false, true]);
+    expect([kopf.readOnly, kopf.disabled, kopf.classList.contains('berechnet'), kopf.tabIndex]).toEqual([true, false, true, -1]);
+    // Herkunft am Feld, neutral (FORMA sperrt auch Felder, die die Behörde ausfüllt)
+    const hinweis = document.getElementById(kopf.getAttribute('aria-describedby')!)!;
+    expect(hinweis.textContent).toBe('In FORMA schreibgeschützt – hier nicht einzutragen');
     await tippe('1:Memo1', 'X');
     act(() => useFormulare.getState().feldVerlassen(feldVon('1:Memo1')));
     await warte();

@@ -446,6 +446,8 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           value={typeof wert === 'string' ? wert : ''}
           disabled={gesperrt}
           readOnly={feld.berechnet}
+          // von FORMA gesperrte Felder ohne Summe: keine Tab-Stopps, aber per Klick und Sprung erreichbar
+          tabIndex={feld.berechnet && !feld.summe ? -1 : undefined}
           title={autofill ? `${titel} – ${AUTOFILL_TEXT[autofill]}` : titel}
           aria-label={feld.beschriftung}
           data-feld={feld.schluessel}

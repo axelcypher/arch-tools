@@ -318,7 +318,10 @@ function FeldEingabe({
   const gesperrt = gesperrtFormular || (feld.berechnet && feld.art === 'kreuz');
   const nurLesen = feld.berechnet;
   const summeAus = summe && herkunft(summe, titelVon);
-  const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? 'wird berechnet'}` : feld.hinweis;
+  // von FORMA gesperrte Felder: berechnet (Summen, Kopfzeilen) oder von anderer Stelle auszufüllen (z. B. der Behörde) –
+  // die App weiß nicht, welches von beiden, deshalb neutral
+  const gesperrtInForma = 'In FORMA schreibgeschützt – hier nicht einzutragen';
+  const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? gesperrtInForma}` : feld.hinweis;
 
   if (feld.art === 'kreuz') {
     // echte Entweder-oder-Fälle (Regel „genau eine“, z. B. Bauantrag/Vorbescheid, ja/nein) als Optionsfelder (U-04) –
@@ -353,35 +356,38 @@ function FeldEingabe({
   const eingabe = einzeilig ? (
     <input
       type="text"
-      id={summe ? feldId : undefined}
+      id={feld.berechnet ? feldId : undefined}
       className={feld.berechnet ? 'berechnet' : undefined}
       value={text}
       disabled={gesperrt}
       readOnly={nurLesen}
       aria-label={titel}
-      aria-describedby={summe ? hinweisId : undefined}
+      aria-describedby={feld.berechnet ? hinweisId : undefined}
+      tabIndex={feld.berechnet && !summe ? -1 : undefined}
       data-feld={feld.schluessel}
       onChange={(e) => wertSetzen(feld, e.target.value)}
       onBlur={() => useFormulare.getState().feldVerlassen(feld)}
     />
   ) : (
     <textarea
-      id={summe ? feldId : undefined}
+      id={feld.berechnet ? feldId : undefined}
       className={feld.berechnet ? 'berechnet' : undefined}
       value={text}
       disabled={gesperrt}
       readOnly={nurLesen}
       aria-label={titel}
-      aria-describedby={summe ? hinweisId : undefined}
+      aria-describedby={feld.berechnet ? hinweisId : undefined}
+      tabIndex={feld.berechnet && !summe ? -1 : undefined}
       data-feld={feld.schluessel}
       rows={Math.max(2, Math.min(12, text.split('\n').length + 1, Math.round(feld.kasten.h / 18)))}
       onChange={(e) => wertSetzen(feld, e.target.value)}
       onBlur={() => useFormulare.getState().feldVerlassen(feld)}
     />
   );
-  // Summenfeld: Hülle ohne <label> – Herkunft und „Neu berechnen“ stehen als Geschwister unter dem Feld, der Knopf gehört
-  // nicht zur Beschreibung des Felds
-  if (summe)
+  // berechnetes Feld: Hülle ohne <label> – Herkunft (und bei Summen „Neu berechnen“) stehen als Geschwister unter dem Feld,
+  // der Knopf gehört nicht zur Beschreibung des Felds. Von FORMA gesperrte Felder ohne Summe sind keine Tab-Stopps
+  // (Tabellen hätten sonst Dutzende zwischen den Eingaben), bleiben aber per Klick und Sprung erreichbar
+  if (feld.berechnet)
     return (
       <div className={klasse} title={hinweis} style={breite}>
         {!ohneBeschriftung && (
@@ -394,9 +400,9 @@ function FeldEingabe({
         {eingabe}
         <div className="feld-herkunft">
           <span className="field-hint" id={hinweisId}>
-            {herkunft(summe, titelVon, true)}
+            {summe ? herkunft(summe, titelVon, true) : gesperrtInForma}
           </span>
-          {neuBerechnen !== undefined && !gesperrtFormular && (
+          {summe && neuBerechnen !== undefined && !gesperrtFormular && (
             <button
               type="button"
               className="small"
