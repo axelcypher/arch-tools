@@ -3,17 +3,17 @@
 .po-lph {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 8px;
-  margin-bottom: 8px;
-  font-size: 12px;
+  gap: 2px var(--s2);
+  margin-bottom: var(--s2);
+  font-size: var(--fs-s);
 }
 
 /* Vorschau des Projektordners */
 .po-ort {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: var(--s1);
+  margin-bottom: var(--s2);
 }
 .po-ort > div {
   flex: 1;
@@ -26,7 +26,7 @@
 .po-pfad,
 .po-ergebnis code {
   display: block;
-  padding: 3px 6px;
+  padding: 3px var(--s2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -47,7 +47,7 @@
 }
 .po-status {
   width: 80px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--ok-text);
 }
@@ -59,7 +59,7 @@
   display: inline-block;
   width: 13px;
   height: 10px;
-  margin-right: 6px;
+  margin-right: var(--s1);
   vertical-align: -1px;
   border: 1.5px solid var(--muted);
   border-radius: 2px;
@@ -76,9 +76,9 @@
   margin-left: 2px;
 }
 .po-hinweise {
-  margin: 8px 0;
-  padding-left: 18px;
-  font-size: 12px;
+  margin: var(--s2) 0;
+  padding-left: var(--s4);
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 /* Ergebnis des Anlegens: .meldung ok bzw. warnung (teils fehlgeschlagen), etwas mehr Luft */
@@ -87,12 +87,12 @@
   padding: var(--s3);
 }
 .po-ergebnis ul {
-  margin: 6px 0;
-  padding-left: 18px;
+  margin: var(--s1) 0;
+  padding-left: var(--s4);
 }
 .po-rueckgaengig button,
 .po-konflikt button {
-  margin-left: 6px;
+  margin-left: var(--s1);
 }
 .po-konflikt {
   margin: 0;
@@ -100,7 +100,7 @@
 }
 .po-sicherungen li {
   display: flex;
-  gap: 8px;
+  gap: var(--s2);
   align-items: center;
   justify-content: space-between;
 }
@@ -120,15 +120,15 @@
 }
 .po-befunde {
   list-style: none;
-  margin: 10px 0;
+  margin: var(--s2) 0;
   padding: 0;
 }
 .po-befunde > li {
   display: flex;
-  gap: 10px;
-  padding: 8px 0;
+  gap: var(--s2);
+  padding: var(--s2) 0;
   border-bottom: 1px solid var(--line-soft);
-  font-size: 13px;
+  font-size: var(--fs-m);
 }
 .po-befund-art {
   flex: 0 0 92px;
@@ -136,7 +136,7 @@
   text-align: center;
   font-size: var(--fs-xs);
   font-weight: 600;
-  padding: 1px 7px;
+  padding: 1px var(--s2);
   border-radius: 999px;
   color: var(--muted);
   background: var(--chip-bg);
@@ -154,8 +154,8 @@
   background: var(--fehler-bg);
 }
 .po-pfade {
-  margin: 4px 0 0;
-  padding-left: 16px;
+  margin: var(--s1) 0 0;
+  padding-left: var(--s4);
   font-family: Consolas, 'Cascadia Mono', monospace;
   font-size: var(--fs-s);
   color: var(--muted);
@@ -166,7 +166,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--s3);
 }
 .po-bericht-kopf > button {
   flex: 0 0 auto;
@@ -179,20 +179,20 @@
   gap: 2px;
 }
 .po-pfade-klapp summary {
-  margin-top: 4px;
+  margin-top: var(--s1);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .po-befund-aktion {
-  margin-top: 6px;
+  margin-top: var(--s1);
 }
 
 /* Struktur */
 .po-ordnertext {
   width: 100%;
   min-height: 52vh;
-  padding: 8px 10px;
+  padding: var(--s2) var(--s3);
   font-family: Consolas, 'Cascadia Mono', monospace;
   font-size: var(--fs-m);
   line-height: 1.5;
@@ -205,7 +205,7 @@
 }
 .po-schemafeld {
   display: flex;
-  gap: 4px;
+  gap: var(--s1);
 }
 .po-schemafeld input {
   flex: 1;
@@ -226,7 +226,7 @@
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: 8px 14px;
+  gap: var(--s2) var(--s3);
 }
 .po-struktur-titel .field {
   margin: 0;
@@ -237,11 +237,11 @@
   margin: 0;
 }
 .po-struktur-kopf > p {
-  margin: 6px 0 0;
+  margin: var(--s1) 0 0;
 }
 /* unlesbare Struktur (StrukturSperre): Grund, Sperre und „Angezeigte Struktur übernehmen …“ */
 .po-struktur-fehler p {
-  margin: 0 0 6px;
+  margin: 0 0 var(--s1);
 }
 .po-struktur-fehler .button-row {
   margin: 0;
@@ -264,31 +264,31 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 12px;
-  margin-bottom: 6px;
+  gap: var(--s1) var(--s3);
+  margin-bottom: var(--s1);
 }
 .po-werkzeuge-gruppe {
   display: flex;
-  gap: 4px;
+  gap: var(--s1);
 }
 /* LPh-Vorschau: eigener Modus mit Rahmen, Chips als Umriss (ansehen statt Regel setzen) */
 .po-vorschau-lph {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 6px;
-  padding: 5px 8px;
+  gap: var(--s1);
+  margin-bottom: var(--s1);
+  padding: var(--s1) var(--s2);
   border: 1px dashed var(--accent);
   border-radius: 4px;
 }
 .po-vorschau-titel {
-  margin-right: 4px;
-  font-size: 12px;
+  margin-right: var(--s1);
+  font-size: var(--fs-s);
   font-weight: 600;
 }
 .po-vorschau-stand {
-  margin: 0 4px 0 6px;
+  margin: 0 var(--s1) 0 var(--s1);
   color: var(--muted);
 }
 .po-vorschau-lph > button:last-child {
@@ -296,11 +296,11 @@
 }
 .po-chip {
   min-width: 24px;
-  padding: 1px 6px;
+  padding: 1px var(--s2);
   font-size: var(--fs-s);
   line-height: 18px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 999px;
   background: var(--chip-bg);
   color: var(--text);
   cursor: pointer;
@@ -368,7 +368,7 @@
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2);
   margin: 0;
   box-shadow: var(--schatten-schwebend);
 }
@@ -383,7 +383,7 @@
   height: 0;
   min-height: 240px;
   overflow: auto;
-  padding: 4px 0;
+  padding: var(--s1) 0;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--input-bg);
@@ -396,15 +396,15 @@
   border-color: var(--accent);
 }
 .po-k-leer {
-  padding: 8px 10px;
+  padding: var(--s2) var(--s3);
 }
 .po-k-zeile {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--s1);
   min-height: 24px;
-  padding-right: 6px;
+  padding-right: var(--s2);
   cursor: default;
   white-space: nowrap;
 }
@@ -467,13 +467,13 @@
 }
 .po-k-eingabe {
   min-width: 180px;
-  padding: 1px 5px;
+  padding: 1px var(--s1);
   font-size: var(--fs-m);
 }
 .po-k-marke {
   flex: 0 0 auto;
-  padding: 0 6px;
-  border-radius: 8px;
+  padding: 0 var(--s2);
+  border-radius: var(--radius);
   font-size: var(--fs-xs);
   line-height: 16px;
   background: var(--chip-bg);
@@ -503,7 +503,7 @@
 }
 .po-k-aktionen button {
   min-width: 22px;
-  padding: 0 5px;
+  padding: 0 var(--s1);
   line-height: 16px;
 }
 /* beim Ziehen immer sichtbar: klebt am unteren Rand des sichtbaren Baums */
@@ -512,13 +512,13 @@
   bottom: 0;
   z-index: 1;
   background: var(--input-bg);
-  margin: 6px;
-  padding: 8px;
+  margin: var(--s1);
+  padding: var(--s2);
   border: 1px dashed var(--border);
   border-radius: 4px;
   color: var(--muted);
   text-align: center;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .po-k-stamm.drop-in {
   border-color: var(--accent);
@@ -526,31 +526,31 @@
   background: var(--accent-soft);
 }
 .po-k-hilfe {
-  margin: 6px 0 0;
+  margin: var(--s1) 0 0;
 }
 .po-k-pfad {
-  margin: -2px 0 8px;
+  margin: -2px 0 var(--s2);
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .po-auswahl-panel .field {
-  margin-bottom: 8px;
+  margin-bottom: var(--s2);
 }
 .po-auswahl-panel .toggle {
   display: flex;
-  margin: 8px 0 4px;
+  margin: var(--s2) 0 var(--s1);
 }
 .po-auswahl-panel .button-row {
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--s1);
 }
 .po-lph-wahl .po-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin: 3px 0 4px;
+  gap: var(--s1);
+  margin: 3px 0 var(--s1);
 }
 .po-chips-schnell {
   display: flex;
@@ -558,19 +558,19 @@
   gap: 3px;
 }
 .po-chips-schnell button {
-  padding: 0 6px;
-  font-size: 11px;
+  padding: 0 var(--s2);
+  font-size: var(--fs-xs);
 }
 .po-baustein-liste {
   list-style: none;
-  margin: 6px 0 0;
+  margin: var(--s1) 0 0;
   padding: 0;
 }
 .po-baustein-liste > li {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  padding: 5px 0;
+  gap: var(--s1);
+  padding: var(--s1) 0;
   border-top: 1px solid var(--line-soft);
 }
 .po-baustein-liste details {
@@ -586,12 +586,12 @@
   gap: 3px;
 }
 .po-baustein-knoepfe button {
-  padding: 1px 6px;
+  padding: 1px var(--s2);
 }
 .po-baustein-inhalt,
 .po-mehrere-vorschau pre {
-  margin: 4px 0 0;
-  padding: 6px 8px;
+  margin: var(--s1) 0 0;
+  padding: var(--s2) var(--s2);
   max-height: 220px;
   overflow: auto;
   font-family: Consolas, 'Cascadia Mono', monospace;
@@ -600,8 +600,8 @@
   border-radius: 4px;
 }
 .po-schemata h3 {
-  margin: 12px 0 4px;
-  font-size: 13px;
+  margin: var(--s3) 0 var(--s1);
+  font-size: var(--fs-m);
 }
 /* Namen und Pfade: eingestellt zentral (Einstellungen › Pfade und Benennung), hier nur angezeigt */
 .po-schemata-werte {
@@ -632,7 +632,7 @@
 .po-mehrere {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: var(--s2);
 }
 .po-mehrere .po-ordnertext {
   min-height: 260px;
@@ -647,16 +647,16 @@
   align-self: center;
 }
 .po-ordnermeldungen {
-  margin: 6px 0;
+  margin: var(--s1) 0;
 }
 .po-ordnermeldungen ul {
-  margin: 0 0 4px;
-  padding-left: 18px;
+  margin: 0 0 var(--s1);
+  padding-left: var(--s4);
 }
 
 /* Vorschau: abwählen, Warnungen */
 .po-wahl {
-  margin: 0 5px 0 0;
+  margin: 0 var(--s1) 0 0;
   vertical-align: -2px;
 }
 .po-plan tr.abgewaehlt td {
@@ -672,31 +672,31 @@
 }
 .po-nurneu {
   display: inline-flex;
-  margin-bottom: 6px;
-  font-size: 12px;
+  margin-bottom: var(--s1);
+  font-size: var(--fs-s);
 }
 
 .po-presetwahl {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 12px;
-  margin: 2px 0 6px;
-  font-size: 12px;
+  gap: 2px var(--s3);
+  margin: 2px 0 var(--s1);
+  font-size: var(--fs-s);
 }
 .po-unbekannt {
   color: var(--warn-text);
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 
 .karte .warning .button-row {
-  margin-top: 6px;
+  margin-top: var(--s1);
 }
 
 /* Vorlagen: Presets und Zuordnungen */
 .po-presets li {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--s2);
   padding: 0;
 }
 /* der ganze Eintrag ist ein Knopf – per Tab erreichbar, Enter/Leertaste wählt */
@@ -704,9 +704,9 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--s2);
   width: 100%;
-  padding: 4px 6px;
+  padding: var(--s1) var(--s2);
   border: none;
   border-radius: 4px;
   background: none;
@@ -720,46 +720,46 @@
   outline-offset: -2px;
 }
 .po-platzhalter-klapp {
-  margin-top: 8px;
+  margin-top: var(--s2);
 }
 .po-platzhalter-klapp summary {
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .po-standard {
   align-self: center;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .po-zuordnungen {
   list-style: none;
-  margin: 8px 0;
+  margin: var(--s2) 0;
   padding: 0;
 }
 .po-zuordnungen > li {
-  padding: 8px 10px;
-  margin-bottom: 8px;
+  padding: var(--s2) var(--s3);
+  margin-bottom: var(--s2);
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius-s);
   background: var(--bg);
 }
 .po-zuordnungen > li.fehlt {
   border-color: var(--warn-border);
 }
 .po-zuordnungen .field {
-  margin-bottom: 4px;
+  margin-bottom: var(--s1);
 }
 .po-z-kopf {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: var(--s1);
+  margin-bottom: var(--s1);
 }
 .po-z-kopf > input {
   flex: 1;
   min-width: 0;
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .po-z-kopf .po-art {
   flex: 0 0 auto;
@@ -768,14 +768,14 @@
 .po-z-lph {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: var(--s1);
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 .po-z-lph input {
   width: 58px;
-  padding: 2px 5px;
-  font-size: 12px;
+  padding: 2px var(--s1);
+  font-size: var(--fs-s);
 }
 .po-z-vorschau {
   font-family: Consolas, 'Cascadia Mono', monospace;
@@ -797,7 +797,7 @@
   max-height: 40vh;
 }
 .po-quellen .po-status button {
-  padding: 0 8px;
+  padding: 0 var(--s2);
 }
 
 /* Assistent */
@@ -820,16 +820,16 @@
 .po-schritte {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--s1);
   list-style: none;
-  margin: 0 0 10px;
-  padding: 0 0 10px;
+  margin: 0 0 var(--s2);
+  padding: 0 0 var(--s3);
   border-bottom: 1px solid var(--line-soft);
 }
 .po-schritte button {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s1);
   border-color: transparent;
   background: transparent;
 }
@@ -839,7 +839,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   background: var(--chip-bg);
   color: var(--text);
 }
@@ -852,7 +852,7 @@
 }
 .po-weiter-grund {
   align-self: center;
-  font-size: 12px;
+  font-size: var(--fs-s);
   color: var(--danger);
 }
 .po-weiter-grund:empty {
@@ -883,7 +883,7 @@
 .po-sperr-grund {
   align-self: center;
   margin-left: auto;
-  font-size: 12px;
+  font-size: var(--fs-s);
   color: var(--muted);
   text-align: right;
 }
@@ -901,29 +901,29 @@
   box-shadow: inset 0 0 0 1px var(--ok-border);
 }
 .po-kontext {
-  margin: 0 0 10px;
-  font-size: 12px;
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .po-start {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 12px;
+  gap: var(--s3);
 }
 .po-karte {
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
+  border-radius: var(--radius-s);
+  padding: var(--s3) var(--s4);
   background: var(--bg);
 }
 .po-karte h3 {
-  margin: 0 0 4px !important;
-  font-size: 14px !important;
+  margin: 0 0 var(--s1) !important;
+  font-size: var(--fs-l) !important;
 }
 .po-projektliste {
   max-height: 38vh;
   overflow: auto;
-  margin: 6px 0 8px;
+  margin: var(--s1) 0 var(--s2);
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--panel);
@@ -937,36 +937,36 @@
   min-width: 0;
 }
 .po-vorlagenwahl {
-  margin: 10px 0 0;
+  margin: var(--s2) 0 0;
   padding: 0;
   border: none;
   min-width: 0;
 }
 .po-vorlagenwahl legend {
   padding: 0;
-  margin-bottom: 4px;
-  font-size: 12px;
+  margin-bottom: var(--s1);
+  font-size: var(--fs-s);
   font-weight: 600;
   color: var(--muted);
 }
 .po-karte .po-suche {
   width: 100%;
-  margin-top: 6px;
+  margin-top: var(--s1);
 }
 .po-abweichung {
-  margin: 6px 0;
+  margin: var(--s1) 0;
 }
 .po-abweichung summary {
   cursor: pointer;
 }
 .po-abweichung ul {
-  margin: 2px 0 4px;
-  padding-left: 18px;
+  margin: 2px 0 var(--s1);
+  padding-left: var(--s4);
 }
 .po-navigation {
   justify-content: space-between;
-  margin-top: 14px;
-  padding-top: 10px;
+  margin-top: var(--s3);
+  padding-top: var(--s3);
   border-top: 1px solid var(--line-soft);
 }
 .po-navigation .primary {
@@ -995,15 +995,15 @@
 .ex-ziele {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--s1);
 }
 .ex-ziel {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   cursor: pointer;
 }
 .ex-ziel.aktiv {
@@ -1026,7 +1026,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--fs-m);
 }
 .ka-name {
   flex: 1;
@@ -1039,13 +1039,13 @@
 }
 .ka-knoepfe {
   display: flex;
-  gap: 4px;
+  gap: var(--s1);
 }
 .ka-plan {
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  margin-top: 8px;
+  border-radius: var(--radius-s);
+  padding: var(--s2) var(--s3);
+  margin-top: var(--s2);
   background: var(--panel);
 }
 .ka-plan.inaktiv {
@@ -1054,15 +1054,15 @@
 .ka-plan-kopf {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: var(--s1);
+  margin-bottom: var(--s1);
 }
 .ka-art {
-  font-size: 10px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 1px var(--s1);
+  border-radius: 4px;
   background: var(--chip-bg);
   color: var(--muted);
 }
@@ -1086,9 +1086,9 @@
 .ka-status {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--s2);
   flex-wrap: wrap;
-  margin-bottom: 4px;
+  margin-bottom: var(--s1);
 }
 .ka-status > div {
   flex: 1;
@@ -1101,23 +1101,23 @@
 }
 .ka-wahl {
   list-style: none;
-  margin: 8px 0;
+  margin: var(--s2) 0;
   padding: 0;
 }
 .ka-wahl li {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 6px 0;
+  padding: var(--s2) 0;
   border-bottom: 1px solid var(--line-soft);
 }
 .ka-wahl label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2);
 }
 .ka-ergebnis {
-  margin-left: 26px;
+  margin-left: var(--s5);
 }
 .ka-ergebnis.ok {
   color: var(--ok-text);
@@ -1138,7 +1138,7 @@
 .ka-zeile {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s1);
   flex-wrap: wrap;
 }
 
@@ -1150,8 +1150,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 14px;
-  margin: 6px 0 10px;
+  gap: var(--s1) var(--s3);
+  margin: var(--s1) 0 var(--s2);
 }
 .po-statuswahl .field-label {
   width: 100%;
@@ -1162,10 +1162,10 @@
   flex: 0 0 auto;
 }
 .po-steckbrief {
-  margin: 0 0 12px;
-  padding: 8px 12px;
+  margin: 0 0 var(--s3);
+  padding: var(--s2) var(--s3);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--bg);
   font-size: var(--fs-m);
 }
@@ -1190,7 +1190,7 @@
 }
 .po-steckbrief ul {
   margin: 0;
-  padding-left: 16px;
+  padding-left: var(--s4);
 }
 
 .po-mails-view .po-projektliste li.active {
@@ -1201,7 +1201,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--s3);
 }
 /* Projektcode im Kopf der Karte: Beschriftung und Feld in einer Zeile */
 .po-mails-code {
@@ -1232,12 +1232,12 @@
 }
 .po-mailliste {
   list-style: none;
-  margin: 8px 0 0;
+  margin: var(--s2) 0 0;
   padding: 0;
 }
 .po-mail {
-  padding: 8px 10px;
-  margin-bottom: 6px;
+  padding: var(--s2) var(--s3);
+  margin-bottom: var(--s1);
   border: 1px solid var(--border);
   border-left: 3px solid var(--border);
   border-radius: 4px;
@@ -1252,7 +1252,7 @@
 .po-mail-kopf {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--s2);
   min-width: 0;
 }
 .po-mail-name {
@@ -1268,17 +1268,17 @@
   max-width: 40%;
 }
 .po-mail-gruende {
-  margin: 4px 0 6px 24px;
-  padding-left: 14px;
-  font-size: 12px;
+  margin: var(--s1) 0 var(--s1) var(--s5);
+  padding-left: var(--s4);
+  font-size: var(--fs-s);
   color: var(--warn-text);
 }
 .po-mail-teile {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-left: 24px;
+  gap: var(--s1);
+  margin-left: var(--s5);
 }
 .po-mail-teile > * {
   flex: 0 0 auto;
@@ -1286,7 +1286,7 @@
 .po-mail-teile input,
 .po-mail-teile select {
   width: auto;
-  padding: 2px 6px;
+  padding: 2px var(--s2);
   font-size: var(--fs-m);
 }
 .po-mail-teile input.po-mail-gegenueber {
@@ -1312,15 +1312,15 @@
   flex: 0 0 auto;
 }
 .po-mail-neu {
-  margin: 4px 0 0 24px;
+  margin: var(--s1) 0 0 var(--s5);
   overflow-wrap: anywhere;
 }
 .po-mail-problem {
   color: var(--warn-text);
 }
 .po-mail-vorschau {
-  margin: 6px 0 0 24px;
-  font-size: 12px;
+  margin: var(--s1) 0 0 var(--s5);
+  font-size: var(--fs-s);
 }
 .po-mail-vorschau summary {
   cursor: pointer;
@@ -1329,8 +1329,8 @@
 .po-mail-vorschau dl {
   display: grid;
   grid-template-columns: minmax(80px, max-content) 1fr;
-  gap: 2px 8px;
-  margin: 6px 0;
+  gap: 2px var(--s2);
+  margin: var(--s1) 0;
 }
 .po-mail-vorschau dt {
   color: var(--muted);
@@ -1342,11 +1342,11 @@
 .po-mail-text {
   max-height: 220px;
   overflow: auto;
-  margin: 4px 0 6px;
-  padding: 6px 8px;
+  margin: var(--s1) 0 var(--s1);
+  padding: var(--s2) var(--s2);
   white-space: pre-wrap;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--fs-s);
   background: var(--code-bg);
   border-radius: 4px;
 }
@@ -1356,10 +1356,10 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin: 10px 0;
-  padding: 12px 14px;
+  margin: var(--s2) 0;
+  padding: var(--s3) var(--s4);
   border: 2px dashed var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--bg);
   text-align: center;
 }
@@ -1376,7 +1376,7 @@
   margin-left: auto;
 }
 .po-neue {
-  margin-bottom: 14px;
+  margin-bottom: var(--s3);
 }
 .po-mail.neu {
   border-left-color: var(--accent);
@@ -1385,8 +1385,8 @@
   width: auto;
   margin-left: auto;
   max-width: 50%;
-  padding: 2px 6px;
-  font-size: 12px;
+  padding: 2px var(--s2);
+  font-size: var(--fs-s);
 }
 
 /* Namensschema (gemeinsame Einstellungen): Tabelle passt in die Spalte, nur „Bedeutung“ wächst */
@@ -1408,7 +1408,7 @@
 .po-stellen {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 8px;
+  gap: var(--s2);
 }
 .po-stellen label,
 .po-index {
@@ -1420,7 +1420,7 @@
   width: 80px;
 }
 .po-kuerzel p {
-  margin: 2px 0 6px;
+  margin: 2px 0 var(--s1);
 }
 .po-kuerzel-tabelle {
   table-layout: fixed;
@@ -1464,7 +1464,7 @@
 
 /* ursprünglicher Absender einer intern weitergeleiteten Mail: Auswahl zum Korrigieren, bei Unklarheit als Warnung */
 .po-mail-ursprung {
-  margin: 6px 0 0 24px;
+  margin: var(--s1) 0 0 var(--s5);
 }
 .po-mail-ursprung.meldung {
   display: flex;
@@ -1487,14 +1487,14 @@
 .po-mail-ursprung-wahl select {
   width: auto;
   max-width: 100%;
-  padding: 2px 6px;
+  padding: 2px var(--s2);
   font-size: var(--fs-s);
 }
 .po-mail-ursprung-wahl input.po-mail-ursprung-andere {
   flex: 1 1 220px;
   width: auto;
   min-width: 0;
-  padding: 2px 6px;
+  padding: 2px var(--s2);
   font-size: var(--fs-s);
 }
 .po-mail-ursprung-knoepfe {
