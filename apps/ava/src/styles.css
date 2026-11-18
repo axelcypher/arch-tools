@@ -436,6 +436,18 @@
   width: 100%;
 }
 
+/* Felder außerhalb eines Feldrasters (Seitenkarte „Eigenschaften“, Dreierreihen): ohne den Außenabstand von .field,
+   den Abstand gibt dort der gap des Behälters */
+.ava-panel > .field,
+.ava-feld-reihe > .field {
+  margin-bottom: 0;
+}
+
+/* ein Feldraster direkt unter einer Tabelle (Vergabe, Beteiligte) steht nicht an der letzten Zeile */
+.ava-flaeche .summary-table + .feldraster {
+  margin-top: var(--s3);
+}
+
 .ava-feld-reihe {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1418,10 +1430,6 @@
 
 .ava-fehlt.fehler {
   color: var(--fehler-text);
-}
-
-.ava-pruefen .warning-text {
-  margin: 0;
 }
 
 /* Rechnungseingang: Listen per Tastatur, Hinweis zur Zuordnung, schmale Fenster */

@@ -275,10 +275,10 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
         <Feld label="Freigabedatum">
           <DatumEingabe wert={freigabe} onChange={mit(setFreigabe)} />
         </Feld>
+        <label className="toggle feldraster-breit">
+          <input type="checkbox" checked={mitKorrektur} onChange={(x) => mit(setMitKorrektur)(x.target.checked)} /> Rechnungskorrektur mit Deckblatt (Nachlass, Umlage, Einbehalt, Skonto, bisher freigegeben)
+        </label>
       </div>
-      <label className="ava-check">
-        <input type="checkbox" checked={mitKorrektur} onChange={(x) => mit(setMitKorrektur)(x.target.checked)} /> Rechnungskorrektur mit Deckblatt (Nachlass, Umlage, Einbehalt, Skonto, bisher freigegeben)
-      </label>
       {mitKorrektur ? (
         <div className="ava-korrektur">
           <div className="feldraster">

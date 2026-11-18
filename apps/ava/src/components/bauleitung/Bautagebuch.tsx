@@ -244,18 +244,20 @@ function Bericht({ t, neu }: { t: Tagesbericht; neu: boolean }) {
           <option value="-">andere …</option>
         </select>
       </div>
-      <Feld label="Ausgeführte Leistungen" breit>
-        <TextEingabe mehrzeilig zeilen={5} wert={t.leistungen} onChange={(leistungen) => setze({ leistungen })} autoFocus={neu} />
-      </Feld>
-      <Feld label="Behinderungen, Erschwernisse, Mängel" breit hinweis="Ein Eintrag hier ersetzt nicht die schriftliche Behinderungsanzeige des Auftragnehmers (§ 6 Abs. 1 VOB/B).">
-        <TextEingabe mehrzeilig zeilen={3} wert={t.behinderungen} onChange={(behinderungen) => setze({ behinderungen })} />
-      </Feld>
-      <Feld label="Anordnungen und Vereinbarungen" breit>
-        <TextEingabe mehrzeilig zeilen={3} wert={t.anordnungen} onChange={(anordnungen) => setze({ anordnungen })} />
-      </Feld>
-      <Feld label="Besucher" breit>
-        <TextEingabe wert={t.besucher} onChange={(besucher) => setze({ besucher })} />
-      </Feld>
+      <div className="feldraster">
+        <Feld label="Ausgeführte Leistungen" breit>
+          <TextEingabe mehrzeilig zeilen={5} wert={t.leistungen} onChange={(leistungen) => setze({ leistungen })} autoFocus={neu} />
+        </Feld>
+        <Feld label="Behinderungen, Erschwernisse, Mängel" breit hinweis="Ein Eintrag hier ersetzt nicht die schriftliche Behinderungsanzeige des Auftragnehmers (§ 6 Abs. 1 VOB/B).">
+          <TextEingabe mehrzeilig zeilen={3} wert={t.behinderungen} onChange={(behinderungen) => setze({ behinderungen })} />
+        </Feld>
+        <Feld label="Anordnungen und Vereinbarungen" breit>
+          <TextEingabe mehrzeilig zeilen={3} wert={t.anordnungen} onChange={(anordnungen) => setze({ anordnungen })} />
+        </Feld>
+        <Feld label="Besucher" breit>
+          <TextEingabe wert={t.besucher} onChange={(besucher) => setze({ besucher })} />
+        </Feld>
+      </div>
       <h3>Fotos</h3>
       {fotos.length === 0 && !t.fotos.length && <p className="muted small-text">Keine Fotos von diesem Tag im Fotoordner des Projekts.</p>}
       <ul className="ava-fotos">
