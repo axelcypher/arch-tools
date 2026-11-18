@@ -1509,7 +1509,7 @@ code {
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
   padding: 6px 12px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 /* Meldung, die sich per Klick schließt (Hand nur dort) */

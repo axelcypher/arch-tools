@@ -30,10 +30,12 @@ describe('Marken', () => {
 });
 
 describe('Radien von Meldungen', () => {
-  it('Meldung im Inhalt und .warning --radius-s, schwebender Hinweis --radius', () => {
+  it('Meldung im Inhalt und .warning --radius-s, schwebender Hinweis und Meldung auf der Zeichenfläche --radius', () => {
     const r = (sel: string) => regel(sel).match(/border-radius:\s*([^;]+);/)?.[1];
     expect(r('.meldung')).toBe('var(--radius-s)');
     expect(r('.warning')).toBe('var(--radius-s)');
     expect(r('.hinweis')).toBe('var(--radius)');
+    // schwebende Meldung über der Zeichenfläche ist eine schwebende Ebene
+    expect(r('.canvas-message')).toBe('var(--radius)');
   });
 });
