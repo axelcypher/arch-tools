@@ -612,6 +612,17 @@ describe('ATLAS (Projektordner)', () => {
     expect(meldung().textContent).toBe('„gp“: gibt es schon – es bleibt EP.');
     expect(schema().phasen[1].kuerzel).toBe('EP');
 
+    // Spaltentitel der Entfernen-Knöpfe: nur für Screenreader über .unsichtbar aus core, nicht versteckt
+    const entfernenTitel = [...bereich.querySelectorAll<HTMLElement>('.po-kuerzel-tabelle thead th:last-child')];
+    expect(entfernenTitel.length).toBeGreaterThan(0);
+    for (const th of entfernenTitel) {
+      const text = th.querySelector<HTMLElement>('.unsichtbar')!;
+      expect(text.textContent).toBe('Entfernen');
+      expect(th.textContent).toBe('Entfernen');
+      expect(text.hidden || th.hidden).toBe(false);
+      expect(text.closest('[aria-hidden="true"]')).toBeNull();
+    }
+
     // Bedeutung, Schreibweisen (bereinigt angezeigt) und Leistungsphase (begrenzt, leer = keine)
     eingabe(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW'), ' Entwässerungsgesuch ');
     expect(schema().antragsarten.find((k) => k.kuerzel === 'ENTW')!.name).toBe('Entwässerungsgesuch');
