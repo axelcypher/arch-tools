@@ -45,6 +45,7 @@ describe('Fotos des Projekts', () => {
     expect([...host.querySelectorAll('.fw-gruppe h3')].map((h) => h.textContent)).toEqual(['Baustelle/2026-11', 'Bestand']);
     const nord = [...host.querySelectorAll('.fw-foto')].find((x) => x.textContent?.includes('Nord.jpg')) as HTMLButtonElement;
     expect(nord.textContent).toContain('entzerrt');
+    expect(nord.querySelector('.marke.ok')?.textContent).toBe('entzerrt');
     expect([...host.querySelectorAll('.fw-foto')].find((x) => x.textContent?.includes('Sued.png'))?.textContent).not.toContain('entzerrt');
     act(() => nord.click());
     expect(geoeffnet).toEqual(['/p/2026-014 Haus/09 Fotos|Bestand/Nord.jpg']);
