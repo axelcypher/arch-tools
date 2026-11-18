@@ -71,7 +71,9 @@ Umstellung bleiben diese bestehen.
 
 Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile, die Marken der Projektübersicht): klein
 (`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.info` (nicht `.hinweis` – das
-ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). Die Information steht immer
+ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). `.pille` gibt runde Enden
+und mehr Innenabstand – für Zuordnungen (welche App, welches Schlagwort) und Zähler; Status-Marken („festgelegt“,
+„offen“) bleiben eckig gerundet. Die Information steht immer
 im Text der Marke, die Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz` (`tr.selected`
 oder `tr[aria-selected="true"]`), überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene
 Projektkachel – verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens
@@ -303,7 +305,7 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Antragsordners), nennt die Bezugszeile auch das im Text („Gilt nicht, solange „…“ gesetzt ist.“, dazu
   `--warn-text`), ohne Vorschau; der ersetzende Eintrag steht direkt hinter dem Baum seines Bezugs.
 - **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
-  als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
+  als Marken (`.marke.info.pille`). Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
   fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein
   Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App
   abweichend“ bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „·

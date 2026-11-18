@@ -731,7 +731,7 @@ function WirksamJeApp({ basis, werte, app, id: listeId }: { basis: PfadEinstellu
           .filter(({ a }) => !app || a.apps.includes(app))
           .map(({ a, text }) => (
             <li key={a.id}>
-              <span className="einst-app">{APP_NAMEN[a.apps[0]].name}</span> {text ? <code>{text}</code> : <span className="muted">direkt im Projektordner</span>}
+              <span className="marke info pille">{APP_NAMEN[a.apps[0]].name}</span> {text ? <code>{text}</code> : <span className="muted">direkt im Projektordner</span>}
             </li>
           ))}
       </ul>
@@ -817,7 +817,7 @@ function PfadFeld({ e, werte, losVon, app = '', fokus }: { e: PfadEinstellung; w
         )}
         <span className="einst-apps" title={`genutzt von ${appsText(e)}`}>
           {e.apps.map((a) => (
-            <span key={a} className="einst-app">
+            <span key={a} className="marke info pille">
               {APP_NAMEN[a].name}
             </span>
           ))}
@@ -889,7 +889,7 @@ export function PfadBezugsZeile({ e, werte, onAlle }: { e: PfadEinstellung; wert
         <span className="einst-eintrag-titel">{e.bezeichnung}</span>
         <span className="einst-apps" title={`genutzt von ${appsText(e)}`}>
           {e.apps.map((a) => (
-            <span key={a} className="einst-app">
+            <span key={a} className="marke info pille">
               {APP_NAMEN[a].name}
             </span>
           ))}

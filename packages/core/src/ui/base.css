@@ -1344,6 +1344,12 @@ textarea:focus {
   background: var(--ok-bg);
   color: var(--ok-text);
 }
+/* .pille: runde Enden und mehr Innenabstand – für Zuordnungen (App, Schlagwort) und Zähler; Status-Marken bleiben eckig
+   gerundet */
+.marke.pille {
+  padding: 0 var(--s2);
+  border-radius: 999px;
+}
 /* Hinweis-Marke heißt .info: .hinweis ist die schwebende Hinweis-Meldung weiter unten */
 .marke.info {
   background: var(--accent-soft);
@@ -3444,15 +3450,6 @@ button.ungespeichert::after {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s1);
-}
-.einst-app {
-  font-size: var(--fs-xs);
-  /* Zeilenhöhe der Marke (keine Größe der Abstandsskala) */
-  line-height: 1.6;
-  padding: 0 var(--s2);
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-text);
 }
 /* Abweichungen je App in der Karte der gemeinsamen Angabe (Pfade und Benennung): unter dem Fuß, abgesetzt durch eine
    Linie; die Felder je App eingerückt mit Linie links, ohne eigenen Rahmen (keine Karte in der Karte) */

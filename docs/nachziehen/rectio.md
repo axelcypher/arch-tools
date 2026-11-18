@@ -5,3 +5,5 @@ Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen
 sich auf den Stand beim Eintragen.
 
 Zurzeit keine offenen Punkte.
+
+- **Marke aus core** (design.md „Skalen“, Marken): `.fw-marke` („entzerrt“ in `FotoWahl.tsx`, Regel in `styles.css`) ist eine Status-Marke. Sie wird `.marke info` (eckig gerundet, `.pille` nur für Zuordnungen und Zähler), die eigene Regel entfällt.
