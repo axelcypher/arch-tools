@@ -135,7 +135,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
             </button>
           ))}
         </div>
-        <button className="small" title="Zur nächsten offenen Angabe springen (F8)" disabled={!liste.length} onClick={() => zurNaechstenOffenen()}>
+        <button title="Zur nächsten offenen Angabe springen (F8)" disabled={!liste.length} onClick={() => zurNaechstenOffenen()}>
           Nächste offene Angabe
         </button>
         {/* Trefferzahl beim Tippen ansagen: die Live-Region steht immer, ihr Text nur bei Suche */}

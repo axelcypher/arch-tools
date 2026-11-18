@@ -355,15 +355,15 @@ export function DokumenteEinstellungen() {
                           </span>
                         </label>
                       ) : (
-                        <div className="es-dok-felder">
-                          <label className="es-dok-feld">
+                        <div className="feldraster es-dok-felder">
+                          <label>
                             <span className="field-label">Ordner der Quelle (im Projektordner)</span>
                             <input value={k.quelle ?? ''} placeholder={quelleVorgabe(k)} onChange={(x) => setzen(k.id, { quelle: x.target.value })} aria-describedby={`${kid}-quelle-hinweis`} />
                             <span className="field-hint" id={`${kid}-quelle-hinweis`}>
                               Ordner innerhalb des Projektordners; leer: {quelleVorgabe(k)}.
                             </span>
                           </label>
-                          <label className="es-dok-feld">
+                          <label>
                             <span className="field-label">Muster des Dateinamens</span>
                             <input value={k.muster ?? ''} placeholder={musterVorgabe(k)} onChange={(x) => setzen(k.id, { muster: x.target.value })} aria-describedby={`${kid}-muster-hinweis`} />
                             <span className="field-hint" id={`${kid}-muster-hinweis`}>
