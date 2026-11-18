@@ -225,12 +225,13 @@ export function Feld({ label, children, hinweis, breit }: { label: string; child
   );
 }
 
-/** Beschriftete schreibgeschützte Angabe (kein Feld): `div` mit `.field-label`, der Wert steht in der Höhe der Felder daneben */
-export function Angabe({ label, children }: { label: string; children: React.ReactNode }) {
+/** Beschriftete schreibgeschützte Angabe (kein Feld): `div` mit `.field-label`, der Wert steht in der Höhe der Felder
+ *  daneben; `zahl` für Beträge (rechtsbündig, Tabellenziffern wie in den Zahlenfeldern) */
+export function Angabe({ label, children, zahl }: { label: string; children: React.ReactNode; zahl?: boolean }) {
   return (
     <div className="field">
       <span className="field-label">{label}</span>
-      <span className="ava-angabe">{children}</span>
+      <span className={zahl ? 'ava-angabe num' : 'ava-angabe'}>{children}</span>
     </div>
   );
 }

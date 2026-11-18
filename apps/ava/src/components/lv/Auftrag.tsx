@@ -131,7 +131,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                 <Feld label="Auftragssumme netto" hinweis="leer = Angebot nach Nachlass">
                   <ZahlEingabe wert={lv.auftrag.summeNetto ?? null} stellen={2} onChange={(n) => aendern((l) => ({ ...l, auftrag: l.auftrag && { ...l.auftrag, summeNetto: n ?? undefined } }))} placeholder={euro(s?.bieter.get(lv.auftrag.bieterId)?.netto)} />
                 </Feld>
-                <Angabe label="brutto">
+                <Angabe label="brutto" zahl>
                   <strong>{euro(brutto(auftragNetto, ust))}</strong>
                 </Angabe>
                 <div className="button-row feldraster-breit">

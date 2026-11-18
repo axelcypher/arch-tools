@@ -459,11 +459,16 @@
   min-height: var(--ctl-h);
 }
 
+/* Beträge rechtsbündig wie in den Zahlenfeldern (Tabellenziffern aus .num) */
+.ava-angabe.num {
+  justify-content: flex-end;
+}
+
 /* Dreierreihen der Seitenkarte „Eigenschaften“: Feldraster mit fester Spaltenzahl (Felder fluchten, auch wenn eine
-   Beschriftung umbricht); den Abstand zur nächsten Zeile gibt der gap der Seitenkarte */
+   Beschriftung umbricht). Den Abstand zur nächsten Zeile gibt der gap der Seitenkarte (wie bei .ava-panel > .field),
+   sonst stünde er doppelt */
 .feldraster.ava-feld-reihe {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: var(--s2);
 }
 
 .feldraster.ava-feld-reihe > * {
@@ -702,7 +707,7 @@
 .ava-top-angaben {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--s2);
   align-items: center;
   margin-left: auto;
 }
