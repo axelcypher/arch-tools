@@ -39,7 +39,7 @@ textarea {
   font: inherit;
   padding: 4px 6px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--input-bg);
   color: var(--text);
   min-width: 0;
@@ -191,7 +191,7 @@ button.icon.active {
   text-align: left;
   background: none;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   padding: 5px 8px;
   font-size: 12.5px;
   color: var(--text);
@@ -228,10 +228,10 @@ button.icon.active {
   min-width: 0;
 }
 .fo-daten > .nav-eintrag.fo-eintrag-karte:first-child {
-  border-radius: 6px 0 0 6px;
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
 }
 .fo-daten > .nav-eintrag.fo-eintrag-karte:last-child {
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
   border-left-width: 0;
 }
 .fo-daten > .nav-eintrag.fo-eintrag-karte .symbol {
@@ -320,10 +320,10 @@ button.icon.active {
     grid-template-columns: minmax(0, 1fr);
   }
   .fo-daten > .nav-eintrag.fo-eintrag-karte:first-child {
-    border-radius: 6px 6px 0 0;
+    border-radius: var(--radius-s) var(--radius-s) 0 0;
   }
   .fo-daten > .nav-eintrag.fo-eintrag-karte:last-child {
-    border-radius: 0 0 6px 6px;
+    border-radius: 0 0 var(--radius-s) var(--radius-s);
     border-left-width: 1px;
     border-top-width: 0;
   }
@@ -368,7 +368,7 @@ button.icon.active {
 }
 .nav-hinweis {
   border: 1px dashed var(--line-soft);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   padding: 8px 10px;
   font-size: 12px;
 }
@@ -392,7 +392,7 @@ button.icon.active {
   align-items: flex-start;
   gap: 6px;
   padding: 8px 8px 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--bg);
   border-left: 3px solid var(--accent);
 }
@@ -502,7 +502,7 @@ button.icon.active {
   width: 100%;
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   text-align: left;
   color: var(--text);
 }
@@ -516,7 +516,7 @@ button.icon.active {
 .fo-gl-abschnitt {
   padding: 3px 6px 3px 12px;
   border-left: 2px solid var(--border);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 .fo-gl-seite:hover:not(:disabled),
 .fo-gl-abschnitt:hover:not(:disabled) {
@@ -533,7 +533,7 @@ button.icon.active {
   min-width: 26px;
   text-align: center;
   padding: 0 5px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 10.5px;
   line-height: 16px;
   background: var(--line-soft);
@@ -604,7 +604,7 @@ button.icon.fo-gl-auf {
   width: 100%;
   background: none;
   border: none;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
   text-align: left;
   padding: 2px 6px 2px 12px;
   font-size: 11.5px;
@@ -643,7 +643,7 @@ button.icon.fo-gl-auf {
   align-items: center;
   gap: 4px;
   padding: 1px 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 11.5px;
 }
 .fo-gl-feld:hover {
@@ -703,7 +703,7 @@ button.icon.fo-gl-zaehlt.an {
   margin: 2px 0 4px;
   padding: 2px;
   border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 .fo-gl-feldgruppe.zaehlt-nicht {
@@ -757,7 +757,7 @@ button.icon.fo-gl-zaehlt.an {
   min-width: 0;
   background: none;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   text-align: left;
   padding: 3px 6px;
   color: var(--text);
@@ -974,7 +974,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .fo-feld.markiert {
   background: var(--fo-markiert);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 .fo-feld.umrandet {
   outline: 2px solid var(--accent);
@@ -1033,7 +1033,7 @@ button.icon.fo-gl-zaehlt.an {
   background: none;
   border: none;
   border-left: 3px solid transparent;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
   padding: 5px 8px;
   color: var(--text);
 }
@@ -1139,7 +1139,7 @@ button.icon.fo-gl-zaehlt.an {
   text-align: left;
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 5px 8px;
   color: var(--text);
 }
@@ -1321,11 +1321,11 @@ button.icon.fo-gl-zaehlt.an {
   margin-left: -1px;
 }
 .pk-optionen button:first-child {
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
   margin-left: 0;
 }
 .pk-optionen button:last-child {
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
 }
 .pk-optionen button.active {
   position: relative;
@@ -1356,7 +1356,7 @@ button.icon.fo-gl-zaehlt.an {
   margin-top: 14px;
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--panel);
   font-size: 13px;
   line-height: 1.45;
@@ -1438,7 +1438,7 @@ button.icon.fo-gl-zaehlt.an {
   font-size: 11px;
   font-weight: 600;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--on-typ);
   background: var(--muted);
 }
@@ -1649,7 +1649,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .xl-blaetter button {
   border: none;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 var(--radius-xs) var(--radius-xs);
   background: none;
   padding: 4px 12px;
   white-space: nowrap;
@@ -1745,7 +1745,7 @@ button.icon.fo-gl-zaehlt.an {
 .fo-sperr-marke {
   display: inline-block;
   padding: 0 6px;
-  border-radius: 9px;
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   line-height: 18px;
@@ -1814,7 +1814,7 @@ button.icon.fo-gl-zaehlt.an {
   text-align: left;
   background: none;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   padding: 6px 10px;
   cursor: pointer;
 }
@@ -1966,7 +1966,7 @@ button.icon.fo-gl-zaehlt.an {
 /* nach längerem Verweilen im Anpassen-Modus: umrandet */
 .fo-umrandung {
   border: 2px solid var(--p-umrandung);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   box-shadow: 0 0 0 4px rgba(42, 91, 215, 0.18);
   pointer-events: none;
   z-index: 5;
@@ -2052,7 +2052,7 @@ button.icon.fo-gl-zaehlt.an {
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 999px;
   font-size: 11.5px;
   color: var(--ok-text);
   background: var(--ok-bg);
@@ -2104,7 +2104,7 @@ button.icon.fo-gl-zaehlt.an {
   align-items: center;
   gap: 10px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--bg);
 }
 .es-liste li > .symbol {
@@ -2128,7 +2128,7 @@ button.icon.fo-gl-zaehlt.an {
   padding: 8px 10px;
   border-left: 3px solid var(--accent);
   background: var(--bg);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
   font-size: 13px;
 }
 .es-leer {
@@ -2158,7 +2158,7 @@ button.icon.fo-gl-zaehlt.an {
   max-height: 62vh;
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--panel);
   padding: 4px;
 }
@@ -2169,7 +2169,7 @@ button.icon.fo-gl-zaehlt.an {
   text-align: left;
   border: none;
   background: none;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   padding: 6px 8px;
 }
 .es-adress-eintrag > * {
@@ -2186,7 +2186,7 @@ button.icon.fo-gl-zaehlt.an {
   padding: 14px 18px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   align-self: start;
 }
 .es-adress-detail h4 {
@@ -2339,7 +2339,7 @@ button.icon.fo-gl-zaehlt.an {
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   cursor: pointer;
 }
 .ex-ziel.aktiv {
@@ -2371,7 +2371,7 @@ button.icon.fo-gl-zaehlt.an {
   overflow: auto;
   padding: 4px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--bg);
   font-size: 12.5px;
 }
@@ -2394,7 +2394,7 @@ button.icon.ex-baum-pfeil {
   min-width: 0;
   padding: 2px 6px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: none;
   color: var(--text);
   text-align: left;
@@ -2517,7 +2517,7 @@ button.icon.ex-baum-pfeil {
   gap: 5px;
   padding: 1px 6px;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--bg);
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
@@ -2552,7 +2552,7 @@ button.icon.ex-baum-pfeil {
 .pu-leer {
   padding: 16px;
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -2585,7 +2585,7 @@ button.icon.ex-baum-pfeil {
 .pu-zeile {
   border: 1px solid var(--border);
   border-left: 4px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--panel);
 }
 .pu-zeile.fehlt,
@@ -2626,7 +2626,7 @@ button.icon.ex-baum-pfeil {
 .pu-art {
   display: inline-block;
   padding: 0 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   font-size: 11px;
   font-weight: 600;
   background: var(--line-soft);
@@ -2692,7 +2692,7 @@ button.icon.ex-baum-pfeil {
 .pu-export {
   margin-top: 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--panel);
 }
 .pu-export-kopf {
@@ -2764,7 +2764,7 @@ button.icon.ex-baum-pfeil {
   margin-top: 14px;
   padding: 10px 12px;
   border: 1px dashed var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2803,7 +2803,7 @@ button.icon.ex-baum-pfeil {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: color-mix(in srgb, var(--accent) 4%, var(--panel));
 }
 .bd-gruppe.tiefe-1.oder,
@@ -2822,7 +2822,7 @@ button.icon.ex-baum-pfeil {
 .bd-op {
   display: inline-flex;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   overflow: hidden;
 }
 .bd-op button {
@@ -2869,7 +2869,7 @@ button.icon.ex-baum-pfeil {
   gap: 5px;
   padding: 5px 6px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--panel);
 }
 .bd-regel select,
@@ -2913,7 +2913,7 @@ button.icon.ex-baum-pfeil {
   gap: 3px;
   padding: 1px 8px 1px 4px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 999px;
   cursor: pointer;
   background: var(--panel);
 }
@@ -2957,7 +2957,7 @@ button.icon.ex-baum-pfeil {
 }
 .bd-jetzt {
   padding: 1px 8px;
-  border-radius: 10px;
+  border-radius: 999px;
   font-size: 11.5px;
   background: var(--hover);
   color: var(--muted);
@@ -2993,7 +2993,7 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-gl-entfaellt {
   flex-shrink: 0;
   padding: 0 5px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 11px;
   line-height: 16px;
   color: var(--muted);
@@ -3010,7 +3010,7 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-gl-merkmal {
   margin: 4px 8px 6px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--warn-bg);
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
@@ -3042,7 +3042,7 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-gl-offen {
   flex-shrink: 0;
   padding: 0 5px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 11px;
   line-height: 16px;
   background: var(--warn-bg);
@@ -3076,7 +3076,7 @@ button.icon.fo-gl-bed.gesetzt {
   margin-bottom: 6px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--panel);
 }
 .fo-pruef-zeile.ungeklaert {
@@ -3127,7 +3127,7 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-gesetz-merkmale {
   margin: 0 0 12px;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--warn-bg);
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
@@ -3138,7 +3138,7 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-gl-hinweise {
   flex-shrink: 0;
   padding: 0 5px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 10px;
   line-height: 16px;
   background: var(--warn-bg);
@@ -3166,7 +3166,7 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-gl-freiwillig {
   flex-shrink: 0;
   padding: 0 5px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 11px;
   line-height: 16px;
   color: var(--muted);
@@ -3217,7 +3217,7 @@ button.icon.fo-gl-bed.gesetzt {
   overflow: auto;
   padding: 4px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -3230,7 +3230,7 @@ button.icon.fo-gl-bed.gesetzt {
   width: 100%;
   padding: 5px 8px;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   background: none;
   color: var(--text);
   text-align: left;
@@ -3260,7 +3260,7 @@ button.icon.fo-gl-bed.gesetzt {
   font-size: 10.5px;
   color: var(--muted);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 0 6px;
 }
 
@@ -3293,7 +3293,7 @@ button.icon.fo-gl-bed.gesetzt {
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
 }
 .sg-import p {
   margin: 0;
@@ -3308,7 +3308,7 @@ button.icon.fo-gl-bed.gesetzt {
   margin-top: 6px;
   padding: 5px 8px;
   border: 1px dashed var(--warn-border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--warn-bg);
   color: var(--warn-text);
   font-size: 12px;
@@ -3431,7 +3431,7 @@ tr[data-ziehen='danach'] > td {
   margin: 0 0 8px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
 }
 .es-dok-leer {
   margin: 0 0 8px;
@@ -3453,7 +3453,7 @@ tr[data-ziehen='danach'] > td {
   flex: 0 0 auto;
   width: 28px;
   height: 28px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
 }
 .es-dok-haken:hover {
@@ -3516,7 +3516,7 @@ tr[data-ziehen='danach'] > td {
   text-overflow: ellipsis;
   padding: 1px 7px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 999px;
   font-size: 11px;
   color: var(--muted);
   white-space: nowrap;
@@ -3571,7 +3571,7 @@ tr[data-ziehen='danach'] > td {
   gap: 8px;
   padding: 6px 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--panel);
   cursor: pointer;
 }
@@ -3642,7 +3642,7 @@ li.es-dok[data-ziehen='danach'] {
   min-height: 26px;
   padding: 2px 8px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   background: transparent;
   text-align: left;
   font-size: 12.5px;
@@ -3671,7 +3671,7 @@ li.es-dok[data-ziehen='danach'] {
   gap: 6px;
   padding: 3px 8px 3px 2px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   background: transparent;
   text-align: left;
   font: inherit;
@@ -3704,7 +3704,7 @@ li.es-dok[data-ziehen='danach'] {
 .fo-ein-marke {
   flex-shrink: 0;
   padding: 0 6px;
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--hover);
   color: var(--muted);
   font-size: 10.5px;
@@ -3771,7 +3771,7 @@ li.es-dok[data-ziehen='danach'] {
 .fo-ein-typ {
   align-self: flex-start;
   padding: 0 7px;
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent);
   font-size: 11px;
@@ -3809,7 +3809,7 @@ li.es-dok[data-ziehen='danach'] {
   gap: 8px;
   padding: 6px 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   cursor: pointer;
 }
 .fo-ein-regel.an {
@@ -3904,7 +3904,7 @@ li.es-dok[data-ziehen='danach'] {
 .fo-ein-rahmen {
   z-index: 4;
   border: 2px solid var(--accent);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   pointer-events: none;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 15%, transparent);
 }
@@ -3938,7 +3938,7 @@ li.es-dok[data-ziehen='danach'] {
 .fo-ausfuellen-art {
   font-size: 11px;
   padding: 0 5px;
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--chip-bg);
 }
 .fo-ausfuellen-zeile.manuell .fo-ausfuellen-art,
@@ -4019,7 +4019,7 @@ li.es-dok[data-ziehen='danach'] {
   z-index: 1000;
   padding: 7px 9px;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius-s);
   background: var(--panel);
   color: var(--text);
   box-shadow: var(--schatten-schwebend);
@@ -4054,7 +4054,7 @@ li.es-dok[data-ziehen='danach'] {
   margin: 6px 0 12px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   /* Themenfarben: der ganze Paragraf bleibt lesbar (auch der nicht markierte Rest), in hell und dunkel */
   background: var(--panel);
   color: var(--text);
@@ -4091,10 +4091,10 @@ li.es-dok[data-ziehen='danach'] {
   border-radius: 0;
 }
 .fo-ablage-umschalter button:first-child {
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
 }
 .fo-ablage-umschalter button:last-child {
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
   margin-left: -1px;
 }
 /* Projektordner, Ansicht „Antrag“: eingerückt, Zeilen gleich hoch (wie mit Unterzeile), Knöpfe mit Luft */
@@ -4116,7 +4116,7 @@ li.es-dok[data-ziehen='danach'] {
   flex: 1;
   min-width: 60px;
   height: 5px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: var(--chip-bg);
   overflow: hidden;
 }
@@ -4216,7 +4216,7 @@ li.es-dok[data-ziehen='danach'] {
   align-self: flex-start;
   margin-top: 2px;
   padding: 0 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   font-size: 11px;
   font-weight: 600;
   background: var(--warn-bg);
@@ -4414,7 +4414,7 @@ li.es-dok[data-ziehen='danach'] {
   background: none;
   font-size: 12px;
   border-left: 3px solid transparent;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 .vs-liste button.aktiv {
   background: var(--accent-soft);
@@ -4458,7 +4458,7 @@ li.es-dok[data-ziehen='danach'] {
 .an-eingereicht {
   font-size: 11px;
   padding: 0 6px;
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--ok-bg);
   color: var(--ok-text);
   white-space: nowrap;
@@ -4486,7 +4486,7 @@ li.es-dok[data-ziehen='danach'] {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-left: 4px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--panel);
 }
 .pu-status.eingereicht {
@@ -4636,7 +4636,7 @@ li.es-dok[data-ziehen='danach'] {
 .es-herkunft {
   margin-left: 6px;
   padding: 0 6px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 10.5px;
   font-weight: 600;
   vertical-align: 1px;
@@ -4693,7 +4693,7 @@ li.es-dok[data-ziehen='danach'] {
   align-items: center;
   gap: 10px;
   padding: 3px 8px;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   border-left: 3px solid var(--ok-text);
   background: var(--bg);
 }
@@ -4716,7 +4716,7 @@ li.es-dok[data-ziehen='danach'] {
 .pu-plan-hinweise:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .pu-plan-name {
   min-width: 0;
