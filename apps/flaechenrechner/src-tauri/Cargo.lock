@@ -75,7 +75,7 @@ dependencies = [
 
 [[package]]
 name = "arch-flaechen-tool"
-version = "0.60.5"
+version = "0.60.6"
 dependencies = [
  "base64 0.22.1",
  "log",
