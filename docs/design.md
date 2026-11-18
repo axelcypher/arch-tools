@@ -349,17 +349,20 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder (`.meldung.fehler` oder `.feld-meldung` mit `id`), an jedem betroffenen `NumberField`/`TextField`
   `ungueltig` und `fehlerId` setzen – das Feld wird rot markiert, `aria-invalid` und von der Meldung beschrieben. Die
   gemeinsame Meldung trägt `role="alert"` und erscheint erst, wenn der Fehler besteht.
-- `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht; rechts hält es `--s2` Abstand (am
-  Ende von `.karte-aktionen` keinen, dort schließt es bündig ab).
+- `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht; gesperrt ohne Zeiger und mit Text in
+  `--muted`; rechts hält es `--s2` Abstand (am Ende von `.karte-aktionen` keinen, dort schließt es bündig ab).
 - **Feldraster** (`.feldraster`) für Formulare mit mehreren Angaben nebeneinander (Planangaben, Antragsdaten,
   Adressen):
   - Kinder: beschriftete Felder – `label` mit `.field-label` und genau einem Feld, `Field`, oder für schreibgeschützte
-    Angaben ein `div` mit `.field-label` und Wert. Die Beschriftung steht über dem Feld, darunter wahlweise
-    `.field-hint` und `.feld-meldung`; weitere Elemente (Einheit, Knopf) lägen in der Spur des Felds übereinander und
-    gehören mit dem Feld in eine Hülle. Ein `label.toggle` (Kästchen mit Text) steht in der Spur der Felder.
-  - Spalten und Abstände: so viele Spalten, wie Platz ist (Mindestbreite 200px, abweichend über `--feld-min`); Felder
-    füllen ihre Spalte und sind `--ctl-h` hoch. Die Felder einer Zeile fluchten, auch wenn eine Beschriftung umbricht
-    oder nur ein Feld einen Hinweis hat. `--s3` zwischen den Spalten, `--s2` unter jeder Zeile (auch der letzten).
+    Angaben ein `div` mit `.field-label` und `.feld-wert` (mittig zur Feldhöhe, mit `.num` rechtsbündig für Beträge).
+    Die Beschriftung steht über dem Feld, darunter wahlweise `.field-hint` und `.feld-meldung`; weitere Elemente
+    (Einheit, Knopf) lägen in der Spur des Felds übereinander und gehören mit dem Feld in eine Hülle. Ein
+    `label.toggle` (Kästchen mit Text) steht in der Spur der Felder.
+  - Spalten und Abstände: so viele Spalten, wie Platz ist (Mindestbreite 200px, abweichend über `--feld-min`, auch für
+    eine schmale Seitenleiste statt fester Spaltenzahl); Felder füllen ihre Spalte und sind `--ctl-h` hoch. Die Felder
+    einer Zeile fluchten, auch wenn eine Beschriftung umbricht oder nur ein Feld einen Hinweis hat. `--s3` zwischen
+    den Spalten, `--s2` zwischen den Zeilen; unter der letzten Zeile kein Abstand, so steht das Raster auch in einem
+    Behälter mit `gap` richtig (ein eigener `margin-bottom` der App geht vor).
   - `.feldraster-breit` (bzw. `Field breite="breit"`) nimmt die ganze Zeile, z. B. für Textbereiche oder eine
     Knopfzeile. `.feldraster-zwei` (`breite="zwei"`) nimmt zwei Spalten, z. B. für Auswahlen mit langen Einträgen
     oder ein `label.toggle`, dessen Text in einer Spalte umbräche (ein ganzer Satz neben dem Kästchen nimmt

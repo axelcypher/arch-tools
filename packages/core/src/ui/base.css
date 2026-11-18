@@ -699,6 +699,11 @@ button.link:focus-visible {
   user-select: none;
   margin-right: var(--s2);
 }
+/* gesperrt: kein Zeiger, Text gedämpft (--muted); das Kästchen selbst dämpft der Browser */
+.toggle:has(> input:disabled) {
+  cursor: default;
+  color: var(--muted);
+}
 /* Kästchen nie stauchen, auch bei langem Text daneben */
 .toggle > input:is([type='checkbox'], [type='radio']) {
   flex: none;
@@ -813,6 +818,11 @@ button.link:focus-visible {
   min-width: 0;
   margin: 0 0 var(--s2);
 }
+/* unter der letzten Zeile kein Abstand: der Rand der Kinder wird ausgeglichen, damit das Raster in einem Behälter mit gap
+   oder vor einem Absatz nicht doppelt Abstand hält (Spezifität null: ein eigener margin-bottom der App geht vor) */
+:where(.feldraster) {
+  margin-bottom: calc(-1 * var(--s2));
+}
 .feldraster > :is(label, .field, :has(> .field-label)) {
   display: grid;
   grid-template-rows: subgrid;
@@ -849,6 +859,16 @@ button.link:focus-visible {
   content: '';
   grid-row: 1;
   grid-column: 1 / -1;
+}
+/* schreibgeschützter Wert neben Feldern (div mit .field-label und .feld-wert): mittig zur Feldhöhe, Beträge rechts */
+.feld-wert {
+  display: flex;
+  align-items: center;
+  min-height: var(--ctl-h);
+  overflow-wrap: anywhere;
+}
+.feld-wert.num {
+  justify-content: flex-end;
 }
 .feldraster > .feldraster-breit {
   grid-column: 1 / -1;

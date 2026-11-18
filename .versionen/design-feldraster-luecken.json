@@ -1,0 +1,10 @@
+{
+  "flaechenrechner": { "stufe": "patch", "notiz": "Gesperrte Kästchen mit Text sehen gesperrt aus." },
+  "ava": { "stufe": "patch", "notiz": "Gesperrte Kästchen mit Text sehen gesperrt aus; kein doppelter Abstand unter Feldrastern." },
+  "grz": { "stufe": "patch", "notiz": "Gesperrte Kästchen mit Text sehen gesperrt aus." },
+  "kosten": { "stufe": "patch", "notiz": "Gesperrte Kästchen mit Text sehen gesperrt aus." },
+  "ordner": { "stufe": "patch", "notiz": "Gesperrte Kästchen mit Text sehen gesperrt aus; kein doppelter Abstand unter Feldrastern." },
+  "entzerrung": { "stufe": "patch", "notiz": "Gesperrte Kästchen mit Text sehen gesperrt aus." },
+  "formulare": { "stufe": "patch", "notiz": "Gesperrte Kästchen mit Text sehen gesperrt aus; kein doppelter Abstand unter Feldrastern." },
+  "baurecht": { "stufe": "patch", "notiz": "Gesperrte Kästchen mit Text sehen gesperrt aus." }
+}

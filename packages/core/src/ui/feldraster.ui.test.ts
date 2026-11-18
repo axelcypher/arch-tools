@@ -68,6 +68,25 @@ describe('Feldraster', () => {
     expect(vor).toMatch(/grid-column:\s*1\s*\/\s*-1/);
   });
 
+  it('unter der letzten Zeile kein Abstand, ohne einen eigenen Rand der App zu schlagen', () => {
+    const i = css.indexOf('\n:where(.feldraster) {');
+    expect(i).toBeGreaterThan(-1);
+    expect(css.slice(i, css.indexOf('}', i))).toMatch(/margin-bottom:\s*calc\(-1 \* var\(--s2\)\)/);
+  });
+
+  it('schreibgeschützter Wert mittig zur Feldhöhe, Beträge rechts', () => {
+    const wert = regel('.feld-wert');
+    expect(wert).toMatch(/align-items:\s*center/);
+    expect(wert).toMatch(/min-height:\s*var\(--ctl-h\)/);
+    expect(regel('.feld-wert.num')).toMatch(/justify-content:\s*flex-end/);
+  });
+
+  it('gesperrtes Kästchen mit Text: kein Zeiger, Text gedämpft', () => {
+    const r = regel('.toggle:has(> input:disabled)');
+    expect(r).toMatch(/cursor:\s*default/);
+    expect(r).toMatch(/color:\s*var\(--muted\)/);
+  });
+
   it('Felder im Raster sind so hoch wie die anderen Bedienelemente', () => {
     expect(css).toMatch(/:where\([^)]*\.feldraster\)\s*:where\(select, input:not\([^)]*\)\) \{\s*min-height:\s*var\(--ctl-h\)/);
   });
