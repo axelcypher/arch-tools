@@ -148,6 +148,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
                 ))}
               </select>
             </label>
+            {/* zwei Spalten: in einer Spalte von 160px bräche der Text um */}
             <label className="toggle feldraster-zwei">
               <input type="checkbox" checked={plan.beschriftungen} onChange={(e) => setzen({ beschriftungen: e.target.checked })} />
               <span>Beschriftungen der Layer</span>

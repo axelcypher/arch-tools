@@ -1,4 +1,7 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, createElement, Fragment } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -273,7 +276,14 @@ describe('Einstellungen der Katasterpläne', () => {
   it('Plankarte: Raster, DXF ohne Beschriftungsfeld, Vorwahl mit Namen, Verweis auf Pfade und Benennung', async () => {
     const host = await zeige(createElement(KatasterEinstellungen));
     const karten = [...host.querySelectorAll('.ka-plan')];
-    expect(karten.every((k) => k.querySelector('.feldraster'))).toBe(true);
+    expect(karten.every((k) => k.querySelector('.feldraster.ka-felder'))).toBe(true);
+    // DXF: Stil und Kästchen über zwei Spalten (das Kästchen bräche in einer Spalte um)
+    expect(karten[3].querySelector('select[aria-label="Stil"]')!.closest('label')!.className).toBe('feldraster-zwei');
+    expect(karten[3].querySelector('input[type="checkbox"]:not([aria-label])')!.closest('label')!.className).toBe('toggle feldraster-zwei');
+    // schmalere Spalten nur bis 200px – bis dahin gilt die Abfrage für -zwei in core
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'styles.css'), 'utf8');
+    const min = /\.ka-felder\s*\{\s*--feld-min:\s*(\d+)px;\s*\}/.exec(css);
+    expect(Number(min?.[1])).toBeLessThanOrEqual(200);
     const beschriftung = (k: Element) => k.querySelector('input[aria-label="Beschriftung"]');
     expect(beschriftung(karten[0])).toBeTruthy();
     expect(beschriftung(karten[2])).toBeNull();
