@@ -428,7 +428,7 @@ describe('Einstellungen', () => {
     expect(host.querySelector('form[aria-label="Neue Adresse"]')).not.toBeNull();
     // Feldraster aus core: Name und Straße nehmen zwei Spalten
     const adressRaster = host.querySelector('form[aria-label="Neue Adresse"] .feldraster.es-adress-felder')!;
-    expect([...adressRaster.querySelectorAll(':scope > label.feldraster-zwei .field-label')].map((l) => l.textContent!.replace('*', '').trim())).toHaveLength(2);
+    expect([...adressRaster.querySelectorAll(':scope > label.feldraster-zwei .field-label')].map((l) => l.textContent!.replace('*', '').trim())).toEqual(['Name/Firma', 'Straße/Nr.']);
     // mit dem Formular verschwindet die Leerseite, die Titelzeile zeigt ihre Knöpfe – noch nie eingelesen, also nicht „Neu einlesen“
     expect(knoepfe(host, 'Adresse hinzufügen')).toHaveLength(1);
     expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
