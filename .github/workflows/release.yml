@@ -183,18 +183,20 @@ jobs:
       # das ganze Repo. Arkly bettet alle Apps ein: alle Tests. Projektname = Kennung der App (test.name in vite.config.ts).
       # Die volle Fallmatrix des Regelpakets prüft der LEXIO-Job desselben Laufs; Arkly nimmt die feste Stichprobe
       # (REGELN_STICHPROBE, packages/baurecht-regeln/test/gemeinsam.ts) statt sie ein zweites Mal ganz zu rechnen.
-      # Zwei Worker: Vitest nimmt sonst Kerne − 1, auf dem Windows-Läufer mit zwei Kernen also einen – alle Dateien
-      # liefen nacheinander.
+      # Worker = Zahl der Kerne, mindestens zwei: Vitest nimmt sonst Kerne − 1 (bei zwei Kernen einen, alle Dateien
+      # liefen nacheinander); der Hauptprozess wartet nur. Die Kernzahl steht im Protokoll.
       - name: Tests (App und eingebundene Pakete)
         # Windows-Läufer: ohne Angabe wäre es PowerShell
         shell: bash
         env:
           APP: ${{ matrix.app }}
         run: |
+          WORKER=$(node -p "Math.max(2, require('os').availableParallelism())")
+          echo "Kerne bzw. Test-Worker: $WORKER"
           case "$APP" in
-            suite) REGELN_STICHPROBE=1 npx vitest run --maxWorkers=2 ;;
-            baurecht) npx vitest run --maxWorkers=2 --project core --project regeln --project baurecht ;;
-            *) npx vitest run --maxWorkers=2 --project core --project "$APP" ;;
+            suite) REGELN_STICHPROBE=1 npx vitest run --maxWorkers="$WORKER" ;;
+            baurecht) npx vitest run --maxWorkers="$WORKER" --project core --project regeln --project baurecht ;;
+            *) npx vitest run --maxWorkers="$WORKER" --project core --project "$APP" ;;
           esac
       - uses: tauri-apps/tauri-action@v0
         env:

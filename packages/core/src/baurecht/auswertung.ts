@@ -502,7 +502,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     let ampel: Ampel;
     let bestaetigend: string | undefined;
     let tragend: Bewertung[] = [];
-    // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `bedingung`
+    // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `regelteile`
     const warum = (k: Kurz | undefined, w: Wahrheit) => warumText(k, ctx, text, w);
     // eine fehlende Angabe als Text; ein Merkmal mit Vorbehalt ist angegeben, der Vorbehalt sagt, was fehlt („Planungsrecht
     // (für diesen Ort noch nicht bestätigt)“)
@@ -746,7 +746,6 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     }
 
     const behoerde = r.behoerde ? werten(r.behoerde, ctx).w : undefined;
-    let bedingungWorte: string[] | undefined;
     const ergebnis: ParagrafErgebnis = {
       id,
       modul: n.modul.id,
@@ -772,17 +771,6 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ...(systemVorbehalt.length ? { entfaelltVorbehalt: systemVorbehalt.join('; ') } : {}),
       ...(n.datei ? { regel: { datei: n.datei.datei, version: n.datei.regel.version, fassung: n.datei.regel.fassung } } : {}),
       ...(def.annahme ? { annahme: def.annahme } : {}),
-      // die ganze Bedingung in Worten erst, wenn sie jemand liest (Einzelheiten, Protokoll) – in der Matrix und bei jeder
-      // Neuberechnung der Oberfläche nur einmal je Paragraf statt für alle; aufzählbar, also auch in Kopien und JSON
-      get bedingung() {
-        bedingungWorte ??= [
-          n.datei?.regel.geltung ? `Die Norm gilt, wenn: ${kurzText(n.datei.regel.geltung, text)}` : '',
-          r.gilt ? `Gilt, wenn: ${kurzText(r.gilt, text)}` : '',
-          r.entfaellt ? `Entfällt, wenn: ${kurzText(r.entfaellt, text)}` : '',
-          r.pruefen?.wenn ? `Einzelfall, wenn: ${kurzText(r.pruefen.wenn, text)}` : '',
-        ].filter(Boolean);
-        return bedingungWorte;
-      },
       regelteile: [
         ...(n.datei?.regel.geltung ? [{ titel: 'Die Norm gilt, wenn', kurz: n.datei.regel.geltung }] : []),
         ...(r.gilt ? [{ titel: 'Gilt, wenn', kurz: r.gilt }] : []),

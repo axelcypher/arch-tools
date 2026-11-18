@@ -328,9 +328,7 @@ export interface Festlegung {
 export interface ParagrafErgebnis {
   /** `modul/norm/§` */
   id: string;
-  /** die Regel in Worten (Geltung, Tatbestand, Ausnahme, Einzelfall) – für „Regel im Einzelnen“ */
-  bedingung?: string[];
-  /** dieselbe Bedingung als Regelteile (für die Darstellung als Baum) */
+  /** die Regel als Regelteile (Geltung, Tatbestand, Ausnahme, Einzelfall) – „Regel im Einzelnen“ zeigt sie als Baum */
   regelteile?: { titel: string; kurz: Kurz }[];
   modul: string;
   norm: string;

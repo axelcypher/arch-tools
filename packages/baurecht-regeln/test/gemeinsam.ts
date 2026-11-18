@@ -1,7 +1,7 @@
 /**
  * Gemeinsame Hilfen der Tests über das ganze Regelpaket (paket.test.ts, fallmatrix.test.ts, fragen.test.ts): Paket,
  * Stichprobe bzw. volle Matrix (VOLL), Eingaben, passende Texte und vollständige Sätze von Fakten. Die großen
- * Matrizen stehen in eigenen Dateien, damit Vitest sie auf mehrere Worker verteilt (Release-Lauf: --maxWorkers=2).
+ * Matrizen stehen in eigenen Dateien, damit Vitest sie auf mehrere Worker verteilt (Release-Lauf: so viele Worker wie Kerne).
  */
 import type { AuswertungsEingabe } from '@core/baurecht/auswertung';
 import type { TextStand } from '@core/baurecht/auswertung';
@@ -41,7 +41,7 @@ export const WERTE: Record<string, (string | undefined)[]> = {
  * Sonst – lokal, in Cloud-Sitzungen – eine feste Stichprobe, damit das Projekt in unter einer Minute durch ist statt
  * über zehn Minuten ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln (etwa 15 min).
  * REGELN_STICHPROBE=1 setzt die PR-CI, wenn der PR die Auswertung von LEXIO sicher nicht berührt
- * (scripts/regeln-matrix.mjs); auf main, im Release-Lauf und im Regel-Workflow bleibt es voll. VOLL=1 geht immer vor.
+ * (scripts/regeln-matrix.mjs); auf main, im Release-Lauf (LEXIO-Job; Arkly nimmt die Stichprobe) und im Regel-Workflow bleibt es voll. VOLL=1 geht immer vor.
  */
 export const VOLL = !!process.env.VOLL || (!!process.env.CI && !process.env.REGELN_STICHPROBE);
 /** Zeitgrenze der großen Matrizen: voll großzügig (Windows-Runner), mit Stichprobe knapp – nichts läuft still minutenlang */

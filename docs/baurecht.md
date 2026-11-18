@@ -581,8 +581,9 @@ Workflows, Skripte und alles nicht sicher Zuordenbare. Nur Doku, Notizen, andere
 die Stichprobe zu (`REGELN_STICHPROBE=1`). Auf `main`, im Release-Lauf (LEXIO-Job) und im Regel-Workflow bleibt es
 immer voll; der Arkly-Job desselben Release-Laufs nimmt die Stichprobe, statt die volle Matrix ein zweites Mal zu
 rechnen. Die Matrizen stehen in eigenen Dateien (`test/fallmatrix.test.ts`, `test/fragen.test.ts`, gemeinsame Hilfen in
-`test/gemeinsam.ts`), damit Vitest sie auf mehrere Worker verteilt; der Release-Lauf testet mit `--maxWorkers=2` (sonst
-nähme Vitest auf dem Windows-Läufer mit zwei Kernen nur einen Worker).
+`test/gemeinsam.ts`), damit Vitest sie auf mehrere Worker verteilt; der Release-Lauf testet mit so vielen Workern, wie
+der Läufer Kerne hat, mindestens zwei (Vitest nähme sonst Kerne − 1, bei zwei Kernen also einen). Ein Release-Lauf nur
+für Arkly rechnet die volle Matrix nicht; sie läuft auf `main` (CI) und im Regel-Workflow.
 
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
 Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der Wächter
