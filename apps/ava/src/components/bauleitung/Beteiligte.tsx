@@ -119,11 +119,11 @@ export function Beteiligte() {
           )}
         </tbody>
       </table>
-      <div className="ava-formular">
-        <label className="ava-feld">
-          <span className="ava-feld-label">Rechnungen zahlt (E-Mail, Vorgabe für alle Gewerke)</span>
+      <div className="feldraster">
+        <label className="field">
+          <span className="field-label">Rechnungen zahlt (E-Mail, Vorgabe für alle Gewerke)</span>
           <TextEingabe wert={projekt.ava.zahler} onChange={(zahler) => void speichern((a) => ({ ...a, zahler: zahler || undefined }))} />
-          <span className="ava-feld-hinweis">leer = E-Mail des Bauherrn aus den Stammdaten</span>
+          <span className="field-hint">leer = E-Mail des Bauherrn aus den Stammdaten</span>
         </label>
       </div>
     </AnsichtKarte>

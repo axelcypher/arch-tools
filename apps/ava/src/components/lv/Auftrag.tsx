@@ -117,7 +117,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
               </tbody>
             </table>
             {lv.auftrag && (
-              <div className="ava-formular">
+              <div className="feldraster">
                 <Feld label="Auftragnehmer">
                   <strong>{auftragBieter?.name}</strong>
                 </Feld>
@@ -134,7 +134,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                 <Feld label="brutto">
                   <strong>{euro(brutto(auftragNetto, ust))}</strong>
                 </Feld>
-                <div className="button-row ava-feld-breit">
+                <div className="button-row feldraster-breit">
                   <button disabled={laeuft} onClick={() => void inKostenkontrolle(`${auftragBieter?.name ?? ''} Auftrag`.trim(), lv.auftrag!.datum, brutto(auftragNetto, ust), auftragBieter?.name)} title="Auftrag als neue Zeile in den Kostenanschlag des Gewerkblatts eintragen">
                     In die Kostenkontrolle übernehmen …
                   </button>
@@ -267,7 +267,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
 
       <section className="ava-abschnitt">
         <h3>Auftragnehmer & Zahlung</h3>
-        <div className="ava-formular">
+        <div className="feldraster">
           <Feld label="Firma">
             <TextEingabe wert={angaben.firma ?? blatt?.auftragnehmer ?? auftragBieter?.name} onChange={(firma) => angabenSetzen({ firma })} />
           </Feld>

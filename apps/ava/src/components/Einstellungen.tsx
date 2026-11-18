@@ -143,7 +143,7 @@ export function FabrioSeite() {
             {gespeichert.rechnungen.muster.length > 1 && ` und ${gespeichert.rechnungen.muster.length - 1} weitere zum Erkennen`} – eingestellt auf „Pfade und Benennung“.
           </p>
           <PfadeVerweis fokus="plaene.fabrio.rechnungen" text="Muster der Rechnungen …" />
-          <div className="ava-formular">
+          <div className="feldraster">
             <Feld label="Rechnungsarten" hinweis="je Zeile: Kürzel = Name (AB = Abschlagsrechnung …)" breit>
               <TextEingabe
                 mehrzeilig
@@ -168,16 +168,16 @@ export function FabrioSeite() {
             </Feld>
             <Feld label="Erkennen ausprobieren" breit>
               <input value={probe} onChange={(x) => setProbe(x.target.value)} />
-              <span className="ava-feld-hinweis">
+              <span className="field-hint">
                 {erkannt
                   ? `erkannt: Nr. ${erkannt.nr ?? '–'}, ${erkannt.art ?? ''}${erkannt.lfd ?? ''}, ${erkannt.firma ?? ''}, ${erkannt.datum ?? ''} (Muster „${erkannt.muster}“)`
                   : 'passt zu keinem Muster'}
               </span>
             </Feld>
-            <label className="ava-check ava-feld-breit">
+            <label className="toggle feldraster-breit">
               <input type="checkbox" checked={e.rechnungen.nrAufDeckblatt} onChange={(x) => setze('rechnungen', { nrAufDeckblatt: x.target.checked })} /> Nummer der Rechnungsliste auf dem Deckblatt
             </label>
-            <label className="ava-check ava-feld-breit">
+            <label className="toggle feldraster-breit">
               <input type="checkbox" checked={e.rechnungen.deckblattVoranstellen} onChange={(x) => setze('rechnungen', { deckblattVoranstellen: x.target.checked })} /> Deckblatt beim Ablegen digital
               vor den Scan setzen (sonst wird es mit eingescannt)
             </label>
@@ -185,7 +185,7 @@ export function FabrioSeite() {
         </Abschnitt>
 
         <Abschnitt titel="Prüfung" text="Vorgaben einer neuen Rechnungsprüfung (lassen sich je Rechnung ändern).">
-          <div className="ava-formular">
+          <div className="feldraster">
             <Feld label="Umsatzsteuer %">
               <ZahlEingabe wert={e.pruefung.mwstProzent} onChange={(n) => setze('pruefung', { mwstProzent: n ?? 19 })} />
             </Feld>
@@ -208,7 +208,7 @@ export function FabrioSeite() {
         </Abschnitt>
 
         <Abschnitt titel="Deckblatt">
-          <div className="ava-formular">
+          <div className="feldraster">
             <Feld label="Briefbogen (PDF)" hinweis="erste Seite als Hintergrund; leer = Büroname oben rechts und Fußzeile" breit>
               <div className="ava-reihe">
                 <TextEingabe wert={e.deckblatt.briefbogen} onChange={(briefbogen) => setze('deckblatt', { briefbogen })} />
@@ -239,7 +239,7 @@ export function FabrioSeite() {
         </Abschnitt>
 
         <Abschnitt titel="Scanordner">
-          <div className="ava-formular">
+          <div className="feldraster">
             <Feld label="Scanordner" hinweis="Ordner, in dem der Scanner die Dateien ablegt (z. B. \\server\Scans)" breit>
               <div className="ava-reihe">
                 <TextEingabe wert={e.scan.ordner} onChange={(ordner) => setze('scan', { ordner })} />
@@ -265,7 +265,7 @@ export function FabrioSeite() {
         </Abschnitt>
 
         <Abschnitt titel="Leistungsverzeichnisse">
-          <div className="ava-formular">
+          <div className="feldraster">
             <Feld label="Format neuer LV-Dateien">
               <select value={e.lv.neuesFormat} onChange={(x) => setze('lv', { neuesFormat: x.target.value as 'aslv' | 'oalv' })}>
                 <option value="aslv">LV-Datei (.aslv) – auch im LV-Programm zu öffnen</option>
@@ -353,7 +353,7 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
         )}
       </div>
       {v && (
-        <div className="ava-formular">
+        <div className="feldraster">
           <Feld label="Name" breit>
             <TextEingabe wert={v.name} onChange={(name) => setze({ name })} />
           </Feld>
@@ -377,7 +377,7 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
               <TextEingabe mehrzeilig zeilen={8} wert={v.text} onChange={(text) => setze({ text })} />
             </span>
           </Feld>
-          <div className="ava-feld-breit">
+          <div className="feldraster-breit">
             <PlatzhalterHinweise
               vorlage={alle}
               variablen={variablen}
@@ -389,7 +389,7 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
               fokusBehalten={false}
               onEinfuegen={(p) => setze({ [ziel]: platzhalterEinfuegen(v[ziel], p).text })}
             />
-            <span className="ava-feld-hinweis">Ein Klick fügt den Platzhalter am Ende von „{MAIL_FELDER[ziel]}“ ein (zuletzt bearbeitetes Feld).</span>
+            <span className="field-hint">Ein Klick fügt den Platzhalter am Ende von „{MAIL_FELDER[ziel]}“ ein (zuletzt bearbeitetes Feld).</span>
           </div>
         </div>
       )}

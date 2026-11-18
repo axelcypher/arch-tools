@@ -18,7 +18,7 @@ let abmelden: (() => void) | null = null;
 const warten = () => act(() => new Promise((r) => setTimeout(r, 20)));
 const roh = () => JSON.parse(localStorage.getItem('arch-tools:konfig:ava') ?? 'null') as typeof VORGABE | null;
 const knopf = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.einst button')].find((b) => b.textContent?.trim() === text)!;
-const haken = (text: string) => [...document.querySelectorAll<HTMLLabelElement>('.einst label.ava-check')].find((l) => l.textContent?.includes(text))!.querySelector('input')!;
+const haken = (text: string) => [...document.querySelectorAll<HTMLLabelElement>('.einst label.toggle')].find((l) => l.textContent?.includes(text))!.querySelector('input')!;
 
 beforeEach(async () => {
   localStorage.clear();

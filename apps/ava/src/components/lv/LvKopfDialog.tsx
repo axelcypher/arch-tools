@@ -46,7 +46,7 @@ export function LvKopfDialog({ onClose }: { onClose: () => void }) {
   };
   return (
     <Modal kopf titel="LV-Eigenschaften" onClose={() => void abbrechen()} breit klickDaneben={false}>
-      <div className="ava-formular">
+      <div className="feldraster">
         <Feld label="Bezeichnung" breit>
           <TextEingabe wert={k.bezeichnung} onChange={(bezeichnung) => p({ bezeichnung })} />
         </Feld>
