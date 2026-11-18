@@ -38,7 +38,7 @@ export function HinweisSymbol({ hinweise, className = '', style, info }: { hinwe
       <button
         ref={knopf}
         type="button"
-        className={`fo-entfall-info hinweis${hinweise.some((h) => h.art === 'fehler') ? ' fehler' : ''} ${className}`}
+        className={`fo-entfall-info warnung${hinweise.some((h) => h.art === 'fehler') ? ' fehler' : ''} ${className}`}
         style={style}
         aria-label={text}
         data-info={info}

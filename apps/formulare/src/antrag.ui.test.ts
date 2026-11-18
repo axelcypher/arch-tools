@@ -561,6 +561,9 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     // ohne Gebäudeklasse entfällt nichts (R-01): der Abschnitt zählt, die leeren Angaben sind offen
     expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')).toBeNull();
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
+    // Zähler und Status als Marken aus core: der Zähler mit runden Enden, „ungeklärt“ als Status-Marke in Warnfarbe
+    expect(gl(host).querySelector('.fo-gl-zahl')!.className).toBe('marke pille fo-gl-zahl');
+    expect(gl(host).querySelector('.fo-gl-punkt .fo-gl-offen')!.className).toBe('marke warnung fo-gl-offen');
     expect(gl(host).querySelector('.fo-gl-punkt .fo-gl-offen')!.getAttribute('title')).toContain('hängt ab von: Gebäudeklasse (nicht festgelegt)');
     expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('3 von 5');
     // sichtbar nur die Zahl, die Erklärung steht im Tooltip (der Kopf bleibt schmal)
@@ -669,7 +672,11 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     });
     expect(panel().querySelector('.bd-satz')!.textContent).toBe('Erforderlich, wenn Gebäudeklasse 4 oder 5 und (Sonderbau ja oder Verfahren Baugenehmigungsverfahren)');
     // die Merkmale fehlen im Projekt: offen, gilt als erforderlich (R-01)
-    expect(panel().querySelector('.bd-jetzt')!.textContent).toBe('offen – Antragsmerkmal nicht festgelegt (gilt als erforderlich)');
+    expect(panel().querySelector('.bd-jetzt')!.firstChild!.textContent).toBe('offen – Merkmal nicht festgelegt');
+    expect(panel().querySelector('.bd-jetzt .nur-vorlesen')!.textContent).toContain('gilt die Angabe als erforderlich');
+    // gleiche Bedeutung wie „ungeklärt“ in der Gliederung: Warnmarke; die Erklärung im Tooltip
+    expect(panel().querySelector('.bd-jetzt')!.className).toBe('marke bd-jetzt warnung');
+    expect(panel().querySelector('.bd-jetzt')!.getAttribute('title')).toContain('gilt die Angabe als erforderlich');
 
     // ein Feld durch Klick ins Formular wählen: Bedingung für das Feld Memo2 – „wenn Sonderbau (Kästchen) angekreuzt“
     await klick(host.querySelector<HTMLButtonElement>('.fo-ein-feld[data-ein="0:Memo2"]')!);
@@ -700,6 +707,11 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     await warte();
     expect(memo2().classList.contains('entfaellt')).toBe(false);
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('4/5');
+    // alles ausgefüllt: ✓ als Zähler in der Variante .ok
+    act(() => s.wertSetzen(s.offen!.felder[0].find((f) => f.name === 'Memo2')!, 'Musterstraße 1'));
+    await warte();
+    expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('✓');
+    expect(gl(host).querySelector('.fo-gl-zahl')!.className).toBe('marke pille fo-gl-zahl ok');
   });
 
   it('entfallendes Feld: Info-Symbol nennt den Grund, ein Klick öffnet den Gesetzestext mit dem Absatz', async () => {
@@ -5508,7 +5520,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(antragsdaten(host).textContent).toContain('BAUA 2 · eingereicht');
     await klick([...host.querySelectorAll<HTMLButtonElement>('.nav-eintrag')].find((b) => b.textContent?.includes('001-Muster'))!);
     await warte();
-    expect(host.querySelector('.fo-meldung.hinweis')!.textContent).toContain('Antrag BAUA 2 ist eingereicht');
+    expect(host.querySelector('.fo-meldung.warnung')!.textContent).toContain('Antrag BAUA 2 ist eingereicht');
     const vorher = useFormulare.getState().offen!.aenderungen;
     const f = useFormulare.getState().offen!.felder.flat().find((x) => x.art === 'text')!;
     act(() => useFormulare.getState().wertSetzen(f, 'geändert'));
