@@ -1166,10 +1166,10 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   }
 }
 
-/* Sprungmarken: unsichtbar, bis sie den Fokus haben (auch F6) */
+/* Sprungmarken: oben mittig über dem Inhalt (auch F6) */
 .br-sprung {
   position: absolute;
-  top: 4px;
+  top: var(--s1);
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
@@ -1189,6 +1189,10 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
+}
+/* mit Fokus hebt der Schatten sie von Karten mit ähnlichem Grund ab */
+.br-sprung button:focus {
+  box-shadow: var(--schatten-schwebend);
 }
 
 /* Zielgrößen mindestens 24 px */
