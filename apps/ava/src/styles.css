@@ -459,9 +459,12 @@
 }
 
 /* Dreierreihen der Seitenkarte „Eigenschaften“ (.feldraster.buendig aus core, den Abstand gibt der gap der
-   Seitenkarte): kleine Mindestbreite, damit drei Felder nebeneinander passen und die Reihe in schmaler Karte umbricht */
-.ava-feld-reihe {
+   Seitenkarte): kleine Mindestbreite, damit drei Felder nebeneinander passen und die Reihe in schmaler Karte umbricht.
+   auto-fit statt auto-fill: in breit gezogener Karte (bis 560px) bleiben keine leeren Spuren, die drei Felder füllen
+   die Breite */
+.feldraster.ava-feld-reihe {
   --feld-min: 80px;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--feld-min), 100%), 1fr));
 }
 
 .ava-reihe {
