@@ -19,7 +19,7 @@ vi.mock('@core/platform/files', async (original) => ({
   }),
 }));
 
-const { App, speichern, speichernVollstaendig } = await import('./App');
+const { App, speichern } = await import('./App');
 const { werteSenkrecht } = await import('./components/Angaben');
 const { dialogeZuruecksetzen } = await import('./components/Dialoge');
 const { beispielOap } = await import('./beispiel.test');
@@ -193,15 +193,16 @@ describe('Baurecht – Oberfläche', () => {
     expect(f.von).toBeTruthy();
     expect(f.am).toMatch(/^\d{4}-/);
     expect(f.grund).toBeUndefined();
-    // bis zum Speichern als Entwurf erkennbar – und als „von Hand“
-    expect(host.querySelector('.br-marke-entwurf')?.textContent).toMatch(/von Hand/);
+    // gilt sofort: Zeitpunkt gesetzt, als „von Hand“ erkennbar, kein Entwurf
+    expect(f.bestaetigt).toMatch(/^\d{4}-/);
+    expect([...host.querySelectorAll('.br-marke')].some((m) => m.textContent === 'von Hand')).toBe(true);
+    expect([...host.querySelectorAll('.br-marke, .br-detail-festlegung')].some((m) => /Entwurf/.test(m.textContent ?? ''))).toBe(false);
 
     await speichernOhneDialog();
     // in der geschriebenen Datei: mit Zeitpunkt des Speicherns, Wert, Namen und Datum
     expect(inDatei().festlegungen[ids[0]]).toMatchObject({ ampel: f.ampel, von: f.von, am: f.am });
     expect(inDatei().festlegungen[ids[0]].bestaetigt).toMatch(/^\d{4}-/);
-    expect(useBaurecht.getState().pruefung.festlegungen[ids[0]].bestaetigt).toMatch(/^\d{4}-/);
-    expect(host.querySelector('.br-marke-entwurf')).toBeNull();
+    expect(useBaurecht.getState().pruefung.festlegungen[ids[0]].bestaetigt).toBe(f.bestaetigt);
   });
 
   it('eine geänderte Festlegung übernimmt das Speichern ohne Rückfrage', async () => {
@@ -213,7 +214,7 @@ describe('Baurecht – Oberfläche', () => {
     // ändern (Herabstufung auf grün) und speichern
     festlegen(host, 'gruen', id);
     expect(useBaurecht.getState().pruefung.festlegungen[id]).toMatchObject({ ampel: 'gruen' });
-    expect(useBaurecht.getState().pruefung.festlegungen[id].bestaetigt).toBeUndefined();
+    expect(useBaurecht.getState().pruefung.festlegungen[id].bestaetigt).toMatch(/^\d{4}-/);
     await speichernOhneDialog();
     expect(inDatei().festlegungen[id]).toMatchObject({ ampel: 'gruen' });
     expect(inDatei().festlegungen[id].bestaetigt).toMatch(/^\d{4}-/);
@@ -569,11 +570,11 @@ describe('Baurecht – Oberfläche', () => {
     expect(i('Festlegungen von Hand')).toBeLessThan(i('Gesicherte Angaben'));
     expect(i('Gesicherte Angaben')).toBeLessThan(i('Offene Punkte'));
     expect(d.querySelector('.br-protokoll-offen thead')?.textContent).toMatch(/Was fehlt.*Anzahl.*Paragrafen/);
-    expect(d.textContent).toMatch(/Angaben von Hand ohne eigene Bestätigung/);
+    expect(d.textContent).toMatch(/Weitere Angaben von Hand/);
     // die Festlegung mit Ampel, Namen und Datum – ohne Spalte „Begründung“ (es gibt keine)
     const fl = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Festlegungen von Hand'))!.nextElementSibling!;
     expect(fl.querySelector('thead')!.textContent).not.toMatch(/Begründung/);
-    expect(fl.querySelector('tbody')!.textContent).toMatch(/gilt.*\d\d\.\d\d\.\d{4}.*Entwurf – noch nicht gespeichert/);
+    expect(fl.querySelector('tbody')!.textContent).toMatch(/gilt.*\d\d\.\d\d\.\d{4}.*noch nicht gespeichert/);
     // Entwurf: Abschließen gesperrt, der Grund steht sichtbar daneben
     expect(knopf(d, 'Prüfung abschließen')!.disabled).toBe(true);
     expect(d.querySelector('.br-sperre')?.textContent).toMatch(/Erst speichern/);
@@ -648,7 +649,7 @@ describe('Baurecht – Oberfläche', () => {
     const id = festlegen(host, 'rot');
     let ergebnis = false;
     await act(async () => {
-      ergebnis = await speichernVollstaendig();
+      ergebnis = await speichern();
     });
     expect(ergebnis).toBe(true);
     expect(document.querySelector('[role="dialog"], [role="alertdialog"]')).toBeNull();
@@ -939,7 +940,7 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
   });
   const warten = (ms = 20) => act(async () => void (await new Promise((r) => setTimeout(r, ms))));
 
-  it('der Hinweis nennt vorher, was die Bestätigung klärt – die Zahl stimmt; danach „Entwurf“ mit „zurücknehmen“', async () => {
+  it('der Hinweis nennt vorher, was die Bestätigung klärt – die Zahl stimmt; danach gilt sie, bis zum Speichern mit „zurücknehmen“', async () => {
     const { auswertungMit } = await import('./pruefung');
     const host = render();
     // die Zahl kommt gedrosselt (zweite Auswertung höchstens alle 250 ms)
@@ -952,13 +953,13 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
     act(() => knopf(hinweis, 'Für diesen Ort bestätigen')!.click());
     const nachher = auswertungMit(useBaurecht.getState().pruefung.fakten).paragrafen.filter((p) => vorher.get(p.id) !== p.ampel);
     expect(nachher.length).toBe(n);
-    // am Merkmal: Entwurf (zählt schon, noch nicht gespeichert), zurücknehmbar
+    // am Merkmal: gilt sofort (wer, wann), bis zum Speichern zurücknehmbar
     const merkmal = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"]')!;
-    expect(merkmal.querySelector('.br-merkmal-marken')?.textContent).toMatch(/für diesen Ort bestätigt · Entwurf/);
-    // im Protokoll als Entwurf, mit der Zahl der Paragrafen, die nur daran hängen
+    expect(merkmal.querySelector('.br-merkmal-marken')?.textContent).toMatch(/^für diesen Ort bestätigt \(.+, \d\d\.\d\d\.\d{4}\)zurücknehmen$/);
+    // im Protokoll als noch nicht gespeichert, mit der Zahl der Paragrafen, die nur daran hängen
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    expect(d.textContent).toMatch(/Planungsrecht: .+ \(Entwurf – für diesen Ort bestätigt: /);
+    expect(d.textContent).toMatch(/Planungsrecht: .+ \(für diesen Ort bestätigt: .+; noch nicht gespeichert\)/);
     expect(d.textContent).toContain(`${n} Paragrafen hängen an der noch nicht gespeicherten Bestätigung des Planungsrechts`);
     expect(d.textContent).toMatch(/Die Bestätigung des Planungsrechts ist noch nicht gespeichert/);
     act(() => knopf(d, 'Schließen')!.click());
@@ -1410,7 +1411,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const host = render();
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne eigene Bestätigung'))!.nextElementSibling!;
+    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Weitere Angaben von Hand'))!.nextElementSibling!;
     expect(tabelle.textContent).not.toMatch(/Umfang der Beseitigung/);
     expect(d.textContent).toMatch(/Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\): [^·]*Umfang der Beseitigung: Teilabbruch/);
   });
@@ -1487,7 +1488,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(!!host.querySelector('.br-angaben [data-fakt="planung.innen"]')).toBe(gestellt);
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne eigene Bestätigung'))!.nextElementSibling!.textContent ?? '';
+    const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Weitere Angaben von Hand'))!.nextElementSibling!.textContent ?? '';
     const ohneWirkung = /Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\):[^\n]*Lage in der zusammenhängenden Bebauung/.test(d.textContent ?? '');
     // die Antwort steht im Protokoll – je nachdem in der Tabelle oder unter „ohne Wirkung“, nie gar nicht
     expect(/Lage in der zusammenhängenden Bebauung/.test(tabelle) || ohneWirkung).toBe(true);
@@ -1629,19 +1630,14 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(useBaurecht.getState().ansage).toMatch(/festgelegt – noch nicht wirksam \(Rechtsstand nicht aktuell an der Quelle bestätigt\), es bleibt bei/);
   });
 
-  it('„Rückgängig“ nach Aufheben: angesagt, mit dem Stand nach dem Wiederherstellen (Entwurf, wenn nicht gespeichert)', () => {
+  it('„Rückgängig“ nach Aufheben: angesagt, die Festlegung gilt unverändert wieder', () => {
     const host = render();
     const id = festlegen(host, 'rot');
-    // mit Vermerk, aber nicht gespeichert (weicht vom Stand der Datei ab): beim Wiederherstellen wieder Entwurf
-    act(() => {
-      const p = structuredClone(useBaurecht.getState().pruefung);
-      p.festlegungen[id].bestaetigt = '2026-11-12T10:00:00Z';
-      useBaurecht.setState({ pruefung: p });
-    });
+    const vorher = structuredClone(useBaurecht.getState().pruefung.festlegungen[id]);
     act(() => knopf(host.querySelector('.br-detail')!, /Festlegung aufheben/)!.click());
     act(() => knopf(host.querySelector('.br-detail')!, 'Rückgängig')!.click());
-    expect(useBaurecht.getState().pruefung.festlegungen[id]?.bestaetigt).toBeUndefined();
-    expect(useBaurecht.getState().ansage).toBe('Festlegung wiederhergestellt – „gilt“ (Entwurf, noch nicht gespeichert)');
+    expect(useBaurecht.getState().pruefung.festlegungen[id]).toEqual(vorher);
+    expect(useBaurecht.getState().ansage).toBe('Festlegung wiederhergestellt – „gilt“');
   });
 
   it('Angaben-Suche: interne Kennungen treffen nicht', () => {

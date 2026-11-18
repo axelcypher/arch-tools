@@ -753,10 +753,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   color: var(--text);
   white-space: nowrap;
 }
-.br-marke-entwurf {
-  border: 1px dashed var(--muted);
-  background: transparent;
-}
 .br-marke-warn {
   background: var(--warn-bg);
   color: var(--warn-text);

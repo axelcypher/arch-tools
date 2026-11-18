@@ -236,11 +236,11 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             className="small"
             onClick={() => {
               useBaurecht.getState().festlegungWiederherstellen(aufgehoben.id, aufgehoben.f);
-              // was jetzt im Stand steht (Entwurf, wenn sie vom Stand der Datei abweicht); wie beim
+              // was jetzt im Stand steht; wie beim
               // Festlegen: ein „entfällt“, das noch nicht wirkt, sagt es dazu
               const wieder = useBaurecht.getState().pruefung.festlegungen[aufgehoben.id] ?? aufgehoben.f;
               const vorbehalt = wieder.ampel === 'gruen' ? p.entfaelltVorbehalt : undefined;
-              useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[wieder.ampel]}“${wieder.bestaetigt ? '' : ' (Entwurf, noch nicht gespeichert)'}${vorbehalt ? `, noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“` : ''}`);
+              useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[wieder.ampel]}“${vorbehalt ? `, noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“` : ''}`);
               setAufgehoben(null);
               // der Knopf verschwindet – Fokus auf „Festlegung ändern …“
               setTimeout(() => festlegenKnopf.current?.focus(), 0);
@@ -276,7 +276,8 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             ? `Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'}`
             : p.festlegung.bestaetigt
               ? 'von Hand festgelegt'
-              : 'von Hand festgelegt · Entwurf (noch nicht gespeichert)'}
+              : // ohne Zeitpunkt nur aus einer älteren Datei (früher ein Entwurf): zählt für Verweise erst nach erneutem Festlegen
+                'von Hand festgelegt · ältere Datei ohne Zeitpunkt – bitte erneut festlegen'}
         </p>
       )}
       {p.ueberholt && (

@@ -31,13 +31,12 @@ function merken(w: { gruppierung: Gruppierung; ampeln: Ampel[] }) {
   }
 }
 
-/** Marke „von Hand“ – Entwurf als Wort, nicht nur als gestrichelter Rahmen */
+/** Marke „von Hand“ – eine Festlegung gilt sofort (kein Entwurf) */
 function VonHand({ p }: { p: ParagrafErgebnis }) {
   if (!p.festlegung) return null;
-  const entwurf = !p.festlegung.bestaetigt;
   return (
-    <span className={`br-marke${entwurf ? ' br-marke-entwurf' : ''}`} title={entwurf ? 'von Hand festgelegt – Entwurf, noch nicht gespeichert' : `von Hand festgelegt (${p.festlegung.von})`}>
-      {entwurf ? 'von Hand · Entwurf' : 'von Hand'}
+    <span className="br-marke" title={`von Hand festgelegt (${p.festlegung.von})`}>
+      von Hand
     </span>
   );
 }
@@ -87,7 +86,7 @@ function ParagrafZeile({ p, gewaehlt, tabStop, onFokus }: { p: ParagrafErgebnis;
           </span>
         </span>
         {/* bei einer Festlegung: wer und wann bzw. ihre Begründung aus einer älteren Datei (sonst stünde neben „von Hand“ der automatische Grund) */}
-        <span className="br-paragraf-grund">{nb(p.festlegung && !p.ueberholt && !p.unwirksam ? `Von Hand: ${p.festlegung.grund ?? `festgelegt von ${p.festlegung.von}${p.festlegung.am ? ` am ${datum(p.festlegung.am)}` : ''}`}` : (p.gruende[0] ?? ''))}</span>
+        <span className="br-paragraf-grund">{nb(p.festlegung && !p.ueberholt && !p.unwirksam ? p.festlegung.grund ? `Von Hand: ${p.festlegung.grund}` : `Von Hand (${p.festlegung.von}${p.festlegung.am ? `, ${datum(p.festlegung.am)}` : ''})` : (p.gruende[0] ?? ''))}</span>
       </button>
     </li>
   );
@@ -304,7 +303,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     merken(n);
   };
   const { auswertung } = stand;
-  // Festlegungen aus einer älteren Datei ohne Ortsangabe: in einem Schritt dem jetzigen Ort zuordnen (als Entwurf)
+  // Festlegungen aus einer älteren Datei ohne Ortsangabe: in einem Schritt dem jetzigen Ort zuordnen
   const ohneOrt = auswertung.paragrafen.filter((p) => p.festlegung && !p.festlegung.ort).map((p) => p.id);
   const passt = useMemo(() => suchTreffer(suche, auswertung.normen), [suche, auswertung.normen]);
   const filter = (p: ParagrafErgebnis, n: NormErgebnis) =>
@@ -574,7 +573,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       <Karte titel="Vorschriften" className="br-vorschriften-karte">
         {ohneOrt.length > 0 && (
           <div className="meldung warnung br-ohne-ort" role="status">
-            {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt. Übernehmen ordnet {ohneOrt.length === 1 ? 'sie' : 'sie alle'} dem jetzigen Ort zu – als Entwurf bis zum Speichern.{' '}
+            {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt. Übernehmen ordnet {ohneOrt.length === 1 ? 'sie' : 'sie alle'} dem jetzigen Ort zu.{' '}
             <button type="button" className="small br-link" onClick={() => setNurGeaendert(true)} title="Nur die geänderten bzw. überholten Paragrafen zeigen">
               zeigen
             </button>{' '}
@@ -588,10 +587,10 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
                 // ins Suchfeld statt auf die Seite
                 setNurGeaendert(false);
                 setNurHand(true);
-                setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf bis zum Speichern`, filter: filterKennung(suche, true, false, w.ampeln) });
+                setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet`, filter: filterKennung(suche, true, false, w.ampeln) });
                 setTimeout(() => suchfeld.current?.focus(), 0);
               }}
-              title="Dem jetzigen Ort zuordnen – als Entwurf bis zum Speichern"
+              title="Dem jetzigen Ort zuordnen"
             >
               Für diesen Ort übernehmen
             </button>

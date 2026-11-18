@@ -2,7 +2,7 @@
  * Zustand der App Baurecht: geöffnetes Projekt (Projektdatei), aktiver Antrag, Antragsmerkmale (gemeinsam mit
  * Formulare), die Prüfung des Antrags (Fakten von Hand, Festlegungen, Protokolle), Regelpaket und Rechtsstand.
  *
- * Festlegungen von Hand sind Entwürfe, bis sie gespeichert sind – das Speichern vermerkt den Zeitpunkt (`bestaetigt`).
+ * Festlegungen und Angaben von Hand gelten sofort (kein Entwurf); Festlegungen tragen den Zeitpunkt (`bestaetigt`).
  */
 
 import { create } from 'zustand';
@@ -94,19 +94,18 @@ export interface Zustand {
   einreichungSetzen: (datum: string) => void;
   festlegen: (p: ParagrafErgebnis, ampel: Ampel, von: string, summen: Record<string, string>, werte: Record<string, string | number | boolean | null>, sicherheit?: Festlegung['sicherheit']) => void;
   festlegungAufheben: (id: string) => void;
-  /** Festlegungen ohne Ortsangabe (ältere Datei) dem jetzigen Ort zuordnen – bis zum Speichern als Entwurf */
+  /** Festlegungen ohne Ortsangabe (ältere Datei) dem jetzigen Ort zuordnen – sie gelten danach sofort */
   festlegungenOrtUebernehmen: (ids: string[]) => void;
   /** „Rückgängig“ nach dem Aufheben: die vorige Festlegung unverändert zurück */
   festlegungWiederherstellen: (id: string, f: Festlegung) => void;
-  festlegungenBestaetigen: (ids: string[]) => void;
   /**
    * gespeicherte Modulwerte (nur wegen einer Bestätigung in der Datei), die kein aktives Modul mehr ableitet (anderer
    * Gemeindeschlüssel, Bezug weg), entfernen – sie gelten nicht mehr und kämen sonst unsichtbar wieder in die Datei.
    * `abgeleitet`: die Angaben der aktuellen Auswertung
    */
   veralteteModulwerteEntfernen: (abgeleitet: Record<string, FaktWert>) => void;
-  /** offene Festlegungen und Bestätigungen auf den Stand der Datei zurücksetzen („ohne diese speichern“) */
-  aufDateistand: (festlegungen: string[], fakten: string[]) => void;
+  /** die ungespeicherte Bestätigung des Planungsrechts für den Ort zurücknehmen (Stand der Datei) */
+  planungsrechtZuruecknehmen: () => void;
   protokollAnhaengen: (p: BaurechtPruefung['protokolle'][number]) => void;
   paketSetzen: (paket: Paket, meldung: string) => void;
   /** einen Text setzen (nur noch für Tests – texteLaden bündelt über texteSetzen) */
@@ -271,7 +270,8 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const p = kopie(get().pruefung);
     // eine Festlegung gilt für den Ort, an dem sie getroffen wird (ändert er sich, ist sie überholt)
     const ort = ortVon(get().project);
-    const f: Festlegung = { ampel, von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen, ...(sicherheit && Object.keys(sicherheit).length ? { sicherheit } : {}), ...(ort ? { ort } : {}) };
+    // gilt sofort – der Zeitpunkt steht in `bestaetigt` (früher erst beim Speichern, „Entwurf“ bis dahin)
+    const f: Festlegung = { bestaetigt: new Date().toISOString(), ampel, von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen, ...(sicherheit && Object.keys(sicherheit).length ? { sicherheit } : {}), ...(ort ? { ort } : {}) };
     p.festlegungen[e.id] = f;
     set({ pruefung: p });
   },
@@ -282,8 +282,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     for (const id of ids) {
       const f = p.festlegungen[id];
       if (!f || f.ort) continue;
-      const { bestaetigt: _b, ...entwurf } = f;
-      p.festlegungen[id] = { ...entwurf, ort };
+      p.festlegungen[id] = { ...f, ort, bestaetigt: new Date().toISOString() };
     }
     set({ pruefung: p });
   },
@@ -293,21 +292,8 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     set({ pruefung: p });
   },
   festlegungWiederherstellen: (id, f) => {
-    const s = get();
-    const p = kopie(s.pruefung);
-    // genau der Stand der Datei: unverändert zurück; sonst als Entwurf bis zum Speichern
-    const datei = s.pruefungDatei.festlegungen[id];
-    if (datei && JSON.stringify(datei) === JSON.stringify(f)) p.festlegungen[id] = kopie(f);
-    else {
-      const { bestaetigt: _b, ...entwurf } = kopie(f);
-      p.festlegungen[id] = entwurf;
-    }
-    set({ pruefung: p });
-  },
-  festlegungenBestaetigen: (ids) => {
     const p = kopie(get().pruefung);
-    const jetzt = new Date().toISOString();
-    for (const id of ids) if (p.festlegungen[id]) p.festlegungen[id].bestaetigt = jetzt;
+    p.festlegungen[id] = kopie(f);
     set({ pruefung: p });
   },
   veralteteModulwerteEntfernen: (abgeleitet) => {
@@ -317,24 +303,11 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     for (const [id] of weg) delete p.fakten[id];
     set({ pruefung: p });
   },
-  aufDateistand: (festlegungen, fakten) => {
+  planungsrechtZuruecknehmen: () => {
     const s = get();
     const p = kopie(s.pruefung);
-    for (const id of festlegungen) {
-      const alt = s.pruefungDatei.festlegungen[id];
-      if (alt) p.festlegungen[id] = kopie(alt);
-      else delete p.festlegungen[id];
-    }
-    for (const id of fakten) {
-      if (id === PLANUNGSRECHT) {
-        if (s.pruefungDatei.planungsrechtOrt) p.planungsrechtOrt = kopie(s.pruefungDatei.planungsrechtOrt);
-        else delete p.planungsrechtOrt;
-        continue;
-      }
-      const alt = s.pruefungDatei.fakten[id];
-      if (alt) p.fakten[id] = kopie(alt);
-      else delete p.fakten[id];
-    }
+    if (s.pruefungDatei.planungsrechtOrt) p.planungsrechtOrt = kopie(s.pruefungDatei.planungsrechtOrt);
+    else delete p.planungsrechtOrt;
     set({ pruefung: p });
   },
   protokollAnhaengen: (pr) => {
@@ -357,13 +330,12 @@ export function istGeaendert(s: Pick<Zustand, 'pruefung' | 'pruefungDatei' | 'me
 }
 
 /**
- * Festlegungen seit dem letzten Speichern (Entwurf): neu oder geändert (ohne `bestaetigt`) und aufgehoben (in der
- * Datei, aber nicht mehr in der App). Das Speichern übernimmt sie ohne Rückfrage und vermerkt den Zeitpunkt.
+ * Festlegungen seit dem letzten Speichern (ungespeichert): neu oder geändert und aufgehoben (in der Datei, aber nicht
+ * mehr in der App). Sie gelten schon; das Speichern übernimmt sie ohne Rückfrage.
  */
 export function offeneFestlegungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
   const jetzt = s.pruefung.festlegungen;
-  // offen: alles, was nicht gespeichert ist oder vom Stand der Datei abweicht (der Vermerk entsteht nur beim Speichern –
-  // eine abweichende Festlegung mit Vermerk stammt also aus einem älteren Stand)
+  // offen: alles ohne Zeitpunkt (ältere Datei) oder abweichend vom Stand der Datei
   const datei = s.pruefungDatei.festlegungen;
   const neu = Object.entries(jetzt)
     .filter(([id, f]) => !f.bestaetigt || JSON.stringify(f) !== JSON.stringify(datei[id]))
@@ -374,7 +346,7 @@ export function offeneFestlegungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'
 
 /**
  * Bestätigte Hinweise und Angaben von Hand (z. B. „kein Schutzgebiet“), die seit dem letzten Speichern neu oder
- * geändert sind (Entwurf) – verglichen werden Wert und Bestätigung, nicht nur die Bestätigung
+ * geändert sind (ungespeichert) – verglichen werden Wert und Bestätigung, nicht nur die Bestätigung
  */
 export function offeneBestaetigungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
   const kern = (f: FaktWert | undefined) => JSON.stringify(f ? { wert: f.wert, bestaetigt: f.bestaetigt ?? null } : null);

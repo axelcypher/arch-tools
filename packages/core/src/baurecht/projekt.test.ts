@@ -70,14 +70,20 @@ describe('Abschnitt baurecht und Merkmale', () => {
       baurecht: {
         pruefungen: {
           A: {
-            festlegungen: { x: { ampel: 'rot', grund: 'Begehung am 03.11.2026', von: 'TP', am: '2026-11-03', automatisch: 'gelb' }, y: { ampel: 'gelb', grund: '  ' } },
+            festlegungen: {
+              x: { ampel: 'rot', grund: 'Begehung am 03.11.2026', von: 'TP', am: '2026-11-03', automatisch: 'gelb' },
+              y: { ampel: 'gelb', grund: '  ', von: 'TP', am: '2026-11-03', automatisch: 'gelb' },
+              // ohne wer und wann: unvollständig, fällt weg (wirkt nie unbemerkt)
+              z: { ampel: 'gruen' },
+            },
             fakten: { 'schutz.nsg': { wert: false, herkunft: 'manuell', sicherheit: 'sicher', bestaetigt: { von: 'TP', am: '2026-11-03', grund: 'Auskunft UNB' } } },
           },
         },
       },
     }).pruefungen.A;
     expect(alt.festlegungen.x.grund).toBe('Begehung am 03.11.2026');
-    expect(alt.festlegungen.y).toEqual({ ampel: 'gelb', von: '', am: '', automatisch: 'gelb' });
+    expect(alt.festlegungen.y).toEqual({ ampel: 'gelb', von: 'TP', am: '2026-11-03', automatisch: 'gelb' });
+    expect(alt.festlegungen.z).toBeUndefined();
     expect(alt.fakten['schutz.nsg'].bestaetigt?.grund).toBe('Auskunft UNB');
   });
 

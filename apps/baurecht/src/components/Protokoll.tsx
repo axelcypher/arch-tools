@@ -63,25 +63,25 @@ function nachNorm(ps: ParagrafErgebnis[], normen: { id: string; def: { kurz: str
     .join(' · ');
 }
 
-/** Entwurfsvermerk als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen Text) – genau
- *  wie auf dem Bildschirm („ENTWURF – die Bestätigung des Planungsrechts ist noch nicht gespeichert“) */
-const entwurfDruck = (text: string, eins: boolean) =>
-  `@media print { @page { margin-top: 20mm; @top-center { content: '${`ENTWURF – ${text} ${eins ? 'ist' : 'sind'} noch nicht gespeichert`.replace(/['\\]/g, '')}'; font: 700 12pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
+/** Vermerk „nicht gespeichert“ als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen
+ *  Text) – genau wie auf dem Bildschirm („NICHT GESPEICHERT – die Bestätigung des Planungsrechts ist noch nicht gespeichert“) */
+const ungespeichertDruck = (text: string, eins: boolean) =>
+  `@media print { @page { margin-top: 20mm; @top-center { content: '${`NICHT GESPEICHERT – ${text} ${eins ? 'ist' : 'sind'} noch nicht gespeichert`.replace(/['\\]/g, '')}'; font: 700 12pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
 /** Modulstände sind Daten (JJJJ-MM-TT) – im Protokoll wie alle Daten als TT.MM.JJJJ */
 const stand = (v: string) => (/^\d{4}-\d\d-\d\d$/.test(v) ? datum(v) : v);
 
-/** Ampel in der Tabelle: mit „von Hand“ bzw. „von Hand, Entwurf“ */
+/** Ampel in der Tabelle: mit „von Hand“ */
 function ampelText(p: ParagrafErgebnis): string {
   if (!p.festlegung) return AMPEL_TEXT[p.ampel];
   // eine überholte bzw. nicht wirksame Festlegung trägt die Ampel nicht – das sagt die Zelle auch
   if (p.ueberholt || p.unwirksam) return `${AMPEL_TEXT[p.ampel]} (Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'})`;
-  return `${AMPEL_TEXT[p.ampel]} (von Hand${p.festlegung.bestaetigt ? '' : ', Entwurf'})`;
+  return `${AMPEL_TEXT[p.ampel]} (von Hand)`;
 }
 
 /**
  * Prüfprotokoll zum Drucken bzw. als PDF. Aufbau: Grundlagen, Festlegungen von Hand und gesicherte Angaben, offene
  * Punkte als Tabelle (was fehlt – Anzahl – Paragrafen), dann alle Vorschriften je Ebene. „Prüfung abschließen“ legt einen Stand in der
- * Projektdatei ab – erst, wenn nichts mehr Entwurf ist.
+ * Projektdatei ab – erst, wenn alles gespeichert ist.
  */
 export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: Pruefstand; onClose: () => void; onSpeichern?: () => Promise<boolean> }) {
   const project = useBaurecht((s) => s.project);
@@ -104,8 +104,8 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
       if (pruefstand.planungsrechtFrueher) return ' (nicht für diesen Ort bestätigt)';
       if (!planungsrechtOrt?.von) return '';
       const wer = `${planungsrechtOrt.von}${planungsrechtOrt.am ? `, ${datum(planungsrechtOrt.am)}` : ''}`;
-      // noch nicht gespeichert: zählt schon, ist aber Entwurf
-      return offeneB.split('|').includes(PLANUNGSRECHT) ? ` (Entwurf – für diesen Ort bestätigt: ${wer}; noch nicht gespeichert)` : ` (für diesen Ort bestätigt: ${wer})`;
+      // noch nicht gespeichert: zählt schon
+      return offeneB.split('|').includes(PLANUNGSRECHT) ? ` (für diesen Ort bestätigt: ${wer}; noch nicht gespeichert)` : ` (für diesen Ort bestätigt: ${wer})`;
     }
     if (name === 'Vorhaben') {
       // nur Rückfragen, die gerade gestellt sind (nach einem Wechsel auf „Errichtung“ zählt der Umfang nicht mehr)
@@ -226,20 +226,20 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const a = pruefstand.auswertung;
   const ungespeichert = new Set(offeneB ? offeneB.split('|') : []);
   // die Bestätigung des Planungsrechts eigens (ein Antragsmerkmal, keine gesicherte Angabe)
-  const prEntwurf = ungespeichert.delete(PLANUNGSRECHT);
+  const prNeu = ungespeichert.delete(PLANUNGSRECHT);
   const nF = offeneF ? offeneF.split('|').length : 0;
-  const entwuerfe = nF + ungespeichert.size + (prEntwurf ? 1 : 0);
+  const nichtGespeichert = nF + ungespeichert.size + (prNeu ? 1 : 0);
   // getrennt benannt: Festlegungen von Hand, gesicherte Angaben und das Planungsrecht
-  const entwurfTeile = [
+  const ungespeichertTeile = [
     nF ? (nF === 1 ? 'eine Festlegung von Hand' : `${nF} Festlegungen von Hand`) : '',
     ungespeichert.size ? (ungespeichert.size === 1 ? 'eine gesicherte Angabe' : `${ungespeichert.size} gesicherte Angaben`) : '',
-    prEntwurf ? 'die Bestätigung des Planungsrechts' : '',
+    prNeu ? 'die Bestätigung des Planungsrechts' : '',
   ].filter(Boolean);
-  const entwurfText = aufzaehlen(entwurfTeile);
+  const ungespeichertText = aufzaehlen(ungespeichertTeile);
   const offen = a.paragrafen.filter((p) => p.ampel === 'gelb');
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
-  // nur Entwürfe, die die Ampel tragen (nicht überholt, nicht „noch nicht wirksam“)
-  const ausEntwurf = vonHand.filter((p) => !p.festlegung!.bestaetigt && !p.ueberholt && !p.unwirksam);
+  // Festlegungen ohne Zeitpunkt (ältere Datei), die die Ampel tragen (nicht überholt, nicht „noch nicht wirksam“)
+  const ausAlterDatei = vonHand.filter((p) => !p.festlegung!.bestaetigt && !p.ueberholt && !p.unwirksam);
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt && p.ampel !== 'gelb');
   // dasselbe Kriterium wie Leiste und Kern: nur gestellte Angaben tragen Ampeln; nicht gestellte stehen gesondert
   // („ohne Wirkung“), auch wenn der Kern sie nicht ableitet (Bezug einer Tabelle außerhalb seines Gebiets)
@@ -257,7 +257,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const nichtGestellt = Object.entries(eigeneFakten).filter(([id, f]) => !!a.faktDefs[id] && f.wert != null && !gestellt(id) && !a.fakten[id]?.ausVorfrage && !a.fakten[id]?.ausFolge);
   // Angaben von Hand ohne eigene Bestätigung: auch sie tragen Ampeln (z. B. „Kampfmittelverdacht: nein“) – mit wer und wann
   // nur Angaben, die das Regelpaket kennt (eine Angabe einer früheren Fassung stünde sonst mit ihrer rohen Kennung da)
-  const vonHandOhneBeleg = Object.entries(a.fakten).filter(
+  const weitereVonHand = Object.entries(a.fakten).filter(
     ([id, f]) => id in eigeneFakten && !!a.faktDefs[id] && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null && gestellt(id),
   );
   // abgeschlossen wird nur ein gespeicherter und vollständig geladener Stand
@@ -277,8 +277,8 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   // abgelegt, aber noch nicht in der Datei (auch nach dem Wiederöffnen des Protokolls erkennbar)
   const protokolleDatei = useBaurecht.getState().pruefungDatei.protokolle;
   const ungespeichertAbgelegt = new Set(protokolle.filter((p) => !protokolleDatei.some((b) => b.am === p.am)).map((p) => p.am));
-  const sperre = entwuerfe
-    ? 'Erst speichern: Es gibt ungespeicherte Entwürfe'
+  const sperre = nichtGespeichert
+    ? 'Erst speichern: Es gibt ungespeicherte Änderungen'
     : ungespeichertGesamt
       ? abgelegt?.speichern || ungespeichertAbgelegt.size
         ? 'Abgelegt – zum Übernehmen speichern'
@@ -330,10 +330,13 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const einzeln = [...gruppen.entries()].filter(([, ps]) => ps.length === 1);
   const mehrere = [...gruppen.entries()].filter(([, ps]) => ps.length > 1).sort((x, y) => y[1].length - x[1].length);
   const titel = `Baurechtliche Prüfung vor dem Einreichen – ${antrag}`;
-  // Stand einer Festlegung von Hand: gespeichert/Entwurf und wirksam/überholt/nicht wirksam
-  // mehrteilig: Entwurf/gespeichert und – falls – überholt bzw. noch nicht wirksam
+  // Stand einer Festlegung von Hand: gespeichert bzw. noch nicht gespeichert und wirksam/überholt/nicht wirksam
+  const festlegungNeu = new Set(offeneF ? offeneF.split('|') : []);
   const festlegungStand = (q: ParagrafErgebnis) =>
-    [q.festlegung!.bestaetigt ? 'gespeichert' : 'Entwurf – noch nicht gespeichert', q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : '']
+    [
+      !q.festlegung!.bestaetigt ? 'ältere Datei ohne Zeitpunkt – zählt erst nach erneutem Festlegen' : festlegungNeu.has(q.id) ? 'noch nicht gespeichert' : 'gespeichert',
+      q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : '',
+    ]
       .filter(Boolean)
       .join(' · ');
   // Zeilen der offenen Punkte, fehlende Angaben nach ihrer Gruppe (Lage, Gebäude …) – ab 15 Zeilen mit Zwischenzeilen
@@ -390,7 +393,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   return (
     <div className="report-backdrop br-protokoll-hintergrund">
       <div className="report br-protokoll" role="dialog" aria-modal="true" aria-label={titel} ref={fenster} tabIndex={-1}>
-        {entwuerfe > 0 && <style>{entwurfDruck(entwurfText, entwuerfe === 1)}</style>}
+        {nichtGespeichert > 0 && <style>{ungespeichertDruck(ungespeichertText, nichtGespeichert === 1)}</style>}
         <div className="report-actions no-print br-protokoll-aktionen">
           <label className="toggle">
             <input type="checkbox" checked={nurRelevant} onChange={(e) => setNurRelevant(e.target.checked)} /> ohne „entfällt“
@@ -471,9 +474,9 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
             </>
           )}
         </div>
-        {entwuerfe > 0 && (
+        {nichtGespeichert > 0 && (
           <p className="meldung warnung br-entwurf-hinweis no-print" role="status">
-            Entwurf: {entwurfText.charAt(0).toUpperCase() + entwurfText.slice(1)} {entwuerfe === 1 ? 'ist' : 'sind'} noch nicht gespeichert – unten als „Entwurf“ bzw. „noch nicht gespeichert“
+            {ungespeichertText.charAt(0).toUpperCase() + ungespeichertText.slice(1)} {nichtGespeichert === 1 ? 'ist' : 'sind'} noch nicht gespeichert – unten als „noch nicht gespeichert“
             gekennzeichnet. Abschließen lässt sich die Prüfung erst nach dem Speichern.
           </p>
         )}
@@ -519,7 +522,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               <td>Ergebnis</td>
               <td className="strong">
                 {a.zaehler.rot} gilt · {a.zaehler.gelb} prüfen · {a.zaehler.gruen} entfällt
-                {ausEntwurf.length > 0 && <span className="br-entwurf-text"> – davon {ausEntwurf.length} aus Entwürfen von Hand</span>}
+                {ausAlterDatei.length > 0 && <span className="br-entwurf-text"> – davon {ausAlterDatei.length} aus Festlegungen einer älteren Datei ohne Zeitpunkt</span>}
                 {nurRelevant && a.zaehler.gruen > 0 && <span className="br-leise"> – Vorschriften mit „entfällt“ ({a.zaehler.gruen}) sind in diesem Ausdruck nicht aufgeführt</span>}
                 {anOffenem > 0 && (
                   <span className="br-entwurf-text">
@@ -562,7 +565,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                   <td>
                     {p.festlegung!.von}, {datum(p.festlegung!.am)}
                   </td>
-                  <td className={p.festlegung!.bestaetigt && !p.ueberholt && !p.unwirksam ? '' : 'br-entwurf-text'}>{festlegungStand(p)}</td>
+                  <td className={p.festlegung!.bestaetigt && !festlegungNeu.has(p.id) && !p.ueberholt && !p.unwirksam ? '' : 'br-entwurf-text'}>{festlegungStand(p)}</td>
                 </tr>
               ))}
             </tbody>
@@ -601,8 +604,8 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
           <p>Keine.</p>
         )}
 
-        <h2>Angaben von Hand ohne eigene Bestätigung ({vonHandOhneBeleg.length})</h2>
-        {vonHandOhneBeleg.length ? (
+        <h2>Weitere Angaben von Hand ({weitereVonHand.length})</h2>
+        {weitereVonHand.length ? (
           <table className="report-table">
             <thead>
               <tr>
@@ -612,7 +615,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               </tr>
             </thead>
             <tbody>
-              {vonHandOhneBeleg.map(([id, f]) => (
+              {weitereVonHand.map(([id, f]) => (
                 <tr key={id}>
                   <td className="strong">{faktName(a.faktDefs[id], id)}</td>
                   <td>

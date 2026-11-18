@@ -99,7 +99,8 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
   const eigene = useBaurecht((s) => s.pruefung.fakten);
   const merkmale = useBaurecht((s) => s.merkmale);
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
-  const planungsrechtEntwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(PLANUNGSRECHT));
+  // seit dem letzten Speichern für den Ort bestätigt: gilt schon, lässt sich bis zum Speichern zurücknehmen
+  const planungsrechtNeu = useBaurecht((s) => offeneBestaetigungen(s).includes(PLANUNGSRECHT));
   const planungsrechtOrt = useBaurecht((s) => s.pruefung.planungsrechtOrt);
   const fokus = useBaurecht((s) => s.fokus);
   const ref = useRef<HTMLElement>(null);
@@ -258,10 +259,10 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
               {(geaendert[m.name] ?? '') !== wert && <span className="br-marke" title="noch nicht gespeichert">geändert</span>}
             </div>
             {/* Stand der Bestätigung des Planungsrechts in einer eigenen Zeile unter dem Titel (die Frage behält die volle Breite) */}
-            {m.name === 'Planungsrecht' && wert && !fremd && (planungsrechtOffen || planungsrechtEntwurf || planungsrechtOrt?.von) && (
+            {m.name === 'Planungsrecht' && wert && !fremd && (planungsrechtOffen || planungsrechtNeu || planungsrechtOrt?.von) && (
               <div className="br-merkmal-marken">
-                {/* gespeichert und für diesen Ort bestätigt: wer und wann */}
-                {!planungsrechtOffen && !planungsrechtEntwurf ? (
+                {/* für diesen Ort bestätigt: wer und wann (gilt sofort) */}
+                {!planungsrechtOffen && !planungsrechtNeu ? (
                   <span className="br-leise">
                     für diesen Ort bestätigt ({planungsrechtOrt?.von}
                     {planungsrechtOrt?.am ? `, ${datum(planungsrechtOrt.am)}` : ''})
@@ -272,9 +273,10 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                   </span>
                 ) : (
                   <>
-                    {/* für den Ort bestätigt, aber noch nicht gespeichert: zählt schon */}
-                    <span className="br-marke br-marke-entwurf" title="Bestätigung für diesen Ort – zählt schon, noch nicht gespeichert">
-                      für diesen Ort bestätigt · Entwurf
+                    {/* eben für den Ort bestätigt: gilt schon; „zurücknehmen“ bis zum Speichern */}
+                    <span className="br-leise">
+                      für diesen Ort bestätigt ({planungsrechtOrt?.von}
+                      {planungsrechtOrt?.am ? `, ${datum(planungsrechtOrt.am)}` : ''})
                     </span>
                     <button
                       type="button"
@@ -282,7 +284,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                       aria-label="Bestätigung des Planungsrechts für diesen Ort zurücknehmen"
                       title="Nur die Bestätigung für diesen Ort zurücknehmen – der gewählte Wert bleibt (dann „nicht für diesen Ort bestätigt“)"
                       onClick={() => {
-                        useBaurecht.getState().aufDateistand([], [PLANUNGSRECHT]);
+                        useBaurecht.getState().planungsrechtZuruecknehmen();
                         useBaurecht.getState().ansagen('Bestätigung des Planungsrechts zurückgenommen');
                         useBaurecht.getState().fokusSetzen('merkmal:Planungsrecht');
                       }}
@@ -489,7 +491,6 @@ function FaktZeile({
   const mitBelegPflicht = belegPflicht || !!wert?.gegenFolge;
   // nach dem Bestätigungsdialog neu aufbauen: ein abgebrochener Dialog lässt sonst eine nicht übernommene Zahl im Feld stehen
   const dialogZu = useBelegDialogGeschlossen();
-  const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // „<id>:bestaetigen“: direkt auf „Bestätigen …“ (z. B. vom Hinweis an festen Modulwerten zum Gemeindeschlüssel)
@@ -619,11 +620,6 @@ function FaktZeile({
                 {wert.herkunft === 'manuell' ? 'von Hand bestätigt' : 'bestätigt'} ({wert.bestaetigt.von}
                 {wert.bestaetigt.am ? `, ${datum(wert.bestaetigt.am)}` : ''})
               </span>
-              {entwurf && (
-                <span className="br-marke br-marke-entwurf" title="noch nicht gespeichert">
-                  Entwurf
-                </span>
-              )}
               {eigen && (
                 <button
                   type="button"

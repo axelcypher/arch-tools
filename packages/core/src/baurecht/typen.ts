@@ -320,7 +320,7 @@ export interface Festlegung {
   sicherheit?: Record<string, FaktStatus>;
   /** Prüfsummen der Fundstellen beim Festlegen */
   stand?: Record<string, string>;
-  /** beim Speichern übernommen (ISO) – fehlt = noch nicht gespeichert (Entwurf) */
+  /** seit wann sie gilt (ISO, beim Festlegen gesetzt) – fehlt nur bei Einträgen aus älteren Dateien (früher: Entwurf bis zur zweiten Bestätigung) */
   bestaetigt?: string;
   /** Ort beim Festlegen – eine Festlegung gilt nur für diesen Ort */
   ort?: Ort;

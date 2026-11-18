@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Symbol } from '@core/ui/Symbol';
 import { verweisName } from '@core/baurecht/typen';
 import { create } from 'zustand';
@@ -41,15 +41,12 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
   const merkmale = useBaurecht((s) => s.merkmale);
   const [ampel, setAmpel] = useState<Ampel>('gelb');
   const [von, setVon] = useState('');
-  const wahl = useRef<HTMLFieldSetElement>(null);
   useEffect(() => {
     const p = beimOeffnen;
     if (!p) return;
     // Vorgabe: die bisherige Festlegung bzw. die automatische Ampel – eine Herabstufung wählt man bewusst
     setAmpel(p.festlegung?.ampel ?? p.automatisch);
     setVon(benutzer());
-    // Startfokus auf die Entscheidung selbst (die gewählte Ampel)
-    setTimeout(() => wahl.current?.querySelector<HTMLInputElement>('input:checked')?.focus(), 0);
   }, [beimOeffnen]);
   if (!p) return null;
   const herab = RANG[ampel] < RANG[p.automatisch];
@@ -91,12 +88,13 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
         <p className="br-leise">
           Automatisch: <AmpelMarke ampel={p.automatisch} klein /> {p.gruende[0]}
         </p>
-        <fieldset className="br-wahl" ref={wahl}>
+        <fieldset className="br-wahl">
           <legend>Ampel</legend>
           {(['rot', 'gelb', 'gruen'] as const).map((a) => (
             <label key={a} className={`br-wahl-zeile${ampel === a ? ' br-gewaehlt' : ''}`}>
               {/* Name nur das Ampelwort, die Erklärung als Beschreibung (sonst hieße der Knopf „gilt muss beachtet …“) */}
-              <input type="radio" name="ampel" checked={ampel === a} onChange={() => setAmpel(a)} aria-label={`${AMPEL_TEXT[a]}${a === p.automatisch ? ' (wie automatisch)' : ''}`} aria-describedby={`br-wahl-${a}`} />
+              {/* Startfokus auf die Entscheidung selbst (die gewählte Ampel) */}
+              <input type="radio" name="ampel" checked={ampel === a} data-startfokus={ampel === a ? '' : undefined} onChange={() => setAmpel(a)} aria-label={`${AMPEL_TEXT[a]}${a === p.automatisch ? ' (wie automatisch)' : ''}`} aria-describedby={`br-wahl-${a}`} />
               <AmpelMarke ampel={a} />
               <span id={`br-wahl-${a}`}>
                 {AMPEL_ERKLAERUNG[a]}
@@ -129,7 +127,8 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
           <label className="field-label" htmlFor="br-festlegen-von">
             Festgelegt von
           </label>
-          <input id="br-festlegen-von" value={von} onChange={(e) => setVon(e.target.value)} />
+          <input id="br-festlegen-von" value={von} onChange={(e) => setVon(e.target.value)} placeholder={benutzer()} aria-describedby="br-festlegen-von-hinweis" />
+          <NameHinweis id="br-festlegen-von-hinweis" />
         </div>
         <div className="dialog-buttons">
           <button type="button" onClick={schliessen}>
@@ -141,6 +140,15 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
         </div>
       </form>
     </Modal>
+  );
+}
+
+/** Hinweis am Namensfeld: es ist kein Pflichtfeld – leer gilt der vorbelegte Name (gemerkt bzw. aus den Stammdaten) */
+function NameHinweis({ id }: { id: string }) {
+  return (
+    <span id={id} className="field-hint br-leise">
+      Leer: „{benutzer()}“
+    </span>
   );
 }
 
@@ -269,10 +277,15 @@ export function VorfragenNeinDialog({ folgen }: { folgen: FolgenRechner }) {
           ))}
         </ul>
         {vorschau && <Folgen folgen={vorschau} />}
-        <div className="meldung warnung" role="note">
+        <p className="br-leise">
           Die Angaben gelten danach als gesichert und stehen mit Namen und Datum im Prüfprotokoll.
-          {ziel.lagebezug ? (aktuelleLage(project).lage ? ' Sie gelten nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten, die zur Adresse passen, lassen sie sich an keine Lage binden und bleiben Hinweis.') : ''}
-        </div>
+          {ziel.lagebezug && aktuelleLage(project).lage ? ' Sie gelten nur für die aktuelle Lage des Vorhabens.' : ''}
+        </p>
+        {ziel.lagebezug && !aktuelleLage(project).lage && (
+          <div className="meldung warnung" role="note">
+            Ohne Koordinaten, die zur Adresse passen, lassen sie sich an keine Lage binden und bleiben Hinweis.
+          </div>
+        )}
         {veraltet && (
           <div className="meldung fehler" role="alert">
             Eine der Angaben hat sich inzwischen geändert (z. B. durch „Lage abfragen“). Bitte den Dialog schließen und neu prüfen.
@@ -282,7 +295,8 @@ export function VorfragenNeinDialog({ folgen }: { folgen: FolgenRechner }) {
           <label className="field-label" htmlFor="br-vn-von">
             Angegeben von
           </label>
-          <input id="br-vn-von" value={von} onChange={(e) => setVon(e.target.value)} />
+          <input id="br-vn-von" value={von} onChange={(e) => setVon(e.target.value)} placeholder={benutzer()} aria-describedby="br-vn-von-hinweis" />
+          <NameHinweis id="br-vn-von-hinweis" />
         </div>
         <div className="dialog-buttons">
           <button type="button" onClick={() => schliessen()}>
@@ -313,9 +327,9 @@ function Pfeil() {
   );
 }
 
-function Folgen({ folgen, allein }: { folgen: { herab: Herabstufung[] }; allein?: boolean }) {
+function Folgen({ folgen }: { folgen: { herab: Herabstufung[] } }) {
   const [auf, setAuf] = useState(false);
-  if (!folgen.herab.length) return <p className="br-leise">{allein ? 'Allein ändert dadurch keine Vorschrift ihre Ampel.' : 'Keine Vorschrift ändert dadurch ihre Ampel.'}</p>;
+  if (!folgen.herab.length) return <p className="br-leise">Keine Vorschrift ändert dadurch ihre Ampel.</p>;
   const gruen = folgen.herab.filter((h) => h.nach === 'gruen').length;
   return (
     <details className="br-folgen" onToggle={(e) => setAuf((e.currentTarget as HTMLDetailsElement).open)}>
@@ -378,6 +392,8 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
     const lage = ziel.lagebezug ? aktuelleLage(project).lage : undefined;
     if (ziel.modus === 'setzen') useBaurecht.getState().faktSetzen(ziel.id, ziel.wert.wert, wer, true, lage);
     else useBaurecht.getState().faktBestaetigen(ziel.id, ziel.wert, wer, lage);
+    // angesagt (der Dialog verschwindet) – wie beim Festlegen und bei „Keine davon“
+    useBaurecht.getState().ansagen(`${ziel.titel}: „${wertAnzeige(ziel.wert.wert, faktDef(ziel.id))}“ ${ziel.modus === 'setzen' ? 'von Hand übernommen' : 'bestätigt'}`);
     schliessen();
   };
   return (
@@ -405,10 +421,15 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
             <strong>Widerspruch bleibt:</strong> {vorschau.nachher.widerspruch}. Vorschriften, die an dieser Angabe hängen, werden dadurch nicht „entfällt“.
           </div>
         )}
-        <div className="meldung warnung" role="note">
+        <p className="br-leise">
           Die Angabe gilt danach als gesichert und steht mit Namen und Datum im Prüfprotokoll.
-          {ziel.lagebezug ? (aktuelleLage(project).lage ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten, die zur Adresse passen, lässt sie sich an keine Lage binden und bleibt Hinweis.') : ''}
-        </div>
+          {ziel.lagebezug && aktuelleLage(project).lage ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ''}
+        </p>
+        {ziel.lagebezug && !aktuelleLage(project).lage && (
+          <div className="meldung warnung" role="note">
+            Ohne Koordinaten, die zur Adresse passen, lässt sie sich an keine Lage binden und bleibt Hinweis.
+          </div>
+        )}
         {veraltet && (
           <div className="meldung fehler" role="alert">
             Die Angabe hat sich inzwischen geändert (z. B. durch „Lage abfragen“). Bitte den Dialog schließen und neu prüfen.
@@ -418,7 +439,8 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
           <label className="field-label" htmlFor="br-fakt-von">
             {ziel.modus === 'setzen' ? 'Angegeben von' : 'Bestätigt von'}
           </label>
-          <input id="br-fakt-von" value={von} onChange={(e) => setVon(e.target.value)} />
+          <input id="br-fakt-von" value={von} onChange={(e) => setVon(e.target.value)} placeholder={benutzer()} aria-describedby="br-fakt-von-hinweis" />
+          <NameHinweis id="br-fakt-von-hinweis" />
         </div>
         <div className="dialog-buttons">
           <button type="button" onClick={schliessen}>

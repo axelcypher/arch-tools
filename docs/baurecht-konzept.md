@@ -615,8 +615,9 @@ beim Speichern vorgesehen; beides ist auf Wunsch der Nutzer entfallen (kein Pfli
 1. **Beim Festlegen:** Am Paragrafen „Von Hand festlegen …“ → Ampel wählen → „Festlegen“. Gespeichert werden Name (aus
    den Einstellungen bzw. der Bearbeitung), Datum, die automatische Ampel zu diesem Zeitpunkt, die Fakten, an denen die
    Regel hängt, und die Prüfsummen der Fundstellen. Herabstufungen nennt der Dialog vorher.
-2. **Beim Speichern der Projektdatei:** ohne Rückfrage; die Festlegung bekommt den Zeitpunkt des Speicherns. Bis dahin
-   ist sie Entwurf und lässt sich zurücknehmen. Begründungen aus älteren Dateien bleiben erhalten und im Protokoll.
+2. **Sofort wirksam:** Die Festlegung gilt ab dem Klick (kein Entwurf) und lässt sich aufheben bzw. rückgängig machen;
+   gespeichert wird ohne Rückfrage. Begründungen aus älteren Dateien bleiben erhalten und im Protokoll. Wer von Hand
+   abweicht, hält den Grund weiter in den eigenen Unterlagen fest – das Protokoll ersetzt keine Begründung.
 
 Danach:
 
@@ -869,7 +870,8 @@ den anderen Apps; unbekannte Abschnitte bleiben.
   Stadt Soest – dazu das Bundesmodul, ohne das BauGB, BauNVO, GEG usw. fehlen würden.
 - Ampel je Paragraf.
 - Regeln als eigenes Paket, getrennt von der App ausgeliefert.
-- Festlegen von Hand darf jeder; dafür doppelte Bestätigung (beim Festlegen und beim Speichern).
+- Festlegen von Hand darf jeder; dafür doppelte Bestätigung (beim Festlegen und beim Speichern). – Später entfallen
+  (18.11.2026, Wunsch der Nutzer): ein Klick, ohne Begründung und ohne zweite Bestätigung, siehe Abschnitt 8.
 - Name der App: **Baurecht**.
 
 **Entschieden (12.11.2026, zweite Runde)**

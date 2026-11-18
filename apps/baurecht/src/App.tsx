@@ -21,13 +21,13 @@ import { lageAbfragen } from './lage';
 import { ausProjektwahl, dateiOeffnen, speichernJetzt } from './projekt';
 import { auswertungMit, herabstufungen, texteLaden, usePruefstand } from './pruefung';
 import { abgelegtesPaket, paketNachladen } from './regelpaket';
-import { istGeaendert, offeneFestlegungen, useBaurecht } from './store';
+import { istGeaendert, useBaurecht } from './store';
 
 const log = logger('baurecht');
 
 /**
- * Speichern – ohne weitere Rückfrage: Festlegungen von Hand bekommen dabei den Vermerk, wann sie gespeichert wurden
- * (`bestaetigt`); wer und wann festgelegt bzw. bestätigt hat, steht schon an jedem Eintrag. true = gespeichert.
+ * Speichern – ohne weitere Rückfrage: wer und wann festgelegt bzw. bestätigt hat, steht schon an jedem Eintrag (gilt
+ * sofort, kein Entwurf). true = gespeichert.
  */
 let speichertGerade: Promise<boolean> | null = null;
 
@@ -47,8 +47,6 @@ async function speichernLauf(): Promise<boolean> {
   if (Object.values(useBaurecht.getState().pruefung.fakten).some((f) => f.herkunft === 'modul')) useBaurecht.getState().veralteteModulwerteEntfernen(auswertungMit(useBaurecht.getState().pruefung.fakten).fakten);
   const s = useBaurecht.getState();
   const warGeaendert = istGeaendert(s);
-  const festlegungen = offeneFestlegungen(s);
-  if (festlegungen.length) s.festlegungenBestaetigen(festlegungen);
   let ok = false;
   try {
     const konflikte: string[] = [];
@@ -65,9 +63,6 @@ async function speichernLauf(): Promise<boolean> {
     if (ok) useBaurecht.setState({ gespeichertMeldung: { am: Date.now(), text: warGeaendert ? 'Gespeichert' : 'Gespeichert – keine Änderungen' } });
   }
 }
-
-/** Vor dem Verlassen (anderer Antrag, anderes Projekt, Beenden): true nur, wenn gespeichert wurde */
-export const speichernVollstaendig = (): Promise<boolean> => speichern();
 
 /**
  * Satz der Rückfragen bei ungespeicherten Änderungen (docs/design.md): ungespeichert ist nur der Teil von LEXIO im
@@ -171,7 +166,7 @@ export function App() {
   }, [project, modulSchluessel, stand.einreichung]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Titelleiste (Beenden, Rahmen-App): nur „gespeichert“, wenn keine Entwürfe übrig bleiben
-  const speichernMitMeldung = useCallback(async () => speichernVollstaendig(), []);
+  const speichernMitMeldung = useCallback(async () => speichern(), []);
 
   // F6 führt LEXIO selbst (eigener Kreis mit dem Hinweis-Stapel als letzter Station), nicht zusätzlich core
   useEffect(() => {
@@ -199,12 +194,12 @@ export function App() {
   // anderer Antrag: ungespeicherte Festlegungen, Bestätigungen und Merkmale nicht stillschweigend verwerfen
   const antragWechseln = async (antrag: string) => {
     if (antrag === useBaurecht.getState().antrag) return;
-    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig(), UNGESPEICHERT))) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichern(), UNGESPEICHERT))) return;
     useBaurecht.getState().antragWaehlen(antrag);
   };
 
   const projekteOeffnen = async () => {
-    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig(), UNGESPEICHERT))) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichern(), UNGESPEICHERT))) return;
     setWahl(true);
   };
 
