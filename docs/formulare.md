@@ -444,7 +444,11 @@ Anschrift, wie sie in Formularen steht.
     Entwurfsverfasser; PLZ des Bauvorhabens aus der PLZ des Grundstücks.
   - Erhebungsbögen der Bautätigkeitsstatistik (Baugenehmigung nw010020 samt Baufertigstellung auf Seite 3,
     Baufertigstellung nw010021, Bauabgang nw010022): Anschrift des Baugrundstücks bzw. Gebäudes – Straße und
-    Hausnummer getrennt aus „Straße/Nr.“ des Grundstücks („Musterweg 12 a“ → „Musterweg“ und „12 a“), dazu die PLZ.
+    Hausnummer getrennt aus „Straße/Nr.“ des Grundstücks („Musterweg 12 a“ → „Musterweg“ und „12 a“), dazu die PLZ
+    (Ergänzung der App, auch auf Seite 3 der Baugenehmigung) und – als Vorgabe des Büros – im Gemeindeteil die
+    Gemarkung des Grundstücks (Baugenehmigung Seite 1 und 3, Baufertigstellung; fachlich nicht immer dasselbe, ein
+    eigener Eintrag bleibt als Überschreibung erhalten). Neue Formulare warten auf die Projektdatei, damit die PLZ von
+    dort schon da ist; in vorhandenen Formularen trägt „Daten aktualisieren“ leere Felder nach.
   - Baubeschreibung (nw010010, alle Stände): Nr. 2 „Art der Nutzung“ aus dem Eintrag der Projektkarte mit dem Titel
     „Art der Nutzung“. Der Eintrag wird über den Titel gesucht, weil seine Nummer nicht in jeder Projektkarte gleich
     ist. Das gilt nur, wenn der Vordruck das Feld nicht verknüpft oder auf einen Eintrag verweist, den die

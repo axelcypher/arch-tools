@@ -24,6 +24,14 @@ const plz = (felder: string[]): ZuordnungKorrektur => ({
   teile: [eintrag(GRUNDSTUECK, PLZ_GRUNDSTUECK)],
   grund: 'Postleitzahl des Baugrundstücks – in der Projektkarte nicht vorgesehen, Ergänzung der App.',
 });
+/** Gemarkung des Baugrundstücks (Projektkarte, Grundstück 40) */
+const GEMARKUNG = 40;
+/** Baustatistik: „Gemeindeteil“ bekommt die Gemarkung – Vorgabe des Büros (fachlich nicht immer dasselbe; ein eigener Eintrag bleibt) */
+const gemeindeteil = (felder: string[]): ZuordnungKorrektur => ({
+  felder,
+  teile: [eintrag(GRUNDSTUECK, GEMARKUNG)],
+  grund: 'Gemeindeteil aus der Gemarkung des Grundstücks – Vorgabe des Büros, im Vordruck nicht verknüpft.',
+});
 /** Baustatistik: Straße und Hausnummer stehen in eigenen Feldern, die Projektkarte hat sie in einem Eintrag */
 const strasseHausnummer = (strasse: string, hausnummer: string, postleitzahl: string): ZuordnungKorrektur[] => [
   { felder: [strasse], teile: [eintrag(GRUNDSTUECK, STRASSE_NR, 'strasse')], grund: 'Nur die Straße – die Hausnummer hat ein eigenes Feld.' },
@@ -44,8 +52,8 @@ export const ZUORDNUNG_KORREKTUREN: Record<string, ZuordnungKorrektur[]> = {
     plz(['0:Memo4']),
   ],
   // Erhebungsbögen der Bautätigkeitsstatistik: Anschrift des Baugrundstücks bzw. Gebäudes
-  nw010020: [...strasseHausnummer('0:Memo25', '0:Memo26', '0:Memo27'), ...strasseHausnummer('2:Memo25', '2:Memo26', '2:Memo27')],
-  nw010021: strasseHausnummer('0:Memo25', '0:Memo26', '0:Memo27'),
+  nw010020: [...strasseHausnummer('0:Memo25', '0:Memo26', '0:Memo27'), ...strasseHausnummer('2:Memo25', '2:Memo26', '2:Memo27'), gemeindeteil(['0:Memo30', '2:Memo30'])],
+  nw010021: [...strasseHausnummer('0:Memo25', '0:Memo26', '0:Memo27'), gemeindeteil(['0:Memo30'])],
   nw010022: strasseHausnummer('0:Memo5', '0:Memo34', '0:Memo35'),
   // Baubeschreibung (Anlage I/7), Nr. 2: der Vordruck verknüpft das Feld nicht mit der Art der Nutzung der Projektkarte
   nw010010: [{ felder: ['0:Memo5'], titel: 'Art der Nutzung', grund: 'Nr. 2 Art der Nutzung aus der Projektkarte – im Vordruck nicht verknüpft, Ergänzung der App.' }],

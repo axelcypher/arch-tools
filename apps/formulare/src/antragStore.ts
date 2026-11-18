@@ -605,7 +605,10 @@ const befuellt = (z: FormularZustand | null) => (z ? ` und mit ${anzahl(Object.k
 
 async function mitAutofill(bytes: Uint8Array, projekt: Projekt): Promise<{ bytes: Uint8Array; zustand: FormularZustand | null }> {
   const f = useFormulare.getState();
-  if (!f.karte || f.karte.projekt !== projekt) await f.karteLaden();
+  // erst die Projektdatei: Ergänzungen der Projektkarte (PLZ des Grundstücks) kommen von dort – gleich nach dem Öffnen
+  // eines Projekts liefe das Lesen der Projektdatei sonst noch, und das neue Formular bekäme die PLZ nicht
+  if (f.oap === null && ablageVon(f, projekt)) await f.oapLaden();
+  if (!f.karte || f.karte.projekt !== projekt) await useFormulare.getState().karteLaden();
   const k = useFormulare.getState().karte;
   // nur die Projektkarte des Projekts, für das angelegt wird
   if (!k || k.projekt !== projekt) return { bytes, zustand: null };
