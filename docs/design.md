@@ -361,9 +361,10 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
     füllen ihre Spalte und sind `--ctl-h` hoch. Die Felder einer Zeile fluchten, auch wenn eine Beschriftung umbricht
     oder nur ein Feld einen Hinweis hat. `--s3` zwischen den Spalten, `--s2` unter jeder Zeile (auch der letzten).
   - `.feldraster-breit` (bzw. `Field breite="breit"`) nimmt die ganze Zeile, z. B. für Textbereiche oder eine
-    Knopfzeile. `.feldraster-zwei` (`breite="zwei"`) nimmt zwei Spalten, z. B. für Auswahlen mit langen Einträgen;
-    passt nur eine Spalte, nimmt es die ganze Zeile. Das gilt für `--feld-min` bis 200px, wer mehr setzt, braucht eine
-    eigene `@container feldraster`-Abfrage.
+    Knopfzeile. `.feldraster-zwei` (`breite="zwei"`) nimmt zwei Spalten, z. B. für Auswahlen mit langen Einträgen
+    oder ein `label.toggle`, dessen Text in einer Spalte umbräche (ein ganzer Satz neben dem Kästchen nimmt
+    `-breit`); passt nur eine Spalte, nimmt es die ganze Zeile. Das gilt für `--feld-min` bis 200px, wer mehr setzt,
+    braucht eine eigene `@container feldraster`-Abfrage.
   - Mit `.feldraster-zwei` wird das Raster zum Container: Es braucht dann seine Breite vom Elternteil (in einem
     Flex-Elternteil `flex: 1` oder volle Breite), und Menüs (`MenueKnopf`) oder Dialoge (`Modal`) gehören nicht
     hinein, weil sie mit `position: fixed` am Raster statt am Fenster hingen.
