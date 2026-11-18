@@ -384,6 +384,14 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   `aria-describedby`); weicht der eingetragene Wert ab (etwa aus einer Datei), steht daneben ein Knopf `small` „Neu
   berechnen“. Abgrenzung: `.feld-wert` ist eine schreibgeschützte Angabe ohne Feld (Text neben Feldern), `.berechnet`
   ein Feld, dessen Wert sich ändern kann und das wie die anderen Felder in der Reihe steht.
+- **Von außen gesperrte Felder** (z. B. im Vordruck gesperrt oder von der Behörde auszufüllen) sind eine Ausnahme:
+  ebenfalls schreibgeschützt statt gesperrt (`readOnly`, nicht `disabled`) und gestaltet wie `.berechnet`, darunter eine
+  kurze Herkunftszeile (`.feld-herkunft`, z. B. „Im Vordruck gesperrt“), aber kein Tab-Stopp (`tabIndex={-1}`): Sie
+  tragen nichts zur Eingabe bei und stünden in Tabellen sonst zu Dutzenden zwischen den Eingaben. Erreichbar bleiben sie
+  per Klick und über Sprünge (Prüfliste, Suche); dann werden sie samt Herkunft vorgelesen. Berechnete Felder bleiben
+  Tab-Stopps, weil sich ihr Wert mit den Eingaben ändert und man ihn beim Durchgehen prüft. Kästchen kennen kein
+  `readOnly` und bleiben `disabled`; ein ganz gesperrtes Formular sperrt alle Felder mit `disabled`. Abgrenzung zu
+  `.feld-wert`: der ist gar kein Feld und deshalb nie fokussierbar.
 - `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht; gesperrt (auch mit `aria-disabled`)
   ohne Zeiger und mit Text in `--muted` – statt der Deckkraft gesperrter Knöpfe, damit der Text lesbar bleibt; rechts
   hält es `--s2` Abstand (am Ende von `.karte-aktionen` keinen, dort schließt es bündig ab).
