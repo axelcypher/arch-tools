@@ -111,7 +111,7 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
                   </span>
                 </span>
               </label>
-              {f.length > 0 && <span className="warning small-text">{f.join(' ')}</span>}
+              {f.length > 0 && <span className="warning small-text ka-eingerueckt">{f.join(' ')}</span>}
               {a && (
                 <span className={`ka-ergebnis ${a.ok ? 'ok' : 'fehler'} small-text`}>
                   {a.ok ? (
