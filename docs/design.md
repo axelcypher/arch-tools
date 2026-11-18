@@ -33,6 +33,10 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--s5`   | 24px | große Gliederung (Zielwert für den Dialog-Innenabstand; `.modal` hat heute 18/22px) |
 | `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
+Feinwerte unter `--s1` (1–3px) dürfen zur Feinausrichtung fest bleiben, etwa der Abstand zwischen Beschriftung und
+Feld (2px), ein Ausgleich für einen Rahmen oder das Versetzen eines Symbols um einen Pixel. Abstände zwischen Elementen
+nehmen ab 4px die Skala.
+
 | Variable  | Wert | Verwendung                                                 |
 | --------- | ---- | ---------------------------------------------------------- |
 | `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf     |
