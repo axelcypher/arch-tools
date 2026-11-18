@@ -888,6 +888,22 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(host.querySelector('button[aria-label="Rückgängig"]')).not.toBeNull();
   });
 
+  it('Kennzahl-Zustand: prüfen → warnung, unterschritten → fehler', () => {
+    const p = projekt();
+    // GRZ 0,220 eingehalten, mit ungeklärten Flächen 0,294 über 0,25 → prüfen; 2 Vollgeschosse bei mindestens 3 → unterschritten
+    p.massNutzung = { ...p.massNutzung, grz: 0.25, vollgeschosseMin: 3 };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const kachel = (t: string) => [...host.querySelectorAll('.grz-kennzahlen > .metric')].find((m) => m.querySelector('.metric-kopf > span:first-child')!.textContent === t)!;
+    expect(kachel('GRZ').className).toBe('metric pruefung warnung');
+    expect(kachel('GRZ').querySelector('.marke')!.className).toBe('marke warnung');
+    expect(kachel('Vollgeschosse').className).toBe('metric pruefung fehler');
+    expect(kachel('Vollgeschosse').querySelector('.marke')!.textContent).toBe('unterschritten');
+    // Gegenprobe: ohne Mindestzahl eingehalten → kein Zustand an der Kachel
+    act(() => useGrz.getState().update((q) => ({ ...q, massNutzung: { ...q.massNutzung, vollgeschosseMin: undefined } })));
+    expect(kachel('Vollgeschosse').className).toBe('metric pruefung');
+  });
+
   it('Kennzahlen: höchstens fünf Kacheln, absolute Festsetzungen als Tabelle darunter', () => {
     const p = projekt();
     p.massNutzung = { ...p.massNutzung, planDatum: '2020-05-01', grAbsolut: 100, gfAbsolut: 400, bmz: 3 };
@@ -897,7 +913,12 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(titel.length).toBeLessThanOrEqual(5);
     expect(titel.some((t) => t?.includes('absolut'))).toBe(false);
     const zeilen = [...host.querySelectorAll('table.grz-absolut-tabelle tbody tr')];
-    expect(zeilen.map((z) => z.querySelector('td')!.textContent)).toEqual(['GR I', 'GR II (§ 19 Abs. 4 S. 2)', 'GF']);
+    expect(zeilen.map((z) => z.querySelector('.grz-absolut-name')!.textContent)).toEqual(['GR I', 'GR II', 'GF']);
+    // gemischte Tabelle (.text): Zahlenköpfe rechtsbündig über den Werten, Einheit am Wert; Name für Vorleseprogramme
+    const tabelle = host.querySelector('table.grz-absolut-tabelle')!;
+    expect(tabelle.classList.contains('text')).toBe(true);
+    expect(tabelle.querySelector('caption')!.textContent).toBe('Absolute Festsetzungen');
+    expect(zeilen[0].querySelector('td.num')!.textContent).toMatch(/ m²$/);
     // GR I 135 m² > 100 m² zulässig: Marke „überschritten“ in der Tabelle
     expect(zeilen[0].querySelector('.marke')!.className).toBe('marke fehler');
     // Gegenprobe: ohne absolute Festsetzung keine Tabelle
@@ -905,7 +926,7 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(host.querySelector('table.grz-absolut-tabelle')).toBeNull();
   });
 
-  it('Kennzahl-Karte: kurze Pille, Grund in der Unterzeile, Spanne der ungeklärten Flächen eigene Zeile', () => {
+  it('Kennzahl-Kachel: kurze Marke, Grund in der Unterzeile, Spanne der ungeklärten Flächen eigene Zeile', () => {
     const p = projekt();
     p.meta.grundstueck.flaeche = undefined;
     p.lageplan!.flaechen = [];
@@ -914,7 +935,7 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     const karte = host.querySelector('.grz-kennzahlen > .metric')!;
     // Aufbau der core-Kachel: Kopf (Bezeichnung + Marke), Wert als strong, Nebentext als small
     expect(karte.classList.contains('pruefung')).toBe(true);
-    expect(karte.querySelector(':scope > .metric-kopf > span')!.textContent).toBe('GRZ');
+    expect(karte.querySelector(':scope > .metric-kopf > span:first-child')!.textContent).toBe('GRZ');
     expect(karte.querySelector(':scope > strong')).not.toBeNull();
     // Statusmarke aus core; „fehlt“ ist neutral (keine Variante, kein Zustand an der Kachel)
     expect(karte.querySelector('.marke')!.textContent).toBe('fehlt');
@@ -926,8 +947,8 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(k2.querySelector(':scope > small.grz-metric-offen')!.textContent).toBe('mit ungeklärten Flächen bis 0,294');
     expect(k2.textContent).toContain('Reserve 110,00 m²');
     expect(k2.getAttribute('title')).toContain('GR 135,00 m² < 245,00 m² zulässig');
-    // Alarm nur an der überschrittenen Kennzahl (GFZ), Gegenprobe an der eingehaltenen GRZ
-    const kachel = (t: string) => [...host.querySelectorAll('.grz-kennzahlen > .metric')].find((m) => m.querySelector('.metric-kopf > span')!.textContent === t)!;
+    // Zustand fehler nur an der überschrittenen Kennzahl (GFZ), Gegenprobe an der eingehaltenen GRZ
+    const kachel = (t: string) => [...host.querySelectorAll('.grz-kennzahlen > .metric')].find((m) => m.querySelector('.metric-kopf > span:first-child')!.textContent === t)!;
     expect(kachel('GFZ').classList.contains('fehler')).toBe(true);
     expect(kachel('GFZ').querySelector('.marke')!.className).toBe('marke fehler');
     expect(kachel('GRZ').classList.contains('fehler')).toBe(false);

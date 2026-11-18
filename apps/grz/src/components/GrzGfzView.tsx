@@ -657,11 +657,11 @@ export function GrzGfzView() {
             {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
             <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" offenText="mit zu prüfenden Räumen bis" />
             {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
-            <div className={`metric pruefung${kachelZustand(n.vollgeschosse.status)}`}>
-              <span className="metric-kopf">
+            <div className={kachelKlasse(n.vollgeschosse.status)}>
+              <div className="metric-kopf">
                 <span>Vollgeschosse</span>
                 <StatusMarke s={n.vollgeschosse.status} />
-              </span>
+              </div>
               <strong>{roemisch(n.vollgeschosse.anzahl)}</strong>
               <small>{vollgeschosseZulaessig(n.vollgeschosse, '') || 'keine Festsetzung'}</small>
               <small>
@@ -962,27 +962,28 @@ function AbsolutTabelle({ zeilen }: { zeilen: { titel: string; a: Absolut | unde
   const da = zeilen.filter((z): z is { titel: string; a: Absolut; zusatz?: string } => z.a !== undefined);
   if (!da.length) return null;
   return (
-    <table className="summary-table grz-tabelle grz-absolut-tabelle">
+    <table className="summary-table text grz-tabelle grz-absolut-tabelle">
+      <caption className="unsichtbar">Absolute Festsetzungen</caption>
       <thead>
         <tr>
-          <th title="absolute Festsetzung der Grund- bzw. Geschossfläche in m²">absolut [m²]</th>
+          <th>Festsetzung</th>
           <th className="num">vorhanden</th>
           <th className="num">zulässig</th>
-          <th>Ergebnis</th>
         </tr>
       </thead>
       <tbody>
         {da.map((z) => (
           <tr key={z.titel}>
             <td>
-              {z.titel}
+              <span className="grz-absolut-name">{z.titel}</span>
               {z.zusatz && <span className="muted small-text"> ({z.zusatz})</span>}
+              {/* Ergebnis unter der Bezeichnung statt in eigener Spalte – so passt die Tabelle auch bei 320 px */}
+              <div>
+                <StatusMarke s={z.a.status} />
+              </div>
             </td>
-            <td className="num">{fmt2(z.a.flaeche)}</td>
-            <td className="num">{fmt2(z.a.zulaessig)}</td>
-            <td>
-              <StatusMarke s={z.a.status} />
-            </td>
+            <td className="num">{fmt2(z.a.flaeche)} m²</td>
+            <td className="num">{fmt2(z.a.zulaessig)} m²</td>
           </tr>
         ))}
       </tbody>
@@ -1009,14 +1010,14 @@ function TeilflaechenListe({ f }: { f: ReturnType<typeof rechenweg>['flaechen'][
 const autoVollgeschoss = (g: { vollgeschossAuto: boolean }) => `${g.vollgeschossAuto ? 'ja' : 'nein'} (auto)`;
 
 /** Variante der Marke je Prüfergebnis (offen/fehlt: neutral) */
-const MARKE: Record<Status, string> = { ok: ' ok', ueberschritten: ' fehler', unterschritten: ' fehler', pruefen: ' warnung', offen: '', fehlt: '' };
+const MARKE: Record<Status, '' | 'ok' | 'warnung' | 'fehler'> = { ok: 'ok', ueberschritten: 'fehler', unterschritten: 'fehler', pruefen: 'warnung', offen: '', fehlt: '' };
 
-/** Zustand der Kennzahl-Kachel als Innenrand aus core (fehler/warnung); der Zustand steht zusätzlich als Marke im Kopf */
-const kachelZustand = (s: Status) => (MARKE[s] === ' ok' ? '' : MARKE[s]);
+/** Klassen der Kennzahl-Kachel: Zustand als Innenrand aus core (fehler/warnung); er steht zusätzlich als Marke im Kopf */
+const kachelKlasse = (s: Status) => ['metric', 'pruefung', MARKE[s] === 'ok' ? '' : MARKE[s]].filter(Boolean).join(' ');
 
 export function StatusMarke({ s }: { s: Status }) {
   return (
-    <span className={`marke${MARKE[s]}`} title={STATUS[s].label}>
+    <span className={['marke', MARKE[s]].filter(Boolean).join(' ')} title={STATUS[s].label}>
       {STATUS[s].kurz ?? STATUS[s].label}
     </span>
   );
@@ -1043,11 +1044,11 @@ function KpiZeile({ titel, k, einheit, kurz, offenText = 'mit ungeklärten Fläc
   // Vergleich der Flächen (ehrlicher als die gerundete Kennzahl) im Tooltip; der Rechenweg zeigt die Formel
   const vergleich = flaechenVergleich(kurz, k);
   return (
-    <div className={`metric pruefung${kachelZustand(k.status)}`} title={vergleich}>
-      <span className="metric-kopf">
+    <div className={kachelKlasse(k.status)} title={vergleich}>
+      <div className="metric-kopf">
         <span>{titel}</span>
         <StatusMarke s={k.status} />
-      </span>
+      </div>
       <strong>{kennzahlWert(k)}</strong>
       <small>
         <span className="nowrap">

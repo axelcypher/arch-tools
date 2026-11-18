@@ -56,7 +56,7 @@ stehen die Kacheln GRZ/GFZ/Vollgeschosse untereinander) –, der Lageplan behäl
 im Kopf von Lageplan und Nachweis direkt hinter dem Titel. Die Kennzahlen stehen als Kacheln der Suite im Nachweis
 (höchstens fünf: GRZ, ggf. GRZ II, GFZ, ggf. BMZ, Vollgeschosse): Kopf aus Bezeichnung und Prüfergebnis als Marke
 (eingehalten, überschritten …), darunter der Wert und die Nebenzeilen (Fläche, Zulässiges, Reserve); eine
-Überschreitung rahmt die Kachel rot, „prüfen“ in der Warnfarbe. Absolute Festsetzungen (GR, GR II, GF in m²)
+Über- oder Unterschreitung rahmt die Kachel rot, „prüfen“ in der Warnfarbe. Absolute Festsetzungen (GR, GR II, GF in m²)
 stehen in einer Tabelle unter den Kacheln. In der Flächentabelle stehen Nutzung und Versiegelung untereinander in
 einer Spalte; die Spalte „GR“ zeigt die Anrechnung auf die Grundfläche.
 Der Lageplan ist bewusst eine normale Karte und keine reine Zeichenkarte: Werkzeuge, Plan (feste Höhe), Flächentabelle

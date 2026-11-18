@@ -178,10 +178,6 @@
   color: var(--ok-text);
   background: var(--ok-bg);
 }
-.pill.bad {
-  color: var(--fehler-text);
-  background: var(--fehler-bg);
-}
 .pill.warn {
   color: var(--warn-text);
   background: var(--warn-bg);
