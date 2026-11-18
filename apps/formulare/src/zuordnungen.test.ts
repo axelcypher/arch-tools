@@ -138,6 +138,15 @@ describe('Grundstück: Straße und Hausnummer getrennt, PLZ als Ergänzung der A
       ].map(([k, a]) => [k, a.wert]),
     );
     expect(werteBf).toEqual({ '0:Memo27': '48143', '0:Memo30': 'Kinderhaus' });
+    // Bauabgang: „Lage des Gebäudes: Gemeindeteil“
+    const ba = parseFormular(synthetischesFormular('nw010022', '2024G', [[{ name: 'Panel1', titel: 'Gebäude', felder: [{ art: 'memo' as const, name: 'Memo47', text: 'Gemeindeteil' }] }]]));
+    expect(
+      autoWerte(
+        ba,
+        ba.seiten.map((x, i) => felderDerSeite(x, i)),
+        pk,
+      ).get('0:Memo47')?.wert,
+    ).toBe('Kinderhaus');
     // Herkunft für den Dialog „Daten aktualisieren“
     expect(
       autoWerte(

@@ -54,7 +54,7 @@ export const ZUORDNUNG_KORREKTUREN: Record<string, ZuordnungKorrektur[]> = {
   // Erhebungsbögen der Bautätigkeitsstatistik: Anschrift des Baugrundstücks bzw. Gebäudes
   nw010020: [...strasseHausnummer('0:Memo25', '0:Memo26', '0:Memo27'), ...strasseHausnummer('2:Memo25', '2:Memo26', '2:Memo27'), gemeindeteil(['0:Memo30', '2:Memo30'])],
   nw010021: [...strasseHausnummer('0:Memo25', '0:Memo26', '0:Memo27'), gemeindeteil(['0:Memo30'])],
-  nw010022: strasseHausnummer('0:Memo5', '0:Memo34', '0:Memo35'),
+  nw010022: [...strasseHausnummer('0:Memo5', '0:Memo34', '0:Memo35'), gemeindeteil(['0:Memo47'])],
   // Baubeschreibung (Anlage I/7), Nr. 2: der Vordruck verknüpft das Feld nicht mit der Art der Nutzung der Projektkarte
   nw010010: [{ felder: ['0:Memo5'], titel: 'Art der Nutzung', grund: 'Nr. 2 Art der Nutzung aus der Projektkarte – im Vordruck nicht verknüpft, Ergänzung der App.' }],
 };
