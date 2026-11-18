@@ -8,7 +8,7 @@
   background: var(--text);
   color: var(--panel);
   padding: 6px 14px;
-  border-radius: 14px;
+  border-radius: 999px;
   z-index: 50;
   font-size: 12px;
   opacity: 0.92;
@@ -76,7 +76,7 @@
 .ava-marke {
   font-size: 10.5px;
   padding: 0 6px;
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--chip-bg);
   color: var(--muted);
   white-space: nowrap;
@@ -145,7 +145,7 @@
   width: 90px;
   height: 8px;
   background: var(--chip-bg);
-  border-radius: 4px;
+  border-radius: 999px;
   overflow: hidden;
   margin-top: 4px;
 }
@@ -170,7 +170,7 @@
   font-size: 10.5px;
   padding: 0 6px;
   margin-left: 6px;
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--chip-bg);
   color: var(--muted);
   vertical-align: 1px;
@@ -197,7 +197,7 @@
   width: 16px;
   text-align: center;
   font-size: 10.5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   margin-right: 2px;
   color: var(--muted);
   background: var(--chip-bg);
@@ -393,7 +393,7 @@
 
 .ava-langtext {
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--input-bg);
 }
 
@@ -434,7 +434,7 @@
   font: inherit;
   padding: 4px 6px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--input-bg);
   color: var(--text);
   resize: vertical;
@@ -580,7 +580,7 @@
   flex-wrap: wrap;
   padding: 8px 10px;
   background: var(--accent-soft);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   margin-top: 8px;
 }
 
@@ -657,7 +657,7 @@
 .ava-top {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   padding: 6px 8px;
   display: flex;
   flex-direction: column;
@@ -716,7 +716,7 @@
 .ava-notiz-neu {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -741,7 +741,7 @@
   align-items: flex-start;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   padding: 6px 8px;
 }
 
@@ -790,7 +790,7 @@
 .ava-mail-vorschau {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   padding: 10px 12px;
   position: sticky;
   top: 0;
@@ -809,7 +809,16 @@
   overflow: auto;
   background: var(--bg);
   padding: 8px;
-  border-radius: 4px;
+}
+
+/* in der Mail-Vorschau (selbst ein Kasten) eine Stufe kleiner */
+.ava-mail-text {
+  border-radius: var(--radius-xs);
+}
+
+/* in der Vorschau des Dialogs „Vorlagetexte“ steht der Text direkt in der Fläche: Kasten in einer Fläche */
+.ava-bib-text {
+  border-radius: var(--radius-s);
 }
 
 /* ---------- Dialoge ---------- */
@@ -838,7 +847,7 @@
 .ava-bib-liste {
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   margin: 0;
 }
 
@@ -1025,7 +1034,7 @@
   padding: 5px 8px;
   border: none;
   border-left: 3px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -1209,6 +1218,7 @@
   gap: 5px;
 }
 
+/* Farbfeld der Legende: Kleinstteil, rundet unter der Skala */
 .ava-legende-feld {
   display: inline-block;
   width: 14px;
@@ -1352,7 +1362,7 @@
 .ava-abnahme {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   padding: 8px 10px;
   margin: 6px 0;
 }
@@ -1413,7 +1423,7 @@
 .ava-ok {
   color: var(--ok-text);
   background: var(--ok-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 3px 8px;
 }
 
