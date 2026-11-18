@@ -897,8 +897,8 @@ button.link:focus-visible {
   cursor: default;
   resize: none;
 }
-/* Herkunft unter einem berechneten Feld: .field-hint („Summe aus …“), daneben bei Abweichung ein Knopf „Neu berechnen“ */
-/* ersetzt den Hinweis unter dem Feld (im Feldraster dieselbe Spur) */
+/* Herkunft unter einem berechneten Feld: .field-hint („Summe aus …“), daneben bei Abweichung ein Knopf „Neu berechnen“;
+   ersetzt den Hinweis unter dem Feld (im Feldraster dieselbe Spur) */
 .feld-herkunft {
   display: flex;
   flex-wrap: wrap;

@@ -366,12 +366,12 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   gemeinsame Meldung trägt `role="alert"` und erscheint erst, wenn der Fehler besteht.
 - **Berechnete Felder** (`input.berechnet` bzw. `textarea.berechnet`, z. B. Summen): Der Wert folgt aus anderen Angaben.
   Das Feld ist schreibgeschützt (`readOnly`, nicht `disabled`), bleibt also fokussierbar, kopierbar und wird vorgelesen;
-  Grund `--bg`, gestrichelter Rahmen, Schrift in Textfarbe; deshalb steht es nicht direkt auf `--bg` (dort fehlt der
-  Unterschied zur Fläche, nur die Strichelung bliebe). Darunter steht die Herkunft (`.feld-herkunft` mit `.field-hint`;
-  sie ersetzt den Hinweis unter dem Feld, z. B. „Summe aus Zeile 3 bis 5“, am Feld über `aria-describedby`); weicht der
-  eingetragene Wert ab (etwa aus einer Datei), steht daneben ein Knopf `small` „Neu berechnen“. Abgrenzung: `.feld-wert`
-  ist eine schreibgeschützte Angabe ohne Feld (Text neben Feldern), `.berechnet` ein Feld, dessen Wert sich ändern kann
-  und das wie die anderen Felder in der Reihe steht.
+  Grund `--bg`, gestrichelter Rahmen, Schrift in Textfarbe. Auf `--bg` als Grund fehlte der Unterschied zur Fläche; das
+  Feld steht deshalb in einer Karte oder einem Kasten auf `--panel`. Darunter steht die Herkunft (`.feld-herkunft` mit
+  `.field-hint`; sie ersetzt den Hinweis unter dem Feld, z. B. „Summe aus Zeile 3 bis 5“, am Feld über
+  `aria-describedby`); weicht der eingetragene Wert ab (etwa aus einer Datei), steht daneben ein Knopf `small` „Neu
+  berechnen“. Abgrenzung: `.feld-wert` ist eine schreibgeschützte Angabe ohne Feld (Text neben Feldern), `.berechnet`
+  ein Feld, dessen Wert sich ändern kann und das wie die anderen Felder in der Reihe steht.
 - `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht; gesperrt (auch mit `aria-disabled`)
   ohne Zeiger und mit Text in `--muted` – statt der Deckkraft gesperrter Knöpfe, damit der Text lesbar bleibt; rechts
   hält es `--s2` Abstand (am Ende von `.karte-aktionen` keinen, dort schließt es bündig ab).
