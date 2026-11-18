@@ -441,10 +441,9 @@
   width: 100%;
 }
 
-/* Felder außerhalb eines Feldrasters (Seitenkarte „Eigenschaften“, Dreierreihen): ohne den Außenabstand von .field,
-   den Abstand gibt dort der gap des Behälters */
-.ava-panel > .field,
-.ava-feld-reihe > .field {
+/* Felder außerhalb eines Feldrasters (Seitenkarte „Eigenschaften“): ohne den Außenabstand von .field, den Abstand
+   gibt dort der gap des Behälters */
+.ava-panel > .field {
   margin-bottom: 0;
 }
 
@@ -453,10 +452,32 @@
   margin-top: var(--s3);
 }
 
-.ava-feld-reihe {
-  display: grid;
+/* schreibgeschützte Angabe im Feldraster (Angabe in eingaben.tsx): Wert mittig zur Höhe der Felder daneben */
+.ava-angabe {
+  display: flex;
+  align-items: center;
+  min-height: var(--ctl-h);
+}
+
+/* Beträge rechtsbündig wie in den Zahlenfeldern (Tabellenziffern aus .num); die Beschriftung steht mit darüber, wie
+   der Kopf einer Zahlenspalte */
+.ava-angabe.num {
+  justify-content: flex-end;
+}
+
+.field:has(> .ava-angabe.num) > .field-label {
+  text-align: right;
+}
+
+/* Dreierreihen der Seitenkarte „Eigenschaften“: Feldraster mit fester Spaltenzahl (Felder fluchten, auch wenn eine
+   Beschriftung umbricht). Den Abstand zur nächsten Zeile gibt der gap der Seitenkarte (wie bei .ava-panel > .field),
+   sonst stünde er doppelt */
+.feldraster.ava-feld-reihe {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+}
+
+.feldraster.ava-feld-reihe > * {
+  margin-bottom: 0;
 }
 
 .ava-reihe {
@@ -469,13 +490,6 @@
 .ava-reihe > select {
   flex: 1;
   min-width: 0;
-}
-
-.ava-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
 }
 
 /* ---------- Angebote ---------- */
@@ -698,7 +712,7 @@
 .ava-top-angaben {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--s2);
   align-items: center;
   margin-left: auto;
 }
@@ -1010,7 +1024,7 @@
   }
 
   .ava-druck select,
-  .ava-druck .ava-check {
+  .ava-druck .toggle {
     display: none;
   }
 

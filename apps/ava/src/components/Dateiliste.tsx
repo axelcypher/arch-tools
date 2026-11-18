@@ -75,7 +75,7 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
     <AnsichtKarte
       titel="Dateien"
       aktionen={
-        <label className="ava-check">
+        <label className="toggle">
           <input type="checkbox" checked={archiv} onChange={(e) => setArchiv(e.target.checked)} /> Archiv zeigen
         </label>
       }

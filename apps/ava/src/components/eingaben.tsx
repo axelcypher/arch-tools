@@ -225,4 +225,15 @@ export function Feld({ label, children, hinweis, breit }: { label: string; child
   );
 }
 
+/** Beschriftete schreibgeschützte Angabe (kein Feld): `div` mit `.field-label`, der Wert steht in der Höhe der Felder
+ *  daneben; `zahl` für Beträge (rechtsbündig, Tabellenziffern wie in den Zahlenfeldern) */
+export function Angabe({ label, children, zahl }: { label: string; children: React.ReactNode; zahl?: boolean }) {
+  return (
+    <div className="field">
+      <span className="field-label">{label}</span>
+      <span className={zahl ? 'ava-angabe num' : 'ava-angabe'}>{children}</span>
+    </div>
+  );
+}
+
 export const datumKurz = (iso: string | undefined) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}` : '');

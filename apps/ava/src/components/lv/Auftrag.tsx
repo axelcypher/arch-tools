@@ -11,7 +11,7 @@ import { brutto, rangfolge, summen } from '../../lv/rechnen';
 import { ASLV_NICHT_GESPEICHERT } from '../../format/aslv';
 import { vollerPfad } from '../../dateien';
 import { gewerkOrdner, useAva } from '../../store';
-import { DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
+import { Angabe, DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
 
 /** Vergabe, Auftragssumme, Nachträge – und die Übernahme in den Kostenanschlag der Kostenkontrolle */
 export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
@@ -118,9 +118,9 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
             </table>
             {lv.auftrag && (
               <div className="feldraster">
-                <Feld label="Auftragnehmer">
+                <Angabe label="Auftragnehmer">
                   <strong>{auftragBieter?.name}</strong>
-                </Feld>
+                </Angabe>
                 <Feld label="Auftragsdatum" hinweis={nurAslv ? 'nur im eigenen Format (.oalv) speicherbar' : undefined}>
                   {nurAslv ? (
                     <input type="date" value={lv.auftrag.datum?.slice(0, 10) ?? ''} disabled title={aslvHinweis(ASLV_NICHT_GESPEICHERT.auftragDatum)} />
@@ -131,9 +131,9 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                 <Feld label="Auftragssumme netto" hinweis="leer = Angebot nach Nachlass">
                   <ZahlEingabe wert={lv.auftrag.summeNetto ?? null} stellen={2} onChange={(n) => aendern((l) => ({ ...l, auftrag: l.auftrag && { ...l.auftrag, summeNetto: n ?? undefined } }))} placeholder={euro(s?.bieter.get(lv.auftrag.bieterId)?.netto)} />
                 </Feld>
-                <Feld label="brutto">
+                <Angabe label="brutto" zahl>
                   <strong>{euro(brutto(auftragNetto, ust))}</strong>
-                </Feld>
+                </Angabe>
                 <div className="button-row feldraster-breit">
                   <button disabled={laeuft} onClick={() => void inKostenkontrolle(`${auftragBieter?.name ?? ''} Auftrag`.trim(), lv.auftrag!.datum, brutto(auftragNetto, ust), auftragBieter?.name)} title="Auftrag als neue Zeile in den Kostenanschlag des Gewerkblatts eintragen">
                     In die Kostenkontrolle übernehmen …
