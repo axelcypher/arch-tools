@@ -2135,7 +2135,7 @@ button.icon.fo-gl-zaehlt.an {
   margin: var(--s4) 0;
   padding: var(--s4);
   border: 1px dashed var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-s);
   max-width: 760px;
 }
 .es-adressbuch {
@@ -3010,7 +3010,7 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-gl-merkmal {
   margin: 4px 8px 6px;
   padding: 6px 8px;
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-xs);
   background: var(--warn-bg);
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
