@@ -1,6 +1,7 @@
-// Umfang der großen Regel-Matrizen (packages/baurecht-regeln/test/paket.test.ts) im PR: voll nur, wenn der PR etwas
+// Umfang der großen Regel-Matrizen (packages/baurecht-regeln/test/: fallmatrix, fragen, paket) im PR: voll nur, wenn der PR etwas
 // ändert, das die Auswertung von LEXIO erreichen kann – sonst die feste Stichprobe (wie lokal). Auf main, im
-// Release-Lauf (LEXIO und Arkly) und im Regel-Workflow bleibt es immer voll; dort wird dieses Skript nicht aufgerufen.
+// Release-Lauf (LEXIO-Job; Arkly nimmt die Stichprobe) und im Regel-Workflow bleibt es immer voll; dort wird dieses
+// Skript nicht aufgerufen.
 // Im Zweifel voll: Die Stichprobe gilt nur, wenn JEDE geänderte Datei sicher außerhalb liegt –
 //   - Doku und Notizen: docs/, .versionen/, .claude/, Markdown-Dateien
 //   - andere Apps: apps/<app>/ außer apps/baurecht/ (Arkly bettet LEXIO ein, wertet aber nicht selbst aus), solange

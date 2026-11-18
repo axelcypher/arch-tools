@@ -502,7 +502,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     let ampel: Ampel;
     let bestaetigend: string | undefined;
     let tragend: Bewertung[] = [];
-    // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `bedingung`
+    // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `regelteile`
     const warum = (k: Kurz | undefined, w: Wahrheit) => warumText(k, ctx, text, w);
     // eine fehlende Angabe als Text; ein Merkmal mit Vorbehalt ist angegeben, der Vorbehalt sagt, was fehlt („Planungsrecht
     // (für diesen Ort noch nicht bestätigt)“)
@@ -771,12 +771,6 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ...(systemVorbehalt.length ? { entfaelltVorbehalt: systemVorbehalt.join('; ') } : {}),
       ...(n.datei ? { regel: { datei: n.datei.datei, version: n.datei.regel.version, fassung: n.datei.regel.fassung } } : {}),
       ...(def.annahme ? { annahme: def.annahme } : {}),
-      bedingung: [
-        n.datei?.regel.geltung ? `Die Norm gilt, wenn: ${kurzText(n.datei.regel.geltung, text)}` : '',
-        r.gilt ? `Gilt, wenn: ${kurzText(r.gilt, text)}` : '',
-        r.entfaellt ? `Entfällt, wenn: ${kurzText(r.entfaellt, text)}` : '',
-        r.pruefen?.wenn ? `Einzelfall, wenn: ${kurzText(r.pruefen.wenn, text)}` : '',
-      ].filter(Boolean),
       regelteile: [
         ...(n.datei?.regel.geltung ? [{ titel: 'Die Norm gilt, wenn', kurz: n.datei.regel.geltung }] : []),
         ...(r.gilt ? [{ titel: 'Gilt, wenn', kurz: r.gilt }] : []),
@@ -855,12 +849,21 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   };
   // Hinweis: klaert setzt die Angabe ohne die Ableitungen (folgt) – eine ersetzte Frage (FaktDef.ersetzt) wirkt hier nur,
   // weil die Regel ihre Tatsachen auch selbst nennt (z. B. § 246e: „gilt“ mit neuen Wohnungen und Abweichung)
+  // Kontext mit einer gesetzten Antwort – je Angabe und Wert einmal gebaut (die Kopie der Fakten ist teuer), für alle Paragrafen
+  const mitCache = new Map<string, KurzKontext>();
+  const mit = (o: string, v: string | boolean): KurzKontext => {
+    const schluessel = `${o}\u0000${typeof v}\u0000${String(v)}`;
+    let c = mitCache.get(schluessel);
+    if (!c) {
+      c = o.startsWith('merkmal:') ? { ...ctx, merkmale: { ...ctx.merkmale, [o.slice(8)]: String(v) } } : { ...ctx, fakten: { ...ctx.fakten, [o]: { wert: v, herkunft: 'manuell', sicherheit: 'sicher' } } };
+      mitCache.set(schluessel, c);
+    }
+    return c;
+  };
   const klaert = (p: ParagrafErgebnis, o: string): boolean => {
     const werte = moeglich(o);
     if (!werte || !regelVon.has(p.id)) return true;
-    const mit = (v: string | boolean): KurzKontext =>
-      o.startsWith('merkmal:') ? { ...ctx, merkmale: { ...ctx.merkmale, [o.slice(8)]: String(v) } } : { ...ctx, fakten: { ...ctx.fakten, [o]: { wert: v, herkunft: 'manuell', sicherheit: 'sicher' } } };
-    const aus = new Set(werte.map((v) => ausgang(p.id, mit(v))));
+    const aus = new Set(werte.map((v) => ausgang(p.id, mit(o, v))));
     return aus.size > 1 || aus.has('gelb');
   };
   const karte = vorfragenKarte(faktDefs);
