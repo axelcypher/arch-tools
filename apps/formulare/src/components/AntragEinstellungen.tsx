@@ -53,7 +53,7 @@ export function AntragEinstellungen() {
           fokus="ablage.permio.antragsordner"
           erklaerung="Antragsordner, Namensvorlage, fester Zielordner, Suchordner der Berechnungen und Vorlagenordner stehen auf der Seite „Pfade und Benennung“."
         />
-        <div className="es-raster">
+        <div className="feldraster es-raster">
           <div>
             <span className="field-label">Antragsordner</span>
             <code>{e.antragsordner}</code>
@@ -102,7 +102,7 @@ export function AntragEinstellungen() {
         </label>
         <label className="radio-row">
           <input type="radio" name="export-ziel" checked={e.ziel === 'pfad'} onChange={() => entwurfSetzen('ziel', 'pfad')} />
-          <span className="es-breit">
+          <span className="es-radio-text">
             <strong>Fester Ordner im Projekt</strong> <code>{e.zielpfad}</code>
           </span>
         </label>
@@ -110,7 +110,7 @@ export function AntragEinstellungen() {
       </Karte>
 
       <Karte titel="Quellen und Vorlagen">
-        <div className="es-raster">
+        <div className="feldraster es-raster">
           <div>
             <span className="field-label">Berechnungen im Projektordner</span>
             <code>{e.berechnungsordner.split('\n').join(' · ')}</code>

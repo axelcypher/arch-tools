@@ -4516,6 +4516,9 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     let schreiben = 0;
     useFormulare.setState({ oapAendern: async (f) => (schreiben++, await tor, echt(f)) });
     const titel = () => host.querySelector<HTMLInputElement>('.pu-zeile .pu-bearbeiten input')!;
+    // Bearbeiten im Feldraster aus core, Knopfzeile über die ganze Breite
+    expect(host.querySelector('.pu-zeile .pu-bearbeiten')!.classList.contains('feldraster')).toBe(true);
+    expect(host.querySelector('.pu-zeile .pu-bearbeiten-knoepfe')!.classList.contains('feldraster-breit')).toBe(true);
     eingabe(titel(), 'LageplanA');
     eingabe(titel(), `${titel().value}B`);
     expect(titel().value).toBe('LageplanAB');

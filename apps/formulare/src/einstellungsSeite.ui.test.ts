@@ -38,5 +38,7 @@ describe('Seite PERMIO im Notbetrieb', () => {
     expect(tabellen.length).toBeGreaterThanOrEqual(2);
     for (const t of tabellen) expect(['summary-table', 'text'].every((k) => t.classList.contains(k))).toBe(true);
     expect(host.querySelector('table.es-katalog')!.classList.contains('felder')).toBe(true);
+    // Feldraster aus core (Beschriftung über dem Feld, Spalten nach Platz)
+    expect(host.querySelectorAll('.feldraster.es-raster').length).toBeGreaterThanOrEqual(2);
   });
 });

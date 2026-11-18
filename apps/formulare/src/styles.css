@@ -2667,27 +2667,16 @@ button.icon.ex-baum-pfeil {
   align-items: center;
   gap: 4px;
 }
+/* Bearbeiten im Antragsumfang: Feldraster aus core (Spalten ab 220px); Rand, Innenabstand und Knopfzeile sind App-Sache.
+   Felder über die ganze Breite stehen am Ende (kein dense: die Tab-Reihenfolge folgt der Anzeige) */
 .pu-bearbeiten {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  /* Felder über die ganze Breite stehen am Ende (kein dense: die Tab-Reihenfolge folgt der Anzeige) */
-  gap: 8px 12px;
-  padding: 8px 12px 12px;
+  --feld-min: 220px;
+  padding: var(--s2) var(--s3) var(--s3);
   border-top: 1px solid var(--line-soft);
 }
-.pu-bearbeiten label {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.pu-bearbeiten input,
-.pu-bearbeiten select {
-  width: 100%;
-}
 .pu-bearbeiten-knoepfe {
-  grid-column: 1 / -1;
   display: flex;
-  gap: 6px;
+  gap: var(--s2);
 }
 .pu-unten {
   display: flex;
@@ -2724,30 +2713,15 @@ button.icon.ex-baum-pfeil {
 
 /* ---------- Einstellungen: Antrag & Export ---------- */
 
+/* Feldraster aus core, Spalten ab 240px */
 .es-raster {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 8px 14px;
+  --feld-min: 240px;
 }
-.es-raster label {
+/* Text eines Optionsfelds mit Pfad: Titel und Pfad untereinander */
+.es-radio-text {
   display: flex;
   flex-direction: column;
   gap: 3px;
-}
-.es-raster input {
-  width: 100%;
-}
-.es-raster > div > .field-label {
-  display: block;
-}
-.es-breit {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.es-breit input {
-  width: 100%;
 }
 .es-platzhalter-zeile {
   display: flex;
@@ -3572,10 +3546,9 @@ tr[data-ziehen='danach'] > td {
 .es-dok-feld input {
   width: 100%;
 }
+/* Feldraster aus core, Spalten ab 240px */
 .es-dok-felder {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 8px 14px;
+  --feld-min: 240px;
 }
 .es-dok-gruppe {
   display: flex;
@@ -4681,19 +4654,10 @@ li.es-dok[data-ziehen='danach'] {
 .es-adress-form h4 {
   margin-top: 0;
 }
+/* Feldraster aus core, Spalten ab 180px; Name und Straße zweispaltig (.feldraster-zwei) */
 .es-adress-felder {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 8px 12px;
-  margin-bottom: 12px;
-}
-.es-adress-felder label {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.es-adress-felder label.breit {
-  grid-column: span 2;
+  --feld-min: 180px;
+  margin-bottom: var(--s3);
 }
 .es-adress-detail .es-titelzeile {
   flex-wrap: wrap;
@@ -4784,12 +4748,14 @@ li.es-dok[data-ziehen='danach'] {
 .es-feldblock p {
   margin: 0;
 }
-/* Namensvorlage im Export des Projekts: ganze Breite des Rasters */
-.pu-bearbeiten .pu-breit {
-  grid-column: 1 / -1;
+/* Namensvorlage bzw. fester Ordner im Export des Projekts (.feldraster-breit): Feld, Hinweise und Chips untereinander */
+.pu-breit {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--s1);
+}
+.pu-breit > .field {
+  margin-bottom: 0;
 }
 .pu-breit p {
   margin: 0;

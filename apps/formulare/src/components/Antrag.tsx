@@ -971,7 +971,7 @@ export function AntragsdatenAnsicht() {
                     </div>
                     {u.art === 'plansatz' && d.plansatz && plaeneOffen.includes(u.id) && <PlansatzListe id={`plaene-${u.id}`} r={d.plansatz} basis={basis} ordner={ordner} />}
                     {offen && !gesperrt && (
-                      <div className="pu-bearbeiten">
+                      <div className="feldraster pu-bearbeiten">
                         <label>
                           <span className="field-label">Titel</span>
                           <UebernahmeFeld
@@ -1029,7 +1029,7 @@ export function AntragsdatenAnsicht() {
                           <span className="field-label">Nur erforderlich, wenn …</span>
                           <BedingungEditor wert={u.bedingung} merkmale={st.merkmalDefinitionen} onChange={(b) => setzen(u.id, { bedingung: b })} />
                         </div>
-                        <div className="pu-bearbeiten-knoepfe">
+                        <div className="feldraster-breit pu-bearbeiten-knoepfe">
                           <button className="small" onClick={() => setBearbeiten(null)}>
                             Fertig
                           </button>
@@ -1098,7 +1098,7 @@ function ExportFuerProjekt() {
         <span className="muted small-text">{ueber ? ' – weicht von den Einstellungen ab' : ' – wie in den Einstellungen'} · gilt für alle Anträge des Projekts</span>
       </button>
       {offen && (
-        <div className="pu-bearbeiten">
+        <div className="feldraster pu-bearbeiten">
           <label>
             <span className="field-label">Antragsordner</span>
             <input value={ueber?.antragsordner ?? ''} placeholder={global.antragsordner} onChange={(e) => setzen({ antragsordner: e.target.value })} />
@@ -1112,8 +1112,8 @@ function ExportFuerProjekt() {
             </select>
           </label>
           {(ueber?.ziel ?? global.ziel) === 'pfad' && (
-            <div className="pu-breit">
-              <label>
+            <div className="feldraster-breit pu-breit">
+              <label className="field">
                 <span className="field-label">Fester Ordner</span>
                 <input ref={zielFeld} value={ueber?.zielpfad ?? ''} placeholder={globalZiel} onChange={(e) => setzen({ zielpfad: e.target.value })} aria-label="Fester Ordner" />
               </label>
@@ -1127,8 +1127,8 @@ function ExportFuerProjekt() {
           )}
           {/* über die ganze Breite, nach den schmalen Feldern (Tab-Reihenfolge = Lesereihenfolge): Feld, darunter Hinweis
               und ggf. Warnung (wie in den Einstellungen) */}
-          <div className="pu-breit">
-            <label>
+          <div className="feldraster-breit pu-breit">
+            <label className="field">
               <span className="field-label">Namensvorlage</span>
               <input
                 ref={vorlageFeld}
@@ -1158,7 +1158,7 @@ function ExportFuerProjekt() {
             />
           </div>
           {ueber && (
-            <div className="pu-bearbeiten-knoepfe">
+            <div className="feldraster-breit pu-bearbeiten-knoepfe">
               <button className="small" onClick={() => setUeberschreibung(null)}>
                 Vorgabe verwenden
               </button>
