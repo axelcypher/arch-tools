@@ -1,0 +1,6 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Eckenradien folgen jetzt der gemeinsamen Skala: Kästen und Knöpfe, Listenzeilen und Tastenkürzel runden einheitlich."
+  }
+}
