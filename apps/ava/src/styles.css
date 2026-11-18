@@ -831,6 +831,10 @@
   overflow: auto;
   background: var(--bg);
   padding: 8px;
+}
+
+/* in der Mail-Vorschau (selbst ein Kasten) eine Stufe kleiner */
+.ava-mail-text {
   border-radius: var(--radius-xs);
 }
 
