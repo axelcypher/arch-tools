@@ -958,6 +958,23 @@ button.icon.fo-gl-zaehlt.an {
   font-family: inherit;
   resize: vertical;
 }
+/* berechnete Felder (von FORMA gesperrt bzw. Summen der App, schreibgeschützt): ohne Feldgrund, gestrichelt – die Schrift
+   bleibt in Textfarbe, damit der Wert lesbar bleibt */
+.fo-feld :is(textarea, input[type='text']).berechnet {
+  background: var(--bg);
+  border-style: dashed;
+  border-color: var(--border);
+  color: var(--text);
+  cursor: default;
+  resize: none;
+  opacity: 1;
+}
+.fo-summe-aus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
 .fo-feld.geaendert {
   border-left-color: var(--sel);
 }
@@ -1920,7 +1937,8 @@ button.icon.fo-gl-zaehlt.an {
   outline: 1px solid var(--accent);
   background: var(--p-feld-fokus);
 }
-.fo-papier .fo-memo:disabled {
+.fo-papier .fo-memo:disabled,
+.fo-papier .fo-memo:read-only:not(:focus) {
   background: transparent;
   opacity: 1;
 }
