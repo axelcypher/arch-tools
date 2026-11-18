@@ -149,55 +149,39 @@
   display: flex;
   margin-top: 2px;
 }
-.kpis {
-  display: grid;
-  /* zwei Kacheln nebeneinander, wenn sie Platz haben (Zahl mit Einheit bricht nicht um); sonst untereinander */
-  grid-template-columns: repeat(auto-fit, minmax(12em, 1fr));
-  gap: 8px;
-  margin: 8px 0;
+/* Kennzahlen: Kacheln aus core (.metric-row/.metric); hier nur der Kopf mit Statusmarke, die Einheit am Wert, der
+   Hinweis auf offene Flächen und der Alarmzustand (core hat keine Warnvariante für Kennzahlen) */
+.grz-kennzahlen > .metric {
+  /* Zahl mit Einheit und Statusmarke brauchen etwa 12em; schmalere Karten stellen die Kacheln untereinander */
+  flex-basis: 12em;
 }
-.kpi {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-s);
-  padding: 8px 10px;
-  background: var(--bg);
+/* mehrere Nebenzeilen je Kachel: der Wert steht direkt unter dem Kopf (core schiebt ihn für eine Nebenzeile nach unten),
+   so liegen die Werte nebeneinanderstehender Kacheln auf einer Linie */
+.grz-kennzahlen > .metric > strong {
+  margin-top: 0;
 }
-.kpi.alarm {
-  border-color: var(--danger);
-}
-.kpi-head {
+.grz-metric-kopf {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 2px 6px;
-  font-size: 11px;
-  color: var(--muted);
+  gap: 2px var(--s1);
 }
-.kpi-value {
-  font-size: 22px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+.grz-metric-titel {
+  white-space: nowrap;
 }
-.kpi-value small {
-  font-size: 12px;
+.metric > strong small {
+  font-size: var(--fs-s);
   font-weight: 400;
   color: var(--muted);
 }
-.kpi-sub {
-  font-size: 11px;
-  color: var(--muted);
-}
-.kpi-titel {
-  white-space: nowrap;
-}
-.kpi-offen {
+.metric > small.grz-metric-offen {
   margin-top: 2px;
   color: var(--warn-text);
 }
-/* letzte Karte allein in der Zeile: über die volle Breite */
-.kpis > .kpi:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
+.metric.alarm {
+  /* Rand in --danger ohne Verschieben des Inhalts */
+  box-shadow: inset 0 0 0 1px var(--danger);
 }
 /* Zahl und Einheit nie trennen („100,00 m²“) */
 .nowrap,
@@ -209,7 +193,7 @@
 }
 .pill {
   display: inline-block;
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 999px;
@@ -234,7 +218,7 @@
 .grz-hinweise {
   padding-left: 18px;
   margin: 0 0 8px;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .grz-hinweise li {
   margin-bottom: 4px;
@@ -334,24 +318,24 @@
 .grz-report-hinweise {
   margin: 0;
   padding-left: 18px;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .grz-formeln {
   margin: 0 0 8px;
   padding-left: 18px;
-  font-size: 12px;
+  font-size: var(--fs-s);
   font-variant-numeric: tabular-nums;
 }
 .grz-rechenweg-app summary {
   cursor: pointer;
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--fs-s);
   margin: 10px 0 4px;
 }
 .grz-teile {
   margin: 4px 0 0;
   padding-left: 18px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -360,7 +344,7 @@
   display: flex;
   gap: 48px;
   margin-top: 36px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
@@ -532,7 +516,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
   box-shadow: var(--schatten-schwebend);
-  font-size: 11.5px;
+  font-size: var(--fs-s);
 }
 .lp-tasten-liste ul {
   margin: 2px 0 6px;
@@ -595,7 +579,7 @@
   padding: 0 2px 0 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .lp-chip.active {
   border-color: var(--sel);
@@ -630,7 +614,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
   box-shadow: var(--schatten-schwebend);
-  font-size: 12px;
+  font-size: var(--fs-s);
   text-align: center;
 }
 .lp-leer p {
@@ -657,7 +641,7 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .lp-plan-steuerung .toggle {
   margin-right: 0;

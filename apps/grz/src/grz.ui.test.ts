@@ -123,7 +123,7 @@ describe('TERRIO', () => {
     expect(text).toContain('Vollgeschosse nach BauO NW 1962/1970');
     expect(text).toContain('Räume in Nicht-Vollgeschossen');
     expect(host.querySelectorAll('.grz-skizze path').length).toBeGreaterThan(2);
-    expect(host.querySelectorAll('.kpi').length).toBe(3); // vor 1990: eine GRZ
+    expect(host.querySelectorAll('.grz-kennzahlen > .metric').length).toBe(3); // vor 1990: eine GRZ
   });
 
   it('Festsetzungen, Einstufung, Vollgeschoss und Aufenthaltsraum über die Oberfläche', () => {
@@ -575,7 +575,12 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     // schmale Fenster: die Untergrenze der Seitenkarten kommt aus BreitenLeiste min (core), keine eigene Regel;
     // die Kacheln stehen bei wenig Platz untereinander, die Zahlenspalten haben feste Breiten statt Prozent
     expect(css).not.toMatch(/--leiste-min/);
-    expect(css).toMatch(/\.kpis\s*\{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(12em, 1fr\)\)/);
+    // Kennzahlen aus core (.metric-row/.metric), keine eigenen Kachelregeln; App ergänzt nur Kopf, Offen-Hinweis und Alarm
+    expect(css).not.toMatch(/\.kpis?\b|\.kpi-/);
+    expect(css).toMatch(/\.grz-kennzahlen > \.metric\s*\{[^}]*flex-basis: 12em;/);
+    expect(css).toMatch(/\.metric\.alarm\s*\{[^}]*var\(--danger\)/);
+    // Schriftgrößen nur aus der Skala
+    expect(css.match(/font-size: [^;]+;/g)!.filter((f) => !/var\(--fs-(xs|s|m|l|xl)\)/.test(f))).toEqual([]);
     const spalten = css.slice(css.indexOf('.grz-vg-tabelle th:nth-child(1)'), css.indexOf('.grz-tabelle.grz-vg-tabelle th.num'));
     expect(spalten.match(/width: calc\([\d.]+ \* var\(--fs-m\)\)/g)).toHaveLength(4);
     expect(spalten).not.toMatch(/width: \d+(%|px)/);
@@ -609,7 +614,7 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(neu.classList.contains('grz-von-hand')).toBe(true);
     expect(neu.options[0].textContent).toBe('ja (auto)');
     expect(neu.title).toBe('EG: kein Vollgeschoss – von Hand festgelegt');
-    expect(host.querySelector('.kpis')!.textContent).toContain('davon eines von Hand festgelegt');
+    expect(host.querySelector('.grz-kennzahlen')!.textContent).toContain('davon eines von Hand festgelegt');
   });
 
   it('G-29: Pille begründet die Anrechnung und öffnet die passende Regel', async () => {
@@ -888,14 +893,21 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     p.lageplan!.flaechen = [];
     useGrz.getState().load(p);
     const host = render(GrzGfzView);
-    const karte = host.querySelector('.kpi')!;
+    const karte = host.querySelector('.grz-kennzahlen > .metric')!;
+    // Aufbau der core-Kachel: Kopf (Bezeichnung + Marke), Wert als strong, Nebentext als small
+    expect(karte.querySelector(':scope > .grz-metric-kopf .grz-metric-titel')!.textContent).toBe('GRZ');
+    expect(karte.querySelector(':scope > strong')).not.toBeNull();
     expect(karte.querySelector('.pill')!.textContent).toBe('fehlt');
     expect(karte.textContent).toContain('Grundstücksfläche fehlt');
     act(() => useGrz.getState().load(projekt()));
-    const k2 = host.querySelector('.kpi')!;
-    expect(k2.querySelector('.kpi-offen')!.textContent).toBe('mit ungeklärten Flächen bis 0,294');
+    const k2 = host.querySelector('.grz-kennzahlen > .metric')!;
+    expect(k2.querySelector(':scope > small.grz-metric-offen')!.textContent).toBe('mit ungeklärten Flächen bis 0,294');
     expect(k2.textContent).toContain('Reserve 110,00 m²');
     expect(k2.getAttribute('title')).toContain('GR 135,00 m² < 245,00 m² zulässig');
+    // Alarm nur an der überschrittenen Kennzahl (GFZ), Gegenprobe an der eingehaltenen GRZ
+    const kachel = (t: string) => [...host.querySelectorAll('.grz-kennzahlen > .metric')].find((m) => m.querySelector('.grz-metric-titel')!.textContent === t)!;
+    expect(kachel('GFZ').classList.contains('alarm')).toBe(true);
+    expect(kachel('GRZ').classList.contains('alarm')).toBe(false);
   });
 
   it('Wandzuschlag nur, wenn Aufenthaltsräume zur GF zählen – 1990 erst mit Festsetzung nach § 20 Abs. 3 S. 2', () => {
