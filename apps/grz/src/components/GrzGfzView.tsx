@@ -652,7 +652,7 @@ export function GrzGfzView() {
               </table>
             </div>
           )}
-          <div className="kpis">
+          <div className="metric-row grz-kennzahlen">
             <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
             {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
             <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" offenText="mit zu prüfenden Räumen bis" />
@@ -660,21 +660,21 @@ export function GrzGfzView() {
             {n.gr2Absolut && <AbsolutKpi titel="GR II absolut" a={n.gr2Absolut} zusatz="§ 19 Abs. 4 S. 2" />}
             {n.gfAbsolut && <AbsolutKpi titel="GF absolut" a={n.gfAbsolut} />}
             {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
-            <div className={`kpi${n.vollgeschosse.status === 'ueberschritten' || n.vollgeschosse.status === 'unterschritten' ? ' alarm' : ''}`}>
-              <div className="kpi-head">
-                <span className="kpi-titel">Vollgeschosse</span>
+            <div className={`metric${n.vollgeschosse.status === 'ueberschritten' || n.vollgeschosse.status === 'unterschritten' ? ' alarm' : ''}`}>
+              <span className="grz-metric-kopf">
+                <span className="grz-metric-titel">Vollgeschosse</span>
                 <StatusPill s={n.vollgeschosse.status} />
-              </div>
-              <div className="kpi-value">{roemisch(n.vollgeschosse.anzahl)}</div>
-              <div className="kpi-sub">{vollgeschosseZulaessig(n.vollgeschosse, '') || 'keine Festsetzung'}</div>
-              <div className="kpi-sub">
+              </span>
+              <strong>{roemisch(n.vollgeschosse.anzahl)}</strong>
+              <small>{vollgeschosseZulaessig(n.vollgeschosse, '') || 'keine Festsetzung'}</small>
+              <small>
                 Vollgeschosse:{' '}
                 {n.geschosse
                   .filter((g) => g.vollgeschoss)
                   .map((g) => g.name)
                   .join(', ') || 'keine'}
-              </div>
-              {vonHand > 0 && <div className="kpi-sub">davon {vonHand === 1 ? 'eines' : vonHand} von Hand festgelegt</div>}
+              </small>
+              {vonHand > 0 && <small>davon {vonHand === 1 ? 'eines' : vonHand} von Hand festgelegt</small>}
             </div>
           </div>
           <details className="grz-rechenweg-app">
@@ -954,18 +954,18 @@ export function kanteSetzen(pts: Point[], i: number, l: number): Point[] {
 /** absolute Festsetzung (GR/GF in m²) */
 function AbsolutKpi({ titel, a, zusatz }: { titel: string; a: NonNullable<ReturnType<typeof massNachweis>['grAbsolut']>; zusatz?: string }) {
   return (
-    <div className={`kpi${a.status === 'ueberschritten' ? ' alarm' : ''}`}>
-      <div className="kpi-head">
-        <span className="kpi-titel">{titel}</span>
+    <div className={`metric${a.status === 'ueberschritten' ? ' alarm' : ''}`}>
+      <span className="grz-metric-kopf">
+        <span className="grz-metric-titel">{titel}</span>
         <StatusPill s={a.status} />
-      </div>
-      <div className="kpi-value">
+      </span>
+      <strong>
         {fmt2(a.flaeche)} <small>m²</small>
-      </div>
-      <div className="kpi-sub">
+      </strong>
+      <small>
         zulässig <span className="nowrap">{fmt2(a.zulaessig)} m²</span>
         {zusatz && <span className="nowrap"> ({zusatz})</span>}
-      </div>
+      </small>
     </div>
   );
 }
@@ -1017,18 +1017,18 @@ function KpiZeile({ titel, k, einheit, kurz, offenText = 'mit ungeklärten Fläc
   // Vergleich der Flächen (ehrlicher als die gerundete Kennzahl) im Tooltip; der Rechenweg zeigt die Formel
   const vergleich = flaechenVergleich(kurz, k);
   return (
-    <div className={`kpi${k.status === 'ueberschritten' ? ' alarm' : ''}`} title={vergleich}>
-      <div className="kpi-head">
-        <span className="kpi-titel">{titel}</span>
+    <div className={`metric${k.status === 'ueberschritten' ? ' alarm' : ''}`} title={vergleich}>
+      <span className="grz-metric-kopf">
+        <span className="grz-metric-titel">{titel}</span>
         <StatusPill s={k.status} />
-      </div>
-      <div className="kpi-value">{kennzahlWert(k)}</div>
-      <div className="kpi-sub">
+      </span>
+      <strong>{kennzahlWert(k)}</strong>
+      <small>
         <span className="nowrap">
           {einheit} {fmt2(k.flaeche)} m²
         </span>
-      </div>
-      <div className="kpi-sub">
+      </small>
+      <small>
         {k.status === 'fehlt' ? (
           'Grundstücksfläche fehlt'
         ) : k.zulaessig === undefined ? (
@@ -1046,11 +1046,11 @@ function KpiZeile({ titel, k, einheit, kurz, offenText = 'mit ungeklärten Fläc
             )}
           </>
         )}
-      </div>
+      </small>
       {k.mitOffenen !== undefined && (
-        <div className="kpi-sub kpi-offen">
+        <small className="grz-metric-offen">
           {offenText} {kennzahlWert(k, k.mitOffenen)}
-        </div>
+        </small>
       )}
     </div>
   );

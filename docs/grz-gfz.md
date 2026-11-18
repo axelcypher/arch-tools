@@ -53,7 +53,9 @@ Die Oberfläche folgt dem Kartenlayout der Suite (Richtung C): Unter der Werkzeu
 Karte scrollt für sich; die linke und die rechte Karte lassen sich am Spalt in der Breite ziehen (Breite wird gemerkt).
 In schmalen Fenstern geben zuerst die Seitenkarten nach – die Eingaben bis 240 px, der Nachweis bis 320 px (dann
 stehen die Kacheln GRZ/GFZ/Vollgeschosse untereinander) –, der Lageplan behält möglichst seine Breite. Das „?“ steht
-im Kopf von Lageplan und Nachweis direkt hinter dem Titel. In der Flächentabelle stehen Nutzung und Versiegelung
+im Kopf von Lageplan und Nachweis direkt hinter dem Titel. Die Kennzahlen stehen als Kacheln der Suite im Nachweis: Kopf aus
+Bezeichnung und Prüfergebnis (eingehalten, überschritten …), darunter der Wert und die Nebenzeilen (Fläche, Zulässiges,
+Reserve); eine Überschreitung rahmt die Kachel rot. In der Flächentabelle stehen Nutzung und Versiegelung
 untereinander in einer Spalte; die Spalte „GR“ zeigt die Anrechnung auf die Grundfläche.
 Der Lageplan ist bewusst eine normale Karte und keine reine Zeichenkarte: Werkzeuge, Plan (feste Höhe), Flächentabelle
 und Eigenschaften der Auswahl gehören zusammen und scrollen gemeinsam.
