@@ -1,6 +1,6 @@
 [package]
 name = "ava"
-version = "0.28.4"
+version = "0.28.5"
 description = "Ausschreibung, Vergabe, Abrechnung und Bauleitung"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
