@@ -22,5 +22,7 @@ describe('Berechnete Felder', () => {
   it('Herkunft als Zeile unter dem Feld, im Feldraster in der Spur der Hinweise', () => {
     expect(regel('.feld-herkunft')).toMatch(/display:\s*flex/);
     expect(regel('.feldraster > :is(label, .field, :has(> .field-label)) > .feld-herkunft')).toMatch(/grid-row:\s*3/);
+    // außerhalb des Rasters kein eigener Abstand: den gibt der Behälter (gap von .field)
+    expect(regel('.feld-herkunft')).not.toMatch(/margin/);
   });
 });

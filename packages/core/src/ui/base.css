@@ -898,15 +898,16 @@ button.link:focus-visible {
   resize: none;
 }
 /* Herkunft unter einem berechneten Feld: .field-hint („Summe aus …“), daneben bei Abweichung ein Knopf „Neu berechnen“ */
+/* ersetzt den Hinweis unter dem Feld (im Feldraster dieselbe Spur) */
 .feld-herkunft {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s1) var(--s2);
-  margin-top: 2px;
 }
 .feldraster > :is(label, .field, :has(> .field-label)) > .feld-herkunft {
   grid-row: 3;
+  margin-top: 2px;
 }
 .feldraster > .feldraster-breit {
   grid-column: 1 / -1;
