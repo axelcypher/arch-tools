@@ -130,28 +130,16 @@
   border-bottom: 1px solid var(--line-soft);
   font-size: var(--fs-m);
 }
+/* Art des Befunds: Marke aus core, hier nur feste Breite und mittig, damit die Titel der Befunde fluchten */
 .po-befund-art {
   flex: 0 0 92px;
   align-self: flex-start;
-  text-align: center;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  padding: 1px var(--s2);
-  border-radius: 999px;
-  color: var(--muted);
-  background: var(--chip-bg);
+  justify-content: center;
 }
-.po-befunde li.ok .po-befund-art {
-  color: var(--ok-text);
-  background: var(--ok-bg);
-}
-.po-befunde li.warnung .po-befund-art {
-  color: var(--warn-text);
-  background: var(--warn-bg);
-}
-.po-befunde li.fehler .po-befund-art {
-  color: var(--fehler-text);
+/* Fehler-Marke fehlt in core noch (ans Designsystem gemeldet) – bis dahin wie die übrigen Varianten in den Fehlerfarben */
+.marke.fehler {
   background: var(--fehler-bg);
+  color: var(--fehler-text);
 }
 .po-pfade {
   margin: var(--s1) 0 0;
@@ -495,7 +483,7 @@
 .po-k-aktionen {
   display: none;
   margin-left: auto;
-  gap: 2px;
+  gap: var(--s1);
 }
 .po-k-zeile:hover .po-k-aktionen,
 .po-k-zeile.gewaehlt .po-k-aktionen {
@@ -1117,9 +1105,10 @@
   align-items: center;
   gap: var(--s2);
 }
-/* bündig unter dem Etikett der Art: Kästchen (13px + Außenrand des Browsers) und Abstand des Labels ergeben 28px */
+/* bündig unter dem Etikett der Art: Kästchen (13px + Außenrand des Browsers 4px + 3px = 20px) und der Abstand des
+   Labels (gap von .ka-wahl label) */
 .ka-ergebnis {
-  margin-left: calc(var(--s5) + var(--s1));
+  margin-left: calc(20px + var(--s2));
 }
 .ka-ergebnis.ok {
   color: var(--ok-text);

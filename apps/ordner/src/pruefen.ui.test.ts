@@ -84,6 +84,11 @@ describe('Prüfbericht', () => {
     const host = await pruefen(await projekt('2026-03-01'));
     expect(host.querySelector('.po-bericht-kopf h3')?.textContent).toContain('1 Abweichung');
     const befund = [...host.querySelectorAll('.po-befunde > li')].find((li) => li.textContent?.includes('Ordner der Struktur fehlen'))!;
+    // Art als Marke aus core, Abweichung in der Variante .warnung
+    expect(befund.querySelector('.po-befund-art')?.className).toBe('marke warnung po-befund-art');
+    expect(befund.querySelector('.po-befund-art')?.textContent).toBe('Abweichung');
+    // die Zeile trägt keine Klasse der Art (.hinweis wäre die schwebende Hinweis-Meldung aus core)
+    expect(befund.className).toBe('');
     expect(befund.querySelector('details summary')?.textContent).toBe('7 Ordner anzeigen');
     expect(befund.querySelector('details')?.hasAttribute('open')).toBe(false);
     expect(knopf(befund, '7 fehlende Ordner anlegen')).toBeTruthy();
