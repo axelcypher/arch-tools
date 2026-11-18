@@ -311,7 +311,7 @@ export function App() {
       <TitleBar app={APP_NAMEN.baurecht.name} name={name} dirty={dirty} ungespeichert={UNGESPEICHERT} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
       {project ? (
         <>
-          <h1 className="br-unsichtbar">
+          <h1 className="unsichtbar">
             {APP_NAMEN.baurecht.name} – {name}
           </h1>
           <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} onAntrag={(a) => void antragWechseln(a)} lageLaeuft={lageLaeuft} />
@@ -335,7 +335,7 @@ export function App() {
         </>
       ) : (
         <>
-          <h1 className="br-unsichtbar">{APP_NAMEN.baurecht.name}</h1>
+          <h1 className="unsichtbar">{APP_NAMEN.baurecht.name}</h1>
           <Start onWahl={() => setWahl(true)} />
         </>
       )}

@@ -17,16 +17,6 @@
   --br-gruen-rand: var(--ok-border);
 }
 
-.br-unsichtbar {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 .br-leise {
   color: var(--muted);
 }
@@ -181,14 +171,19 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   }
 }
 @container app (max-width: 1199px) {
-  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip). „Speichern“ kürzt
-     die Werkzeugleiste selbst (Kompaktstufe, `tb-text`) */
+  /* Beschriftungen von Antrag und Einreichung dann nur noch für Screenreader (wie .unsichtbar aus core, hier nur unter
+     dieser Breite), sichtbar steht der Name im Feld (aria-label, Tooltip). „Speichern“ kürzt die Werkzeugleiste selbst
+     (Kompaktstufe, `tb-text`) */
   .br-kopf-label {
     position: absolute;
     width: 1px;
     height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
     overflow: hidden;
     clip: rect(0 0 0 0);
+    clip-path: inset(50%);
     white-space: nowrap;
   }
 }
@@ -1171,24 +1166,33 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   }
 }
 
-/* Sprungmarken: unsichtbar, bis sie den Fokus haben (auch F6) */
+/* Sprungmarken: oben mittig über dem Inhalt (auch F6) */
 .br-sprung {
   position: absolute;
-  top: 4px;
+  top: var(--s1);
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
   display: flex;
   gap: var(--s1);
 }
+/* Sprungmarken: ohne Fokus nur für Screenreader (wie .unsichtbar aus core), mit Fokus voll sichtbar über dem Inhalt
+   (docs/design.md „Fokus und Tastatur“) – nie display: none */
 .br-sprung button:not(:focus) {
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
   padding: 0;
   overflow: hidden;
-  clip: rect(0 0 0 0);
   border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* mit Fokus hebt der Schatten sie von Karten mit ähnlichem Grund ab */
+.br-sprung button:focus {
+  box-shadow: var(--schatten-schwebend);
 }
 
 /* Zielgrößen mindestens 24 px */

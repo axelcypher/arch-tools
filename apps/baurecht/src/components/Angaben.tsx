@@ -688,7 +688,7 @@ function FaktZeile({
         ) : hilfeLang || wert?.wert != null ? (
           <details className="br-erklaerung">
             <summary>
-              Erläuterung<span className="br-unsichtbar"> zu {name}</span>
+              Erläuterung<span className="unsichtbar"> zu {name}</span>
             </summary>
             <div className="br-leise">{nb(def.hilfe ?? '')}</div>
           </details>
@@ -908,7 +908,7 @@ function ErlaeuterungGekuerzt({ text, name }: { text: string; name: string }) {
           {' '}
           <button type="button" className="small br-link br-mehr" aria-expanded={ganz} onClick={() => setGanz(!ganz)}>
             {ganz ? 'weniger' : 'mehr'}
-            <span className="br-unsichtbar"> Erläuterung zu {name}</span>
+            <span className="unsichtbar"> Erläuterung zu {name}</span>
           </button>
         </>
       )}
@@ -1122,7 +1122,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         </label>
       }
     >
-      <div className="br-unsichtbar" role="status" aria-live="polite">
+      <div className="unsichtbar" role="status" aria-live="polite">
         {ansage}
       </div>
       {/* bleibt beim Scrollen oben in der Karte stehen */}
@@ -1130,12 +1130,12 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         <input ref={suchfeld} type="search" data-f6-ziel="" placeholder="Angabe suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Angaben durchsuchen" />
       </div>
       {/* Suche: Trefferzahl bzw. „keine Angabe“ in einer stehenden Live-Region, entprellt (nicht bei jedem Tastendruck) */}
-      <div className="br-unsichtbar" role="status">
+      <div className="unsichtbar" role="status">
         {suchAnsage}
       </div>
       {/* stehende Live-Region für neue Widersprüche (eine neu eingefügte Region sagen manche Screenreader nicht an) –
           außerhalb der Liste, die sich bei jeder Antwort neu aufbaut */}
-      <div className="br-unsichtbar br-widerspruch-ansage" role="status">
+      <div className="unsichtbar br-widerspruch-ansage" role="status">
         {widerspruchAnsage}
       </div>
       <div className="br-angaben-liste">

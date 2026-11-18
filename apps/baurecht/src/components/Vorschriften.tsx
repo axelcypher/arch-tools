@@ -558,7 +558,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
           {/* sichtbar; für Screenreader steht derselbe Text (entprellt) in der Live-Region daneben */}
           <span aria-hidden="true">{trefferText}</span>
           {/* angesagt wird entprellt (nicht bei jedem Tastendruck) – wie in den Angaben */}
-          <span className="br-unsichtbar" aria-live="polite">
+          <span className="unsichtbar" aria-live="polite">
             {trefferAnsage}
           </span>
           {filterAktiv && treffer > 0 && (
