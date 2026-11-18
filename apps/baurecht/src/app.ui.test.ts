@@ -1390,24 +1390,30 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(d.textContent).toMatch(/\d\d\.\d\d\.\d{4}, \d\d:\d\d \(/);
   });
 
-  it('Vorschriften-Suche: Ansage entprellt, die sichtbare Zeile sofort', async () => {
+  it('Vorschriften-Suche: Ansage entprellt, die sichtbare Zeile sofort (Zeit kontrolliert, unabhängig vom Runner)', () => {
     const host = render();
     const feld = host.querySelector<HTMLInputElement>('.br-vorschriften input[type="search"], main input[type="search"]')!;
-    tippen(feld, 'Stellplatz');
-    const sichtbar = host.querySelector('.br-treffer > span')!.textContent ?? '';
     const live = () => host.querySelector('.br-treffer [aria-live]')!.textContent ?? '';
-    expect(sichtbar).toMatch(/von \d+ Paragrafen/);
-    expect(live()).toBe('');
-    // entprellt (450 ms in Vorschriften.tsx): erst still, dann angesagt – nach Zustand gewartet, nicht nach fester Zeit
-    await warten(200);
-    expect(live()).toBe('');
-    await vi.waitFor(
-      async () => {
-        await warten(50);
-        expect(live()).toBe(sichtbar);
-      },
-      LANGSAME_RUNNER,
-    );
+    // falsche Uhren erst nach dem Zeichnen: die Frist der Ansage (450 ms in Vorschriften.tsx) läuft dann nur, wenn der Test
+    // sie vorstellt – unter Last (echte Zeit) lief sie früher manchmal ab, bevor „noch still“ geprüft war
+    vi.useFakeTimers();
+    try {
+      tippen(feld, 'Stellplatz');
+      const sichtbar = host.querySelector('.br-treffer > span')!.textContent ?? '';
+      expect(sichtbar).toMatch(/von \d+ Paragrafen/);
+      expect(live()).toBe('');
+      act(() => void vi.advanceTimersByTime(440));
+      expect(live()).toBe('');
+      // weiteres Tippen innerhalb der Frist startet sie neu (entprellt, nicht nur verzögert)
+      tippen(feld, 'Stellplatz ');
+      act(() => void vi.advanceTimersByTime(440));
+      expect(live()).toBe('');
+      act(() => void vi.advanceTimersByTime(20));
+      expect(live()).toBe(host.querySelector('.br-treffer > span')!.textContent);
+      expect(live()).toMatch(/von \d+ Paragrafen/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Druck mit „ohne „entfällt““: das Ergebnis vermerkt, wie viele Vorschriften fehlen', async () => {
