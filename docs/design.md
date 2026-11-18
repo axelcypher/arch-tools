@@ -117,7 +117,19 @@ Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`spa
 Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
 stehen auf `--bg` mit `--radius-s`; bricht eine Bezeichnung um, bleiben die Werte einer Zeile auf einer Linie (Wert und
 Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie brechen in schmalen Karten um
-(Wunschbreite 9em, nie schmaler als ihr Inhalt). Mehr als vier oder fünf Kacheln gehören in eine Tabelle.
+(Wunschbreite 9em, nie schmaler als ihr Inhalt). Ergänzungen:
+
+- **Einheit am Wert:** `small` im `strong` (`<strong>0,42 <small>m²</small></strong>`), `--fs-s`, normal, `--muted`.
+- **Kennzahl mit Prüfergebnis** (`.metric.pruefung`, Wunschbreite 12em): oben der Kopf `.metric-kopf` aus Bezeichnung
+  und Marke rechts (`<div class="metric-kopf"><span>GRZ</span><span class="marke ok">eingehalten</span></div>`), gleich
+  darunter der Wert, dann beliebig viele Nebenzeilen (`small`). Der Wert steht oben, damit er bei unterschiedlich vielen
+  Nebenzeilen auf einer Linie bleibt; dafür die Bezeichnung kurz und einzeilig halten und in einer Zeile nicht mit
+  einfachen Kacheln mischen.
+- **Zustand:** `.metric.warnung` bzw. `.metric.fehler` (wie bei `.marke`) als Innenrand in `--warn-text` bzw.
+  `--fehler-text`; er verschiebt nichts. Der Zustand steht immer auch als Text (Marke oder Nebentext), die Farbe allein
+  reicht nicht.
+- **Anzahl:** Mehr als vier oder fünf Kacheln gehören nicht nebeneinander – die wichtigsten Werte als Kacheln, die
+  übrigen in einer Tabelle darunter.
 
 ## Überschriften
 
@@ -150,6 +162,11 @@ Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie b
   wechseln, Esc schließt und gibt den Fokus an den Knopf zurück. Esc über `useEscSchliessen`, damit Dialoge darunter
   offen bleiben. Andere Elemente (Kästchen, Text) stehen außerhalb der Menürolle. Vorbild: `ThemeMenu` in
   `TitleBar.tsx`.
+- Text nur für Screenreader (Tabellentitel `caption.unsichtbar`, Beschriftungen ohne sichtbaren Platz, Live-Regionen)
+  bekommt `.unsichtbar` aus core (gleichwertig `.nur-vorlesen`) – keine eigenen Regeln je App. Nicht `display: none`,
+  `visibility: hidden` oder das Attribut `hidden`: das nähme den Text auch dem Screenreader. Sprunglinks, die beim Fokus
+  erscheinen, blenden nur mit `:not(:focus)` aus und werden beim Fokus voll sichtbar, mit Fokusrahmen und über dem
+  Inhalt (Vorbild `.br-sprung` in LEXIO).
 - Symbolknöpfe ohne Text brauchen `aria-label` und `title`. Symbole lieber als SVG zeichnen als Schriftzeichen
   (◐ ☀ ☾ fallen je nach Schrift winzig oder gar nicht aus).
 
@@ -364,6 +381,28 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder (`.meldung.fehler` oder `.feld-meldung` mit `id`), an jedem betroffenen `NumberField`/`TextField`
   `ungueltig` und `fehlerId` setzen – das Feld wird rot markiert, `aria-invalid` und von der Meldung beschrieben. Die
   gemeinsame Meldung trägt `role="alert"` und erscheint erst, wenn der Fehler besteht.
+- **Berechnete Felder** (`input.berechnet` bzw. `textarea.berechnet`, z. B. Summen): Der Wert folgt aus anderen Angaben.
+  Das Feld ist schreibgeschützt (`readOnly`, nicht `disabled`), bleibt also fokussierbar, kopierbar und wird vorgelesen;
+  Grund `--bg`, gestrichelter Rahmen, Schrift in Textfarbe. Auf `--bg` als Grund fehlte der Unterschied zur Fläche; das
+  Feld steht deshalb in einer Karte oder einem Kasten auf `--panel`. Darunter steht die Herkunft (`.feld-herkunft` mit
+  `.field-hint`; sie ersetzt den Hinweis unter dem Feld, z. B. „Summe aus Zeile 3 bis 5“, am Feld über
+  `aria-describedby`); weicht der eingetragene Wert ab (etwa aus einer Datei), steht daneben ein Knopf `small` „Neu
+  berechnen“. Abgrenzung: `.feld-wert` ist eine schreibgeschützte Angabe ohne Feld (Text neben Feldern), `.berechnet`
+  ein Feld, dessen Wert sich ändern kann und das wie die anderen Felder in der Reihe steht (zu vorgegebenen Feldern mit
+  derselben Klasse siehe den nächsten Punkt).
+- **Von außen vorgegebene Felder** (im Vordruck gesperrt, z. B. von der Behörde auszufüllen) sind schreibgeschützt
+  (`readOnly`, nicht `disabled`) und tragen ebenfalls `.berechnet` – die Klasse steht hier für die Gestalt „nicht
+  einzutragen“, nicht für eine Berechnung –, darunter `.feld-herkunft` mit `.field-hint` (z. B. „Im Vordruck gesperrt“,
+  am Feld über `aria-describedby`; in einer papiergetreuen Ansicht ohne Platz dafür steht die Herkunft im `title`).
+  Kommen solche Felder gehäuft vor (Tabellen, Vordrucke) und wird ihr Inhalt für die Eingabe nicht gebraucht, sind sie
+  kein Tab-Stopp (`tabIndex={-1}`, auch die Weiterschaltung mit Enter überspringt sie); sonst stünden Dutzende
+  Tab-Stopps zwischen den Eingaben. Ein einzelnes vorgegebenes Feld außerhalb solcher Tabellen und Vordrucke bleibt
+  Tab-Stopp; in Vordrucken (PERMIO) gilt das grundsätzlich, ohne zu zählen. Erreichbar sind sie per Klick und über
+  Sprünge, die genau dieses Feld ansteuern (Prüfliste, Gliederung, Hinweis); dann werden sie samt Herkunft vorgelesen,
+  im Lesemodus des Screenreaders ohnehin. Summenfelder, deren Wert die App selbst berechnet (bei Abweichung mit „Neu
+  berechnen“), bleiben Tab-Stopps, weil sich ihr Wert mit den Eingaben ändert. Kästchen kennen kein `readOnly` und
+  bleiben `disabled`; ein ganz gesperrtes Formular sperrt alle Felder mit `disabled`. `.feld-wert` ist kein Feld und nie
+  fokussierbar.
 - `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht; gesperrt (auch mit `aria-disabled`)
   ohne Zeiger und mit Text in `--muted` – statt der Deckkraft gesperrter Knöpfe, damit der Text lesbar bleibt; rechts
   hält es `--s2` Abstand (am Ende von `.karte-aktionen` keinen, dort schließt es bündig ab).

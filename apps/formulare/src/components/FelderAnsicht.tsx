@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef } from 'react';
 import type { Feld } from '../forma/felder';
 import { abschnitte, abschnittsReihen, zeilen } from '../forma/felder';
 import { useMarkierung } from '../markierung';
@@ -17,6 +17,8 @@ import type { Plausi } from '../plausibel';
 import { useVorbelegt } from '../merkmalAbgleich';
 import { springeZuFeld } from '../navigation';
 import { anzahl } from '../text';
+import { kennung } from '../forma/formular';
+import { herkunft, IM_VORDRUCK_GESPERRT, rechne, summenVon } from '../summen';
 import { Karte, useRollendKopf } from '@core/ui/Karte';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
@@ -165,7 +167,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                   Seite {o.seite + 1} · {o.abschnitt}
                 </span>
                 {o.ungeklaert && (
-                  <span className="fo-gl-offen" title={`hängt ab von: ${o.fehlend.join(', ')} (nicht festgelegt)`}>
+                  <span className="marke warnung fo-gl-offen" title={`hängt ab von: ${o.fehlend.join(', ')} (nicht festgelegt)`}>
                     ungeklärt
                   </span>
                 )}
@@ -179,7 +181,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                 Hinweise <span className="muted">{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>
               </h3>
               {hinweise.map((h, i) => (
-                <div key={i} className={`fo-pruef-zeile hinweis${h.art === 'fehler' ? ' fehler' : ''}`}>
+                <div key={i} className={`fo-pruef-zeile warnung${h.art === 'fehler' ? ' fehler' : ''}`}>
                   <div className="fo-pruef-kopf">
                     <strong>{h.art === 'fehler' ? 'Widerspruch' : 'Hinweis'}</strong>
                     <span>{h.text}</span>
@@ -283,6 +285,8 @@ function FeldEingabe({
 }) {
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const werteSetzen = useFormulare((s) => s.werteSetzen);
+  const hinweisId = useId();
+  const feldId = useId();
   const wert = wertVon(offen, feld);
   const geaendert = feld.schluessel in offen.aenderungen;
   const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}${entfall ? (entfall.offen ? ' offen' : ' entfaellt') : ''}${vorbelegt ? ' vorbelegt' : ''}`;
@@ -293,10 +297,30 @@ function FeldEingabe({
     </>
   );
   const breite = { flexGrow: Math.max(40, feld.kasten.b) };
-  // von FORMA berechnete Felder trägt man nicht ein
-  const gesperrt = gesperrtFormular || feld.berechnet;
   const titel = feldTitel(feld, profil);
-  const hinweis = feld.berechnet ? `${titel} – wird berechnet` : feld.hinweis;
+  // Summenfelder (summen.ts): schreibgeschützt, aber fokussierbar (Sprung aus der Prüfliste, Vorlesen, Kopieren); darunter
+  // kurz, woraus die Summe besteht, im Tooltip ausführlich; weicht die eingetragene Summe ab, übernimmt „Neu berechnen“ sie
+  const summe = feld.berechnet ? summenVon(kennung(offen.formular)).find((x) => x.ziel === feld.schluessel) : undefined;
+  const nachSchluessel = (k: string) => offen.felder.flat().find((f) => f.schluessel === k);
+  const titelVon = (k: string) => {
+    const f = nachSchluessel(k);
+    return f ? feldTitel(f, profil) : k;
+  };
+  const textVon = (k: string) => {
+    const f = nachSchluessel(k);
+    const w = f && wertVon(offen, f);
+    return typeof w === 'string' ? w : '';
+  };
+  const berechnet = summe && rechne(summe.teile, textVon);
+  const neuBerechnen = summe && berechnet && !berechnet.ungueltig.length && typeof wert === 'string' && wert.trim() !== berechnet.wert ? berechnet.wert : undefined;
+  // berechnete Felder (von FORMA oder Summen der App) trägt man nicht ein: schreibgeschützt, aber fokussierbar und vorlesbar
+  // (Kästchen kennen kein readOnly – dort bleibt disabled); ganz gesperrt nur im gesperrten Formular
+  const gesperrt = gesperrtFormular || (feld.berechnet && feld.art === 'kreuz');
+  const nurLesen = feld.berechnet;
+  const summeAus = summe && herkunft(summe, titelVon);
+  // im Vordruck gesperrte Felder: berechnet (Summen, Kopfzeilen) oder von anderer Stelle auszufüllen (z. B. der Behörde) –
+  // die App weiß nicht, welches von beiden, deshalb neutral (die Oberfläche nennt kein anderes Programm)
+  const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? IM_VORDRUCK_GESPERRT}` : feld.hinweis;
 
   if (feld.art === 'kreuz') {
     // echte Entweder-oder-Fälle (Regel „genau eine“, z. B. Bauantrag/Vorbescheid, ja/nein) als Optionsfelder (U-04) –
@@ -328,6 +352,69 @@ function FeldEingabe({
   const text = typeof wert === 'string' ? wert : '';
   // einzeilige Felder können durch FORMAs Zeilenumbruch trotzdem mehrere Zeilen enthalten
   const einzeilig = feld.einzeilig && !text.includes('\n');
+  const eingabe = einzeilig ? (
+    <input
+      type="text"
+      id={feld.berechnet ? feldId : undefined}
+      className={feld.berechnet ? 'berechnet' : undefined}
+      value={text}
+      disabled={gesperrt}
+      readOnly={nurLesen}
+      aria-label={titel}
+      aria-describedby={feld.berechnet ? hinweisId : undefined}
+      tabIndex={feld.berechnet && !summe ? -1 : undefined}
+      data-feld={feld.schluessel}
+      onChange={(e) => wertSetzen(feld, e.target.value)}
+      onBlur={() => useFormulare.getState().feldVerlassen(feld)}
+    />
+  ) : (
+    <textarea
+      id={feld.berechnet ? feldId : undefined}
+      className={feld.berechnet ? 'berechnet' : undefined}
+      value={text}
+      disabled={gesperrt}
+      readOnly={nurLesen}
+      aria-label={titel}
+      aria-describedby={feld.berechnet ? hinweisId : undefined}
+      tabIndex={feld.berechnet && !summe ? -1 : undefined}
+      data-feld={feld.schluessel}
+      rows={Math.max(2, Math.min(12, text.split('\n').length + 1, Math.round(feld.kasten.h / 18)))}
+      onChange={(e) => wertSetzen(feld, e.target.value)}
+      onBlur={() => useFormulare.getState().feldVerlassen(feld)}
+    />
+  );
+  // berechnetes Feld: Hülle ohne <label> – Herkunft (und bei Summen „Neu berechnen“) stehen als Geschwister unter dem Feld,
+  // der Knopf gehört nicht zur Beschreibung des Felds. Von FORMA gesperrte Felder ohne Summe sind keine Tab-Stopps
+  // (Tabellen hätten sonst Dutzende zwischen den Eingaben), bleiben aber per Klick und Sprung erreichbar
+  if (feld.berechnet)
+    return (
+      <div className={klasse} title={hinweis} style={breite}>
+        {!ohneBeschriftung && (
+          <span className="field-label">
+            <label htmlFor={feldId}>{titel}</label>
+            {info}
+          </span>
+        )}
+        {ohneBeschriftung && info}
+        {eingabe}
+        <div className="feld-herkunft">
+          <span className="field-hint" id={hinweisId}>
+            {summe ? herkunft(summe, titelVon, true) : 'Im Vordruck gesperrt'}
+          </span>
+          {summe && neuBerechnen !== undefined && !gesperrtFormular && (
+            <button
+              type="button"
+              className="small"
+              aria-label={`„${titel}“ neu berechnen`}
+              title={`Summe der Angaben übernehmen: ${neuBerechnen || 'leer'}`}
+              onClick={() => werteSetzen([{ feld, wert: neuBerechnen }], 'Summe neu berechnet')}
+            >
+              Neu berechnen
+            </button>
+          )}
+        </div>
+      </div>
+    );
   return (
     <label className={klasse} title={hinweis} style={breite}>
       {!ohneBeschriftung && (
@@ -337,27 +424,7 @@ function FeldEingabe({
         </span>
       )}
       {ohneBeschriftung && info}
-      {einzeilig ? (
-        <input
-          type="text"
-          value={text}
-          disabled={gesperrt}
-          aria-label={titel}
-          data-feld={feld.schluessel}
-          onChange={(e) => wertSetzen(feld, e.target.value)}
-          onBlur={() => useFormulare.getState().feldVerlassen(feld)}
-        />
-      ) : (
-        <textarea
-          value={text}
-          disabled={gesperrt}
-          aria-label={titel}
-          data-feld={feld.schluessel}
-          rows={Math.max(2, Math.min(12, text.split('\n').length + 1, Math.round(feld.kasten.h / 18)))}
-          onChange={(e) => wertSetzen(feld, e.target.value)}
-          onBlur={() => useFormulare.getState().feldVerlassen(feld)}
-        />
-      )}
+      {eingabe}
     </label>
   );
 }

@@ -4,6 +4,8 @@ import { useMerkmalWerte } from '../merkmalWerte';
 import type { Plausi } from '../plausibel';
 import { plausibilitaet } from '../plausibel';
 import { formularKontext, leeresProfil, profilSchluessel } from '../profil';
+import { kennung } from '../forma/formular';
+import { summenVon } from '../summen';
 import type { OffenesFormular } from '../store';
 import { useProfil, wertVon } from '../store';
 import { PRUEFREGELN } from '../vorgaben/pruefregeln';
@@ -18,7 +20,7 @@ export function usePlausibel(offen: OffenesFormular): Plausi[] {
   const merkmale = useMerkmalWerte(offen);
   return useMemo(() => {
     const wert = (f: Parameters<typeof wertVon>[1]) => wertVon(offen, f);
-    return plausibilitaet(offen.felder, { ...leeresProfil(), ...roh }, formularKontext(merkmale, offen.felder.flat(), wert), wert, PRUEFREGELN[schluessel]);
+    return plausibilitaet(offen.felder, { ...leeresProfil(), ...roh }, formularKontext(merkmale, offen.felder.flat(), wert), wert, PRUEFREGELN[schluessel], summenVon(kennung(offen.formular)));
   }, [offen, roh, merkmale, schluessel]);
 }
 
@@ -38,7 +40,7 @@ export function HinweisSymbol({ hinweise, className = '', style, info }: { hinwe
       <button
         ref={knopf}
         type="button"
-        className={`fo-entfall-info hinweis${hinweise.some((h) => h.art === 'fehler') ? ' fehler' : ''} ${className}`}
+        className={`fo-entfall-info warnung${hinweise.some((h) => h.art === 'fehler') ? ' fehler' : ''} ${className}`}
         style={style}
         aria-label={text}
         data-info={info}

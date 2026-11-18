@@ -36,7 +36,8 @@ export function feldTasten(reihenfolge: Feld[]) {
     const wurzel = e.currentTarget;
     for (let i = index.get(schluessel)! + schritt; i >= 0 && i < reihenfolge.length; i += schritt) {
       const el = feldElement(reihenfolge[i].schluessel, wurzel);
-      if (el && !(el as HTMLInputElement).disabled) {
+      // gesperrte Felder und solche ohne Tab-Stopp (von FORMA gesperrt, tabIndex −1) überspringen
+      if (el && !(el as HTMLInputElement).disabled && el.tabIndex !== -1) {
         e.preventDefault();
         el.focus();
         el.scrollIntoView?.({ block: 'nearest' });
