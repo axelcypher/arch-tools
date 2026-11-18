@@ -28,11 +28,10 @@ describe('Ort: Festlegungen und Planungsrecht nach einem Adresswechsel', () => {
 
   it('die Festlegung trägt den Ort und wird nach einem Umzug überholt (nicht mehr grün)', () => {
     const st = useBaurecht.getState();
-    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'Begehung am 03.11.2026 ohne Befund', 'TP', {}, { 'merkmal:Vorhaben': 'Errichtung' });
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'TP', {}, { 'merkmal:Vorhaben': 'Errichtung' });
     const f = useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44'];
     expect(f.ort?.adresse).toMatch(/\|/);
     // der Ort landet auch in der Datei
-    useBaurecht.getState().festlegungenBestaetigen(['bund/bnatschg/44']);
     expect(baurechtAusRoh(aenderungenAnwenden(useBaurecht.getState().roh!)).pruefungen['BAUA 1'].festlegungen['bund/bnatschg/44'].ort).toEqual(f.ort);
     const stand = () => {
       const s = useBaurecht.getState();
@@ -129,13 +128,14 @@ describe('Runde 10: ältere Dateien, Speichern, Konflikte', () => {
     useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
   });
 
-  it('Festlegungen ohne Ort: „Für diesen Ort übernehmen“ ordnet sie zu, als Entwurf', () => {
+  it('Festlegungen ohne Ort: „Für diesen Ort übernehmen“ ordnet sie zu, sie gelten danach sofort', () => {
     const f = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, bestaetigt: '2026-11-12T10:00:00Z' };
     useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, festlegungen: { 'bund/bnatschg/44': f } } });
     useBaurecht.getState().festlegungenOrtUebernehmen(['bund/bnatschg/44']);
     const neu = useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44'];
     expect(neu.ort?.adresse).toBeTruthy();
-    expect(neu.bestaetigt).toBeUndefined();
+    expect(neu.bestaetigt).not.toBe(f.bestaetigt);
+    expect(neu.bestaetigt).toMatch(/^\d{4}-/);
   });
 
   it('Angaben von Hand aus älteren Dateien: negative Werte und halbe Anzahlen nur Hinweis, Lageangaben ohne Lagebezug nur Hinweis', () => {
@@ -237,12 +237,12 @@ describe('Runde 12: Planungsrecht beim Speichern, Suche', () => {
     const bytes = beispielOap();
     useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
   });
-  it('die Bestätigung des Planungsrechts steht beim Speichern zur Bestätigung an, mit Name und Datum; „ohne“ setzt sie zurück', () => {
+  it('die Bestätigung des Planungsrechts gilt sofort, mit Name und Datum; bis zum Speichern lässt sie sich zurücknehmen', () => {
     useBaurecht.getState().planungsrechtBestaetigen();
     const s = useBaurecht.getState();
     expect(s.pruefung.planungsrechtOrt).toMatchObject({ von: expect.any(String), am: expect.stringMatching(/^\d{4}-/) });
     expect(offeneBestaetigungen(s)).toContain(PLANUNGSRECHT);
-    useBaurecht.getState().aufDateistand([], [PLANUNGSRECHT]);
+    useBaurecht.getState().planungsrechtZuruecknehmen();
     expect(useBaurecht.getState().pruefung.planungsrechtOrt).toBeUndefined();
   });
   it('„Nr. 1a“, „Abs. 3a“, „§§ 30 ff.“, „LP I“', () => {

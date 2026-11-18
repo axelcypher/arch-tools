@@ -268,7 +268,7 @@ export interface FaktWert {
   sicherheit: 'sicher' | 'hinweis';
   /** warum nur Hinweis */
   grund?: string;
-  /** von Hand bestätigt: wer, wann, worauf gestützt; bei Geodaten die Lage, für die es gilt */
+  /** von Hand bestätigt: wer, wann (worauf gestützt nur aus älteren Dateien); bei Geodaten die Lage, für die es gilt */
   bestaetigt?: { von: string; am: string; grund?: string; lage?: string };
   /** Lage (Koordinaten), an der ein Geodienst abgefragt wurde */
   lage?: string;
@@ -308,7 +308,8 @@ export interface Ort {
 
 export interface Festlegung {
   ampel: Ampel;
-  grund: string;
+  /** Begründung – nur noch aus älteren Dateien (früher Pflicht); neue Festlegungen haben keine */
+  grund?: string;
   von: string;
   am: string;
   /** automatische Ampel beim Festlegen */
@@ -319,7 +320,7 @@ export interface Festlegung {
   sicherheit?: Record<string, FaktStatus>;
   /** Prüfsummen der Fundstellen beim Festlegen */
   stand?: Record<string, string>;
-  /** zweite Bestätigung beim Speichern (ISO) – fehlt = Entwurf */
+  /** seit wann sie gilt (ISO, beim Festlegen gesetzt) – fehlt nur bei Einträgen aus älteren Dateien (früher: Entwurf bis zur zweiten Bestätigung) */
   bestaetigt?: string;
   /** Ort beim Festlegen – eine Festlegung gilt nur für diesen Ort */
   ort?: Ort;

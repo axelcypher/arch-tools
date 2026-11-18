@@ -37,7 +37,7 @@ const tabStopp = (gewaehlt: boolean, erster: boolean, keinerGewaehlt: boolean) =
 /** Angaben, die an der Lage hängen (Schutzgebiete jedes Moduls, Werte aus Geodiensten): an die Lage gebunden */
 export const lagebezug = (def: FaktDef, wert: FaktWert | undefined) => ortsgebunden(def, wert);
 
-/** Angaben, die von Hand nur mit Begründung gesetzt werden: Schutzgebiete und Werte aus Geodiensten (ja/nein, Auswahl) */
+/** Angaben, die von Hand im Dialog bestätigt werden (Folgen sichtbar, ohne Texteingabe): Schutzgebiete und Werte aus Geodiensten (ja/nein, Auswahl) */
 export const mitBeleg = (def: FaktDef, wert: FaktWert | undefined) => (def.typ === 'janein' || def.typ === 'wahl') && (def.gruppe === 'schutz' || !!def.geodienst || wert?.herkunft === 'geodienst' || wert?.herkunft === 'modul');
 
 const HERKUNFT: Record<FaktWert['herkunft'], string> = {
@@ -89,8 +89,8 @@ function rueckfrageSichtbar(id: string, stand: Pruefstand): boolean {
 function planungsrechtGiltHier(klaert: number, ersatz?: () => void) {
   const st = useBaurecht.getState();
   st.planungsrechtBestaetigen();
-  // die Wirkung ansagen – die Zahl steht schon vorher da („klärt N“); bestätigt wird beim Speichern noch einmal
-  st.ansagen(`Planungsrecht für diesen Ort bestätigt${klaert ? ` – ${klaert === 1 ? 'eine Vorschrift entfällt' : `${klaert} Vorschriften entfallen`} jetzt` : ''}; beim Speichern noch einmal bestätigen`);
+  // die Wirkung ansagen – die Zahl steht schon vorher da („klärt N“)
+  st.ansagen(`Planungsrecht für diesen Ort bestätigt${klaert ? ` – ${klaert === 1 ? 'eine Vorschrift entfällt' : `${klaert} Vorschriften entfallen`} jetzt` : ''}`);
   if (ersatz) setTimeout(ersatz, 0);
   else st.fokusSetzen('merkmal:Planungsrecht');
 }
@@ -99,7 +99,8 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
   const eigene = useBaurecht((s) => s.pruefung.fakten);
   const merkmale = useBaurecht((s) => s.merkmale);
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
-  const planungsrechtEntwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(PLANUNGSRECHT));
+  // seit dem letzten Speichern für den Ort bestätigt: gilt schon, lässt sich bis zum Speichern zurücknehmen
+  const planungsrechtNeu = useBaurecht((s) => offeneBestaetigungen(s).includes(PLANUNGSRECHT));
   const planungsrechtOrt = useBaurecht((s) => s.pruefung.planungsrechtOrt);
   const fokus = useBaurecht((s) => s.fokus);
   const ref = useRef<HTMLElement>(null);
@@ -258,37 +259,39 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
               {(geaendert[m.name] ?? '') !== wert && <span className="br-marke" title="noch nicht gespeichert">geändert</span>}
             </div>
             {/* Stand der Bestätigung des Planungsrechts in einer eigenen Zeile unter dem Titel (die Frage behält die volle Breite) */}
-            {m.name === 'Planungsrecht' && wert && !fremd && (planungsrechtOffen || planungsrechtEntwurf || planungsrechtOrt?.von) && (
+            {m.name === 'Planungsrecht' && wert && !fremd && (planungsrechtOffen || planungsrechtNeu || planungsrechtOrt?.von) && (
               <div className="br-merkmal-marken">
-                {/* gespeichert und für diesen Ort bestätigt: wer und wann */}
-                {!planungsrechtOffen && !planungsrechtEntwurf ? (
-                  <span className="br-leise">
-                    für diesen Ort bestätigt ({planungsrechtOrt?.von}
-                    {planungsrechtOrt?.am ? `, ${datum(planungsrechtOrt.am)}` : ''})
-                  </span>
-                ) : planungsrechtOffen ? (
+                {/* für diesen Ort bestätigt: wer und wann (gilt sofort); seit dem letzten Speichern „geändert“ und „zurücknehmen“ */}
+                {planungsrechtOffen ? (
                   <span className="br-info-marke" title={planungsrechtOffen}>
                     nicht für diesen Ort bestätigt
                   </span>
                 ) : (
                   <>
-                    {/* für den Ort bestätigt, aber noch nicht gespeichert: zählt schon, die zweite Bestätigung kommt beim Speichern */}
-                    <span className="br-marke br-marke-entwurf" title="Bestätigung für diesen Ort – zählt schon, wird beim Speichern noch einmal abgefragt">
-                      Entwurf – beim Speichern bestätigen
+                    <span className="br-leise">
+                      für diesen Ort bestätigt ({planungsrechtOrt?.von}
+                      {planungsrechtOrt?.am ? `, ${datum(planungsrechtOrt.am)}` : ''})
                     </span>
-                    <button
-                      type="button"
-                      className="small br-link"
-                      aria-label="Bestätigung des Planungsrechts für diesen Ort zurücknehmen"
-                      title="Nur die Bestätigung für diesen Ort zurücknehmen – der gewählte Wert bleibt (dann „nicht für diesen Ort bestätigt“)"
-                      onClick={() => {
-                        useBaurecht.getState().aufDateistand([], [PLANUNGSRECHT]);
-                        useBaurecht.getState().ansagen('Bestätigung des Planungsrechts zurückgenommen');
-                        useBaurecht.getState().fokusSetzen('merkmal:Planungsrecht');
-                      }}
-                    >
-                      zurücknehmen
-                    </button>
+                    {planungsrechtNeu && (
+                      <>
+                        <span className="br-marke" title="gilt schon, noch nicht gespeichert">
+                          geändert
+                        </span>
+                        <button
+                          type="button"
+                          className="small br-link"
+                          aria-label="Bestätigung des Planungsrechts für diesen Ort zurücknehmen"
+                          title="Nur die Bestätigung für diesen Ort zurücknehmen – der gewählte Wert bleibt (dann „nicht für diesen Ort bestätigt“)"
+                          onClick={() => {
+                            useBaurecht.getState().planungsrechtZuruecknehmen();
+                            useBaurecht.getState().ansagen('Bestätigung des Planungsrechts zurückgenommen');
+                            useBaurecht.getState().fokusSetzen('merkmal:Planungsrecht');
+                          }}
+                        >
+                          zurücknehmen
+                        </button>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -481,15 +484,16 @@ function FaktZeile({
   alsKnoepfe?: boolean;
   defs?: Record<string, FaktDef>;
   unklar?: Unklar;
-  /** von Hand nur mit Beleg (z. B. ein Wert, der sich aus anderen ergibt, wird überstimmt) */
+  /** von Hand nur über den Bestätigungsdialog (z. B. ein Wert, der sich aus anderen ergibt, wird überstimmt) */
   belegPflicht?: boolean;
 }) {
   const fokus = useBaurecht((s) => s.fokus);
-  // weicht die Angabe von einem Wert ab, der sich aus anderen ergibt, gilt eine Antwort ebenfalls nur mit Beleg
+  // weicht die Angabe von einem Wert ab, der sich aus anderen ergibt, gilt eine Antwort ebenfalls nur bestätigt
   const mitBelegPflicht = belegPflicht || !!wert?.gegenFolge;
-  // nach dem Beleg-Dialog neu aufbauen: ein abgebrochener Dialog lässt sonst eine nicht übernommene Zahl im Feld stehen
+  // nach dem Bestätigungsdialog neu aufbauen: ein abgebrochener Dialog lässt sonst eine nicht übernommene Zahl im Feld stehen
   const dialogZu = useBelegDialogGeschlossen();
-  const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
+  // seit dem letzten Speichern bestätigt: gilt schon – „geändert“ wie an den Merkmalen
+  const neu = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // „<id>:bestaetigen“: direkt auf „Bestätigen …“ (z. B. vom Hinweis an festen Modulwerten zum Gemeindeschlüssel)
@@ -501,7 +505,7 @@ function FaktZeile({
     }
   }, [fokus, id]);
   const unsicher = wert?.sicherheit === 'hinweis' && !wert.bestaetigt;
-  // feste Werte des Moduls sind nicht änderbar; Werte nach Tabelle (z. B. Landschaftsplan nach Gemeinde) mit Beleg schon
+  // feste Werte des Moduls sind nicht änderbar; Werte nach Tabelle (z. B. Landschaftsplan nach Gemeinde) bestätigt schon
   const fest = wert?.herkunft === 'modul' && def.wert !== undefined;
   const name = faktName(def, id);
   // Lagebezug: bestätigen lässt sich nur ein Ergebnis der aktuellen Lage (sonst bliebe die Bestätigung wirkungslos)
@@ -563,7 +567,7 @@ function FaktZeile({
           alsKnoepfe={alsKnoepfe}
           unklar={unklar}
           onWert={(v) => {
-            // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
+            // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand über den Bestätigungsdialog
             if (v !== undefined && (mitBeleg(def, wert) || mitBelegPflicht)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
             // Angaben zur Lage an die aktuelle Lage binden (ohne gültige Koordinaten: null → nur Hinweis)
             else useBaurecht.getState().faktSetzen(id, v, benutzer(), undefined, lagebezug(def, wert) ? aktuelleLage(useBaurecht.getState().project).lage : undefined);
@@ -607,7 +611,7 @@ function FaktZeile({
                   )}
                 </>
               ) : (
-                <button type="button" className="small" data-bestaetigen="" aria-label={`${name} bestätigen …`} title={`${wert.grund ?? ''} – als gesichert übernehmen (mit Begründung)`} onClick={() => faktBestaetigenOeffnen(id, name, wert, lagebezug(def, wert))}>
+                <button type="button" className="small" data-bestaetigen="" aria-label={`${name} bestätigen …`} title={`${wert.grund ?? ''} – als gesichert übernehmen`} onClick={() => faktBestaetigenOeffnen(id, name, wert, lagebezug(def, wert))}>
                   Bestätigen …
                 </button>
               )}
@@ -616,10 +620,14 @@ function FaktZeile({
           {wert.bestaetigt && (
             <>
               <span className="br-leise" title={wert.bestaetigt.grund}>
-                {wert.herkunft === 'manuell' ? 'mit Beleg' : 'bestätigt'} ({wert.bestaetigt.von}
+                {wert.herkunft === 'manuell' ? 'von Hand bestätigt' : 'bestätigt'} ({wert.bestaetigt.von}
                 {wert.bestaetigt.am ? `, ${datum(wert.bestaetigt.am)}` : ''})
               </span>
-              {entwurf && <span className="br-marke br-marke-entwurf">Entwurf</span>}
+              {neu && (
+                <span className="br-marke" title="gilt schon, noch nicht gespeichert">
+                  geändert
+                </span>
+              )}
               {eigen && (
                 <button
                   type="button"
@@ -629,7 +637,7 @@ function FaktZeile({
                     useBaurecht.getState().bestaetigungZuruecknehmen(id);
                     fokusZurZeile();
                   }}
-                  title="Bestätigung bzw. Angabe mit Beleg zurücknehmen – es gilt wieder der Hinweis"
+                  title="Bestätigung bzw. bestätigte Angabe von Hand zurücknehmen – es gilt wieder der Hinweis"
                 >
                   zurücknehmen
                 </button>
@@ -643,9 +651,9 @@ function FaktZeile({
           )}
           <AusloeserMarken name={name} wert={wert} defs={defs} />
           {wert.gegenFolge && wert.herkunft === 'manuell' && !wert.bestaetigt && (
-            // die abweichende Angabe behalten: nur mit Beleg (Sonderfall) – dann ohne Widerspruch
-            <button type="button" className="small" aria-label={`${name}: mit Beleg übernehmen …`} title={`Weicht ab von: ${wert.gegenFolge} – als begründeter Sonderfall mit Beleg übernehmen`} onClick={() => faktSetzenOeffnen(id, name, wert.wert, lagebezug(def, wert))}>
-              Mit Beleg übernehmen …
+            // die abweichende Angabe behalten: bestätigt (Sonderfall) – dann ohne Widerspruch
+            <button type="button" className="small" aria-label={`${name}: als Sonderfall übernehmen …`} title={`Weicht ab von: ${wert.gegenFolge} – als Sonderfall bestätigt übernehmen`} onClick={() => faktSetzenOeffnen(id, name, wert.wert, lagebezug(def, wert))}>
+              Als Sonderfall übernehmen …
             </button>
           )}
           {belegPflicht && wert.ausFolge && (
@@ -798,8 +806,8 @@ function Vorfrage({ id, kinder, stand, klaerung, eigene, suche }: { id: string; 
 }
 
 /**
- * „Keine davon …“: alle offenen Vorfragen einer Gruppe auf einmal mit „nein“ – Schutzgebiete und Geodaten von Hand nur mit
- * Beleg, und zwar je Vorfrage einem eigenen (eine Auskunft der Naturschutzbehörde belegt kein Denkmal); sonst sofort.
+ * „Keine davon …“: alle offenen Vorfragen einer Gruppe auf einmal mit „nein“ – Schutzgebiete und Geodaten über einen
+ * Dialog, der jede Vorfrage und die Folgen nennt (ein Klick, ohne Texteingabe); sonst sofort.
  * Steht über den Vorfragen der Gruppe, ab zwei offenen. Danach geht der Fokus auf die erste dieser Vorfragen (die Zeile
  * mit dem Knopf verschwindet), angesagt wird einmal für alle.
  */
@@ -825,7 +833,7 @@ function VorfragenSammel({ gruppe, titel, ids, stand }: { gruppe: string; titel:
       <span className="br-leise" id={textId}>
         {ids.length} Vorfragen offen – trifft keine zu?
       </span>
-      <button type="button" className="small" aria-describedby={textId} title={`Alle mit „nein“ beantworten (je mit Beleg): ${namen.join(', ')}`} onClick={keineDavon}>
+      <button type="button" className="small" aria-describedby={textId} title={`Alle mit „nein“ beantworten: ${namen.join(', ')}`} onClick={keineDavon}>
         Keine davon …
       </button>
     </div>
@@ -835,7 +843,7 @@ function VorfragenSammel({ gruppe, titel, ids, stand }: { gruppe: string; titel:
 /**
  * Werte, die sich aus anderen Angaben ergeben (FaktDef.folgt): keine Fragen, aufklappbar am Ende ihrer Gruppe genannt –
  * mit dem Grund. Ändern heißt die Ausgangsangabe ändern; „Überstimmen …“ (Sonderfall) stellt die Frage, eine Antwort
- * dann nur mit Beleg.
+ * dann über den Bestätigungsdialog.
  */
 function ErgibtSich({ ids, stand, suche }: { ids: string[]; stand: Pruefstand; suche: string }) {
   const { faktDefs: defs, fakten } = stand.auswertung;
@@ -843,7 +851,7 @@ function ErgibtSich({ ids, stand, suche }: { ids: string[]; stand: Pruefstand; s
     // während der Suche aufgeklappt (wie Vorfragen und Merkmale) – sonst stünde ein Treffer verborgen da
     <details className="br-ergibt" open={suche ? true : undefined}>
       <summary>Ergibt sich aus anderen Angaben ({ids.length})</summary>
-      <p className="br-leise">Zum Ändern die Angabe ändern, aus der der Wert folgt. Überstimmen nur in einem begründeten Sonderfall.</p>
+      <p className="br-leise">Zum Ändern die Angabe ändern, aus der der Wert folgt. Überstimmen nur in einem Sonderfall.</p>
       <ul>
         {ids.map((id) => {
           const name = faktName(defs[id], id);
@@ -856,7 +864,7 @@ function ErgibtSich({ ids, stand, suche }: { ids: string[]; stand: Pruefstand; s
                   type="button"
                   className="small br-link"
                   aria-label={`${name} überstimmen …`}
-                  title="Nur für einen begründeten Sonderfall – die Antwort braucht dann einen Beleg"
+                  title="Nur für einen Sonderfall – die Antwort wird dann eigens bestätigt"
                   onClick={() => {
                     useBaurecht.setState((s) => ({ ueberstimmen: { ...s.ueberstimmen, [id]: true } }));
                     useBaurecht.getState().fokusSetzen(id);

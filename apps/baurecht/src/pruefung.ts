@@ -274,44 +274,6 @@ function dateistand(ids: string[]): { datei: Record<string, FaktWert>; prDatei: 
   }
   return { datei, prDatei: ids.includes(PLANUNGSRECHT) ? s.pruefungDatei.planungsrechtOrt : s.pruefung.planungsrechtOrt };
 }
-export interface FolgeBeimSpeichern {
-  herab: Herabstufung[];
-  /** so viele dieser Herabstufungen bewirkt auch eine andere offene Bestätigung (`mit`) */
-  auch?: { anzahl: number; mit: string[] };
-}
-
-/**
- * Folgen der noch nicht gespeicherten Bestätigungen (Angaben bzw. PLANUNGSRECHT) gegenüber dem Stand der Datei: je Punkt
- * allein (Datei + nur dieser Punkt) – mit Vermerk, was ein anderer Punkt ebenso bewirkt – und alle zusammen. So fehlt
- * nichts, wenn zwei Bestätigungen dieselbe Vorschrift entscheiden (z. B. Gemeindeschlüssel und Planungsrecht).
- */
-export function folgenBeimSpeichern(ids: string[], jetzt: Auswertung): { je: Record<string, FolgeBeimSpeichern>; zusammen: Herabstufung[] } {
-  const s = useBaurecht.getState();
-  const { datei, prDatei } = dateistand(ids);
-  const basis = auswertungMit(datei, { planungsrechtOrt: prDatei });
-  const je: Record<string, FolgeBeimSpeichern> = {};
-  for (const id of ids) {
-    let mit: Auswertung;
-    // nur ein Punkt offen: „Datei + dieser Punkt“ ist der jetzige Stand
-    if (ids.length === 1) mit = jetzt;
-    else if (id === PLANUNGSRECHT) mit = auswertungMit(datei, { planungsrechtOrt: s.pruefung.planungsrechtOrt });
-    else {
-      const e = { ...datei };
-      if (s.pruefung.fakten[id]) e[id] = s.pruefung.fakten[id];
-      else delete e[id];
-      mit = auswertungMit(e, { planungsrechtOrt: prDatei });
-    }
-    je[id] = { herab: herabstufungen(basis, mit) };
-  }
-  for (const id of ids) {
-    const andere = ids.filter((x) => x !== id && je[x].herab.length);
-    // dieselbe Vorschrift mit demselben Ziel (eine andere Zielampel ist keine Überschneidung)
-    const gleich = (h: Herabstufung, k: Herabstufung) => k.id === h.id && k.nach === h.nach;
-    const auch = je[id].herab.filter((h) => andere.some((x) => je[x].herab.some((k) => gleich(h, k))));
-    if (auch.length) je[id].auch = { anzahl: auch.length, mit: andere.filter((x) => je[x].herab.some((k) => auch.some((a) => gleich(a, k)))) };
-  }
-  return { je, zusammen: herabstufungen(basis, jetzt) };
-}
 
 /** Paragrafen, deren Ampel an noch nicht gespeicherten Bestätigungen hängt (Vergleich mit dem Stand der Datei) */
 export function anUngespeichertem(ids: string[], jetzt: Auswertung): number {

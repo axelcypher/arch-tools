@@ -285,7 +285,7 @@ describe('Ampel je Paragraf', () => {
   });
 
   it('Festlegung von Hand geht vor und wird überholt, wenn sich danach etwas ändert', () => {
-    const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' } };
+    const fl = { ampel: 'gruen' as const, von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, bestaetigt: '2026-11-12T10:00:00Z' };
     const a = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl } }));
     expect(p(a, 'bund/bnatschg/44')).toMatchObject({ ampel: 'gruen', automatisch: 'rot' });
     expect(p(a, 'bund/bnatschg/44').ueberholt).toBeUndefined();
@@ -296,8 +296,16 @@ describe('Ampel je Paragraf', () => {
     expect(p(b, 'bund/bnatschg/44').ampel).not.toBe('gruen');
   });
 
+  it('Festlegung ohne Zeitpunkt (ältere Datei, früher Entwurf) ist überholt und trägt kein „entfällt“', () => {
+    const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' } };
+    const q = p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl } })), 'bund/bnatschg/44');
+    expect(q.ueberholt).toMatch(/ohne Zeitpunkt getroffen – ältere Datei/);
+    expect(q.ampel).not.toBe('gruen');
+    expect(q.gruende[0]).toMatch(/Festlegung „entfällt“ überholt .* erneut festlegen oder aufheben/);
+  });
+
   it('Festlegung wird überholt, wenn ein beteiligtes Merkmal widersprüchlich wird (gleicher Wert)', () => {
-    const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, sicherheit: { 'merkmal:Vorhaben': 'sicher' as const } };
+    const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, sicherheit: { 'merkmal:Vorhaben': 'sicher' as const }, bestaetigt: '2026-11-12T10:00:00Z' };
     expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl } })), 'bund/bnatschg/44').ueberholt).toBeUndefined();
     const b = auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, widersprueche: new Set(['Vorhaben']) }));
     expect(p(b, 'bund/bnatschg/44').ueberholt).toMatch(/jetzt widersprüchlich/);
@@ -569,7 +577,7 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
 
 describe('Runde 9: kein falsches Grün über Ort und Schwellen', () => {
   const ort = { adresse: 'musterweg 1|59494|soest|||', lage: '420000,5710000' };
-  const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, ort };
+  const fl = { ampel: 'gruen' as const, grund: 'Begehung ohne Befund', von: 'TP', am: '2026-11-12', automatisch: 'rot' as const, fakten: { 'merkmal:Vorhaben': 'Errichtung' }, ort, bestaetigt: '2026-11-12T10:00:00Z' };
   it('eine Festlegung gilt nur am Ort, an dem sie getroffen wurde', () => {
     expect(p(auswerten(eingabe({ festlegungen: { 'bund/bnatschg/44': fl }, ort })), 'bund/bnatschg/44')).toMatchObject({ ampel: 'gruen' });
     // andere Anschrift: überholt, nicht mehr grün

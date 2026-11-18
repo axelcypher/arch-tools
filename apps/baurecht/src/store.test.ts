@@ -24,14 +24,14 @@ describe('Zustand der App', () => {
     expect(istGeaendert(s)).toBe(false);
   });
 
-  it('Festlegung ist Entwurf, bis sie bestätigt wird; geänderte Merkmale und Prüfung landen in projekt.json', () => {
+  it('Festlegung gilt sofort (mit Zeitpunkt, ohne Begründung), ist bis zum Speichern ungespeichert; geänderte Merkmale und Prüfung landen in projekt.json', () => {
     const st = useBaurecht.getState();
-    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'Begehung am 03.11.2026 ohne Befund', 'TP', { '44/1': 'abcd1234' }, { 'merkmal:Vorhaben': 'Errichtung' });
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'TP', { '44/1': 'abcd1234' }, { 'merkmal:Vorhaben': 'Errichtung' });
     st.merkmalSetzen('Gebäudeklasse', '2');
     st.faktSetzen('gebaeude.beheizt', true, 'TP');
     expect(istGeaendert(useBaurecht.getState())).toBe(true);
     expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
-    useBaurecht.getState().festlegungenBestaetigen(['bund/bnatschg/44']);
+    expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44'].bestaetigt).toMatch(/^\d{4}-/);
     const roh = aenderungenAnwenden(useBaurecht.getState().roh!);
     expect(merkmaleAusRoh(roh, 'BAUA 1')['Gebäudeklasse']).toBe('2');
     const p = baurechtAusRoh(roh).pruefungen['BAUA 1'];
@@ -48,7 +48,7 @@ describe('Zustand der App', () => {
     const st = useBaurecht.getState();
     st.faktSetzen('schutz.lsg', false, 'TP');
     st.geoFakten({ 'schutz.nsg': { wert: false, herkunft: 'geodienst', sicherheit: 'hinweis', lage: '1,1' } });
-    st.faktBestaetigen('schutz.nsg', useBaurecht.getState().pruefung.fakten['schutz.nsg'], 'TP', 'Auskunft UNB vom 02.11.2026', '1,1');
+    st.faktBestaetigen('schutz.nsg', useBaurecht.getState().pruefung.fakten['schutz.nsg'], 'TP', '1,1');
     st.geoFakten({ 'schutz.lsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS' }, 'schutz.nsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS', lage: '1,1' } });
     const f = useBaurecht.getState().pruefung.fakten;
     expect(f['schutz.lsg']).toMatchObject({ wert: false, herkunft: 'manuell' });
@@ -57,36 +57,36 @@ describe('Zustand der App', () => {
     expect(f['schutz.nsg'].bestaetigt).toBeUndefined();
   });
 
-  it('aufgehobene Festlegungen und neue Bestätigungen sind offen; „ohne“ setzt sie auf den Stand der Datei', () => {
+  it('aufgehobene Festlegungen und neue Bestätigungen sind bis zum Speichern offen', () => {
     const st = useBaurecht.getState();
-    st.festlegen(ergebnis('bund/bnatschg/44'), 'rot', 'Festlegung mit Begründung', 'TP', {}, {});
-    st.festlegungenBestaetigen(['bund/bnatschg/44']);
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'rot', 'TP', {}, {});
     useBaurecht.getState().gespeichert(aenderungenAnwenden(useBaurecht.getState().roh!));
     expect(offeneFestlegungen(useBaurecht.getState())).toEqual([]);
     useBaurecht.getState().festlegungAufheben('bund/bnatschg/44');
     expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
-    useBaurecht.getState().faktBestaetigen('gebaeude.nutzflaeche', { wert: 40, herkunft: 'flaechen', sicherheit: 'hinweis' }, 'TP', 'Modell vollständig geprüft');
+    useBaurecht.getState().faktBestaetigen('gebaeude.nutzflaeche', { wert: 40, herkunft: 'flaechen', sicherheit: 'hinweis' }, 'TP');
     expect(offeneBestaetigungen(useBaurecht.getState())).toEqual(['gebaeude.nutzflaeche']);
-    useBaurecht.getState().aufDateistand(['bund/bnatschg/44'], ['gebaeude.nutzflaeche']);
-    expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toMatchObject({ ampel: 'rot' });
-    expect(useBaurecht.getState().pruefung.fakten['gebaeude.nutzflaeche']).toBeUndefined();
-    expect(istGeaendert(useBaurecht.getState())).toBe(false);
+    useBaurecht.getState().gespeichert(aenderungenAnwenden(useBaurecht.getState().roh!));
+    expect(offeneFestlegungen(useBaurecht.getState())).toEqual([]);
+    expect(offeneBestaetigungen(useBaurecht.getState())).toEqual([]);
   });
 
   it('Bestätigen mit einem Wert aus der Auswertung: „ueberHinweis“ (nur Auswertung) kommt nicht in die Prüfung', () => {
-    useBaurecht.getState().faktBestaetigen('nw.altbau_verfahrensfrei', { wert: true, herkunft: 'manuell', sicherheit: 'hinweis', ueberHinweis: ['vorhaben.beseitigung_umfang'], ueberWiderspruch: ['vorhaben.beseitigung_umfang'] }, 'TP', 'Auskunft vom 13.11.2026');
+    useBaurecht.getState().faktBestaetigen('nw.altbau_verfahrensfrei', { wert: true, herkunft: 'manuell', sicherheit: 'hinweis', ueberHinweis: ['vorhaben.beseitigung_umfang'], ueberWiderspruch: ['vorhaben.beseitigung_umfang'] }, 'TP');
     const f = useBaurecht.getState().pruefung.fakten['nw.altbau_verfahrensfrei'];
     expect(f).toMatchObject({ wert: true, bestaetigt: { von: 'TP' } });
     expect(f.ueberHinweis).toBeUndefined();
     expect(f.ueberWiderspruch).toBeUndefined();
   });
 
-  it('Angabe von Hand gegen einen Treffer: mit Begründung, Widerspruch bleibt, braucht die zweite Bestätigung', () => {
+  it('Angabe von Hand gegen einen Treffer: bestätigt ohne Begründungstext, Widerspruch bleibt, bis zum Speichern Entwurf', () => {
     const st = useBaurecht.getState();
     st.geoFakten({ 'schutz.lsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS', stand: '2026-11-12' } });
-    useBaurecht.getState().faktSetzen('schutz.lsg', false, 'TP', 'Auskunft UNB vom 03.11.2026: außerhalb');
+    useBaurecht.getState().faktSetzen('schutz.lsg', false, 'TP', true);
     const f = useBaurecht.getState().pruefung.fakten['schutz.lsg'];
-    expect(f).toMatchObject({ wert: false, herkunft: 'manuell', bestaetigt: { von: 'TP', grund: 'Auskunft UNB vom 03.11.2026: außerhalb' } });
+    expect(f).toMatchObject({ wert: false, herkunft: 'manuell', bestaetigt: { von: 'TP' } });
+    expect(f.bestaetigt!.am).toMatch(/^\d{4}-/);
+    expect(f.bestaetigt!.grund).toBeUndefined();
     expect(f.widerspruch).toMatch(/LINFOS meldet „ja“/);
     expect(offeneBestaetigungen(useBaurecht.getState())).toContain('schutz.lsg');
   });
@@ -137,7 +137,7 @@ describe('Zustand der App', () => {
 
   it('aufgehobene Festlegung lässt sich unverändert wiederherstellen (Rückgängig)', () => {
     const st = useBaurecht.getState();
-    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'Begehung am 03.11.2026 ohne Befund', 'TP', { '44/1': 'abcd1234' }, {});
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'TP', { '44/1': 'abcd1234' }, {});
     const f = structuredClone(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']);
     useBaurecht.getState().festlegungAufheben('bund/bnatschg/44');
     expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toBeUndefined();
@@ -145,22 +145,25 @@ describe('Zustand der App', () => {
     expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toEqual(f);
   });
 
-  it('Rückgängig nach dem Speichern: die Festlegung ist wieder Entwurf und braucht die zweite Bestätigung', () => {
+  it('Festlegung ohne Zeitpunkt aus einer älteren Datei: nicht „ungespeichert“ (sie ist überholt, das sagt der Kern)', () => {
+    const fl = { ampel: 'gruen' as const, grund: 'Begehung', von: 'TP', am: '2026-11-03', automatisch: 'rot' as const };
+    const p = { ...useBaurecht.getState().pruefung, festlegungen: { 'bund/bnatschg/44': fl } };
+    useBaurecht.setState({ pruefung: structuredClone(p), pruefungDatei: structuredClone(p) });
+    expect(offeneFestlegungen(useBaurecht.getState())).toEqual([]);
+    expect(istGeaendert(useBaurecht.getState())).toBe(false);
+  });
+
+  it('Rückgängig nach dem Speichern: die Festlegung gilt unverändert wieder, bis zum nächsten Speichern ungespeichert', () => {
     const st = useBaurecht.getState();
-    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'Begehung am 03.11.2026 ohne Befund', 'TP', {}, {});
-    st.festlegungenBestaetigen(['bund/bnatschg/44']);
+    st.festlegen(ergebnis('bund/bnatschg/44'), 'gruen', 'TP', {}, {});
     useBaurecht.getState().gespeichert(aenderungenAnwenden(useBaurecht.getState().roh!));
     const f = structuredClone(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']);
     expect(f.bestaetigt).toBeTruthy();
-    // aufheben und speichern (bestätigt), dann Rückgängig
+    // aufheben und speichern, dann Rückgängig
     useBaurecht.getState().festlegungAufheben('bund/bnatschg/44');
     useBaurecht.getState().gespeichert(aenderungenAnwenden(useBaurecht.getState().roh!));
     useBaurecht.getState().festlegungWiederherstellen('bund/bnatschg/44', f);
-    const jetzt = useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44'];
-    expect(jetzt.bestaetigt).toBeUndefined();
-    expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
-    // auch eine abweichende Festlegung mit altem „bestätigt“ gilt als offen
-    useBaurecht.setState({ pruefung: { ...useBaurecht.getState().pruefung, festlegungen: { 'bund/bnatschg/44': f } } });
+    expect(useBaurecht.getState().pruefung.festlegungen['bund/bnatschg/44']).toEqual(f);
     expect(offeneFestlegungen(useBaurecht.getState())).toEqual(['bund/bnatschg/44']);
   });
 

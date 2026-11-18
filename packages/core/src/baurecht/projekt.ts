@@ -89,12 +89,13 @@ function faktAus(roh: unknown): FaktWert | null {
 }
 
 function festlegungAus(roh: unknown): Festlegung | null {
-  if (!istObjekt(roh) || !AMPELN.has(String(roh.ampel)) || typeof roh.grund !== 'string' || !roh.grund.trim()) return null;
+  // Mindestinhalt: Ampel, wer und wann; die Begründung ist freiwillig (früher Pflicht) – aus älteren Dateien bleibt sie
+  if (!istObjekt(roh) || !AMPELN.has(String(roh.ampel)) || typeof roh.von !== 'string' || typeof roh.am !== 'string') return null;
   const f: Festlegung = {
     ampel: roh.ampel as Ampel,
-    grund: roh.grund,
-    von: typeof roh.von === 'string' ? roh.von : '',
-    am: typeof roh.am === 'string' ? roh.am : '',
+    ...(typeof roh.grund === 'string' && roh.grund.trim() ? { grund: roh.grund } : {}),
+    von: roh.von,
+    am: roh.am,
     automatisch: AMPELN.has(String(roh.automatisch)) ? (roh.automatisch as Ampel) : 'gelb',
   };
   if (istObjekt(roh.fakten)) f.fakten = Object.fromEntries(Object.entries(roh.fakten).filter(([, v]) => v === null || ['string', 'number', 'boolean'].includes(typeof v))) as Festlegung['fakten'];

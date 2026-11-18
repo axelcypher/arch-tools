@@ -67,7 +67,7 @@ describe('Kopf (Web-Version)', () => {
     // Gemeindeschlüssel bestätigt, Koordinaten vorhanden, alle Ebenen da → keine Marke, kein Eintrag
     const ohne = render(() => {
       const ags = auswertungMit(useBaurecht.getState().pruefung.fakten).fakten['lage.ags'];
-      useBaurecht.getState().faktBestaetigen('lage.ags', ags, 'TP', 'Auskunft der Gemeinde vom 12.11.2026');
+      useBaurecht.getState().faktBestaetigen('lage.ags', ags, 'TP');
     });
     expect(ohne.querySelector('.br-kopf > [data-eintrag="modul-marken"]')?.textContent ?? '').toBe('');
     expect(eintraege(ohne)).not.toContain('modul-marken');

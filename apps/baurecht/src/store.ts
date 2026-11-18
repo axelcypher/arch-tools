@@ -2,7 +2,7 @@
  * Zustand der App Baurecht: geöffnetes Projekt (Projektdatei), aktiver Antrag, Antragsmerkmale (gemeinsam mit
  * Formulare), die Prüfung des Antrags (Fakten von Hand, Festlegungen, Protokolle), Regelpaket und Rechtsstand.
  *
- * Festlegungen von Hand sind Entwürfe, bis sie beim Speichern ein zweites Mal bestätigt werden (`bestaetigt`).
+ * Festlegungen und Angaben von Hand gelten sofort (kein Entwurf); Festlegungen tragen den Zeitpunkt (`bestaetigt`).
  */
 
 import { create } from 'zustand';
@@ -20,7 +20,7 @@ import { mitgeliefert } from './regelpaket';
 import { VORGABE_MERKMALE } from '@core/bedingung';
 import { benutzer } from './benutzer';
 
-/** Kennung der Bestätigung des Planungsrechts für den Ort – zählt beim Speichern wie eine gesicherte Angabe */
+/** Kennung der Bestätigung des Planungsrechts für den Ort – zählt wie eine gesicherte Angabe */
 export const PLANUNGSRECHT = 'merkmal:Planungsrecht';
 
 export type Projektquelle =
@@ -63,7 +63,7 @@ export interface Zustand {
   vorfragenUnklar: Record<string, boolean>;
   /** Vorfragen, deren nächste Einzelansage entfällt – „Keine davon“ sagt selbst einmal für alle an (je Kennung einmal verbraucht) */
   vorfragenStill: string[];
-  /** Werte, die sich aus anderen ergeben und die überstimmt werden sollen (die Frage steht dann da, Antwort mit Beleg) */
+  /** Werte, die sich aus anderen ergeben und die überstimmt werden sollen (die Frage steht dann da, Antwort über den Bestätigungsdialog) */
   ueberstimmen: Record<string, boolean>;
   /** Rückmeldung nach dem Speichern (Kopf, Live-Region): Zeitpunkt und Text */
   gespeichertMeldung: { am: number; text: string } | null;
@@ -81,32 +81,31 @@ export interface Zustand {
   /** Planungsrecht gilt unverändert auch am jetzigen Ort (nach einem Adresswechsel) */
   planungsrechtBestaetigen: () => void;
   /**
-   * Angabe von Hand; mit `grund` (Pflicht für Schutzgebiete und Angaben aus Geodiensten) wird sie wie eine Bestätigung
-   * beim Speichern noch einmal abgefragt. Widerspricht sie einem Treffer eines Dienstes, bleibt das als Widerspruch.
+   * Angabe von Hand; `bestaetigt` (Schutzgebiete und Angaben aus Geodiensten, im Dialog) vermerkt sie wie eine
+   * Bestätigung mit Namen und Datum. Widerspricht sie einem Treffer eines Dienstes, bleibt das als Widerspruch.
+   * `lage`: Kennung der Lage, an die die Angabe gebunden wird; `null` = sie müsste gebunden werden, es gibt aber keine Koordinaten
    */
-  /** `lage`: Kennung der Lage, an die die Angabe gebunden wird; `null` = sie müsste gebunden werden, es gibt aber keine Koordinaten */
-  faktSetzen: (id: string, wert: FaktWert['wert'] | undefined, von: string, grund?: string, lage?: string | null) => void;
-  /** Bestätigung (bzw. Angabe von Hand mit Beleg) zurücknehmen – es gilt wieder der Hinweis bzw. nichts */
+  faktSetzen: (id: string, wert: FaktWert['wert'] | undefined, von: string, bestaetigt?: boolean, lage?: string | null) => void;
+  /** Bestätigung (bzw. bestätigte Angabe von Hand) zurücknehmen – es gilt wieder der Hinweis bzw. nichts */
   bestaetigungZuruecknehmen: (id: string) => void;
-  /** Hinweis als gesichert übernehmen – mit Begründung; bei Geodaten an die Lage gebunden; beim Speichern noch einmal bestätigt */
-  faktBestaetigen: (id: string, wert: FaktWert, von: string, grund: string, lage?: string | null) => void;
+  /** Hinweis als gesichert übernehmen – mit Namen und Datum; bei Geodaten an die Lage gebunden */
+  faktBestaetigen: (id: string, wert: FaktWert, von: string, lage?: string | null) => void;
   geoFakten: (fakten: Record<string, FaktWert>) => void;
   einreichungSetzen: (datum: string) => void;
-  festlegen: (p: ParagrafErgebnis, ampel: Ampel, grund: string, von: string, summen: Record<string, string>, werte: Record<string, string | number | boolean | null>, sicherheit?: Festlegung['sicherheit']) => void;
+  festlegen: (p: ParagrafErgebnis, ampel: Ampel, von: string, summen: Record<string, string>, werte: Record<string, string | number | boolean | null>, sicherheit?: Festlegung['sicherheit']) => void;
   festlegungAufheben: (id: string) => void;
-  /** Festlegungen ohne Ortsangabe (ältere Datei) dem jetzigen Ort zuordnen – als Entwurf, bestätigt wird beim Speichern */
+  /** Festlegungen ohne Ortsangabe (ältere Datei) dem jetzigen Ort zuordnen – sie gelten danach sofort */
   festlegungenOrtUebernehmen: (ids: string[]) => void;
   /** „Rückgängig“ nach dem Aufheben: die vorige Festlegung unverändert zurück */
   festlegungWiederherstellen: (id: string, f: Festlegung) => void;
-  festlegungenBestaetigen: (ids: string[]) => void;
   /**
    * gespeicherte Modulwerte (nur wegen einer Bestätigung in der Datei), die kein aktives Modul mehr ableitet (anderer
    * Gemeindeschlüssel, Bezug weg), entfernen – sie gelten nicht mehr und kämen sonst unsichtbar wieder in die Datei.
    * `abgeleitet`: die Angaben der aktuellen Auswertung
    */
   veralteteModulwerteEntfernen: (abgeleitet: Record<string, FaktWert>) => void;
-  /** offene Festlegungen und Bestätigungen auf den Stand der Datei zurücksetzen („ohne diese speichern“) */
-  aufDateistand: (festlegungen: string[], fakten: string[]) => void;
+  /** die ungespeicherte Bestätigung des Planungsrechts für den Ort zurücknehmen (Stand der Datei) */
+  planungsrechtZuruecknehmen: () => void;
   protokollAnhaengen: (p: BaurechtPruefung['protokolle'][number]) => void;
   paketSetzen: (paket: Paket, meldung: string) => void;
   /** einen Text setzen (nur noch für Tests – texteLaden bündelt über texteSetzen) */
@@ -233,16 +232,16 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     p.planungsrechtOrt = { ...o, wert, von: benutzer(), am: heute() };
     set({ pruefung: p });
   },
-  faktSetzen: (id, wert, von, grund, lage) => {
+  faktSetzen: (id, wert, von, bestaetigt, lage) => {
     const p = kopie(get().pruefung);
-    // dieselbe Rechnung wie die Vorschau im Dialog (angabeVonHand): Beleg, Lagebezug, Widerspruch aus dem Dienst
+    // dieselbe Rechnung wie die Vorschau im Dialog (angabeVonHand): Bestätigung, Lagebezug, Widerspruch aus dem Dienst
     if (wert === undefined) delete p.fakten[id];
-    else p.fakten[id] = angabeVonHand(p.fakten[id], id, wert, { von, grund, lage, heute: heute(), desktop: isTauri() });
+    else p.fakten[id] = angabeVonHand(p.fakten[id], id, wert, { von, bestaetigt, lage, heute: heute(), desktop: isTauri() });
     set({ pruefung: p });
   },
-  faktBestaetigen: (id, wert, von, grund, lage) => {
+  faktBestaetigen: (id, wert, von, lage) => {
     const p = kopie(get().pruefung);
-    p.fakten[id] = JSON.parse(JSON.stringify(hinweisBestaetigen(wert, { von, grund, lage, heute: heute() }))) as FaktWert;
+    p.fakten[id] = JSON.parse(JSON.stringify(hinweisBestaetigen(wert, { von, lage, heute: heute() }))) as FaktWert;
     set({ pruefung: p });
   },
   bestaetigungZuruecknehmen: (id) => {
@@ -267,11 +266,12 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     else delete p.einreichung;
     set({ pruefung: p });
   },
-  festlegen: (e, ampel, grund, von, summen, werte, sicherheit) => {
+  festlegen: (e, ampel, von, summen, werte, sicherheit) => {
     const p = kopie(get().pruefung);
     // eine Festlegung gilt für den Ort, an dem sie getroffen wird (ändert er sich, ist sie überholt)
     const ort = ortVon(get().project);
-    const f: Festlegung = { ampel, grund: grund.trim(), von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen, ...(sicherheit && Object.keys(sicherheit).length ? { sicherheit } : {}), ...(ort ? { ort } : {}) };
+    // gilt sofort – der Zeitpunkt steht in `bestaetigt` (früher erst beim Speichern, „Entwurf“ bis dahin)
+    const f: Festlegung = { bestaetigt: new Date().toISOString(), ampel, von, am: heute(), automatisch: e.automatisch, fakten: werte, stand: summen, ...(sicherheit && Object.keys(sicherheit).length ? { sicherheit } : {}), ...(ort ? { ort } : {}) };
     p.festlegungen[e.id] = f;
     set({ pruefung: p });
   },
@@ -282,8 +282,8 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     for (const id of ids) {
       const f = p.festlegungen[id];
       if (!f || f.ort) continue;
-      const { bestaetigt: _b, ...entwurf } = f;
-      p.festlegungen[id] = { ...entwurf, ort };
+      // eine bewusste Handlung: gilt ab jetzt für diesen Ort – der alte Zeitpunkt wird absichtlich ersetzt
+      p.festlegungen[id] = { ...f, ort, bestaetigt: new Date().toISOString() };
     }
     set({ pruefung: p });
   },
@@ -293,21 +293,8 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     set({ pruefung: p });
   },
   festlegungWiederherstellen: (id, f) => {
-    const s = get();
-    const p = kopie(s.pruefung);
-    // genau der Stand der Datei: unverändert zurück; sonst als Entwurf – die zweite Bestätigung ist wieder nötig
-    const datei = s.pruefungDatei.festlegungen[id];
-    if (datei && JSON.stringify(datei) === JSON.stringify(f)) p.festlegungen[id] = kopie(f);
-    else {
-      const { bestaetigt: _b, ...entwurf } = kopie(f);
-      p.festlegungen[id] = entwurf;
-    }
-    set({ pruefung: p });
-  },
-  festlegungenBestaetigen: (ids) => {
     const p = kopie(get().pruefung);
-    const jetzt = new Date().toISOString();
-    for (const id of ids) if (p.festlegungen[id]) p.festlegungen[id].bestaetigt = jetzt;
+    p.festlegungen[id] = kopie(f);
     set({ pruefung: p });
   },
   veralteteModulwerteEntfernen: (abgeleitet) => {
@@ -317,24 +304,11 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     for (const [id] of weg) delete p.fakten[id];
     set({ pruefung: p });
   },
-  aufDateistand: (festlegungen, fakten) => {
+  planungsrechtZuruecknehmen: () => {
     const s = get();
     const p = kopie(s.pruefung);
-    for (const id of festlegungen) {
-      const alt = s.pruefungDatei.festlegungen[id];
-      if (alt) p.festlegungen[id] = kopie(alt);
-      else delete p.festlegungen[id];
-    }
-    for (const id of fakten) {
-      if (id === PLANUNGSRECHT) {
-        if (s.pruefungDatei.planungsrechtOrt) p.planungsrechtOrt = kopie(s.pruefungDatei.planungsrechtOrt);
-        else delete p.planungsrechtOrt;
-        continue;
-      }
-      const alt = s.pruefungDatei.fakten[id];
-      if (alt) p.fakten[id] = kopie(alt);
-      else delete p.fakten[id];
-    }
+    if (s.pruefungDatei.planungsrechtOrt) p.planungsrechtOrt = kopie(s.pruefungDatei.planungsrechtOrt);
+    else delete p.planungsrechtOrt;
     set({ pruefung: p });
   },
   protokollAnhaengen: (pr) => {
@@ -357,32 +331,31 @@ export function istGeaendert(s: Pick<Zustand, 'pruefung' | 'pruefungDatei' | 'me
 }
 
 /**
- * Festlegungen, die die zweite Bestätigung brauchen: neu oder geändert (ohne `bestaetigt`) und aufgehoben (in der
- * Datei, aber nicht mehr in der App – das Aufheben einer Festlegung kann eine Herabstufung sein).
+ * Festlegungen seit dem letzten Speichern (ungespeichert): neu oder geändert und aufgehoben (in der Datei, aber nicht
+ * mehr in der App). Sie gelten schon; das Speichern übernimmt sie ohne Rückfrage.
  */
 export function offeneFestlegungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
   const jetzt = s.pruefung.festlegungen;
-  // offen: alles, was nicht bestätigt ist oder vom Stand der Datei abweicht (bestätigt wird nur beim Speichern – eine
-  // abweichende Festlegung mit „bestätigt“ stammt also aus einem älteren Stand und braucht die Bestätigung erneut)
+  // offen: alles, was vom Stand der Datei abweicht (eine Festlegung ohne Zeitpunkt aus der Datei ist nicht ungespeichert,
+  // sondern überholt – das sagt der Kern)
   const datei = s.pruefungDatei.festlegungen;
   const neu = Object.entries(jetzt)
-    .filter(([id, f]) => !f.bestaetigt || JSON.stringify(f) !== JSON.stringify(datei[id]))
+    .filter(([id, f]) => JSON.stringify(f) !== JSON.stringify(datei[id]))
     .map(([id]) => id);
   const aufgehoben = Object.keys(s.pruefungDatei.festlegungen).filter((id) => !jetzt[id]);
   return [...neu, ...aufgehoben];
 }
 
 /**
- * Bestätigungen von Hinweisen und Angaben mit Beleg (z. B. „kein Schutzgebiet“), die seit dem letzten Speichern neu
- * oder geändert sind – verglichen werden Wert und Bestätigung, nicht nur die Bestätigung
+ * Bestätigte Hinweise und Angaben von Hand (z. B. „kein Schutzgebiet“), die seit dem letzten Speichern neu oder
+ * geändert sind (ungespeichert) – verglichen werden Wert und Bestätigung, nicht nur die Bestätigung
  */
 export function offeneBestaetigungen(s: Pick<Zustand, 'pruefung' | 'pruefungDatei'>): string[] {
   const kern = (f: FaktWert | undefined) => JSON.stringify(f ? { wert: f.wert, bestaetigt: f.bestaetigt ?? null } : null);
   const ids = Object.entries(s.pruefung.fakten)
     .filter(([id, f]) => f.bestaetigt && kern(f) !== kern(s.pruefungDatei.fakten[id]))
     .map(([id]) => id);
-  // das Planungsrecht für diesen Ort bestätigt: wie eine gesicherte Angabe noch einmal beim Speichern (es kann viele
-  // Paragrafen entscheiden)
+  // das Planungsrecht für diesen Ort bestätigt: wie eine gesicherte Angabe
   if (s.pruefung.planungsrechtOrt && JSON.stringify(s.pruefung.planungsrechtOrt) !== JSON.stringify(s.pruefungDatei.planungsrechtOrt ?? null)) ids.push(PLANUNGSRECHT);
   return ids;
 }

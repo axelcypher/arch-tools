@@ -44,9 +44,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   in den Stammdaten passen. Fehlen sie oder wurde die Adresse geändert, sind sie nur noch Hinweis (auch der
   Gemeindeschlüssel aus ALKIS); der Kopf zeigt „Keine Koordinaten“ bzw. „Koordinaten veraltet“, „Bestätigen …“ wird dann
   nicht angeboten. Ortsgebunden sind alle Angaben zu Lage, Schutzgebieten, Planungsrecht (Pläne, Satzungen, Sperren),
-  Grundstück (Straßen, Gewässer, Zufahrten), Ortsrecht und Zuständigkeit – auch von Hand und ohne Beleg; nach einem
-  Adresswechsel sind sie erneut anzugeben (Knopf „Für diese Lage übernehmen“, bei Angaben mit Beleg erneut mit Beleg).
-  Die frühere Lage bleibt dabei vermerkt („Angabe zu einer früheren Lage“), auch bei Angaben mit Beleg. Gespeichert
+  Grundstück (Straßen, Gewässer, Zufahrten), Ortsrecht und Zuständigkeit – auch von Hand und unbestätigt; nach einem
+  Adresswechsel sind sie erneut anzugeben (Knopf „Für diese Lage übernehmen“, bestätigte Angaben erneut bestätigen).
+  Die frühere Lage bleibt dabei vermerkt („Angabe zu einer früheren Lage“), auch bei bestätigten Angaben. Gespeichert
   wird, was das Feld zeigt: Anzahlen (z. B. Stellplätze) ganzzahlig, andere Zahlen auf zwei Nachkommastellen, keine
   negativen Werte. Schwellen „über x“ (im Regelschema „x,01“) gelten als echtes „größer als x“ – 22,005 m sind über 22
   m. Das **Planungsrecht** zählt erst als gesichert, wenn es für genau diesen Ort und Wert bestätigt ist: in Baurecht
@@ -56,10 +56,10 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   diesen Ort bestätigt (Name, Datum)“. Ein Wert aus Formulare oder einer älteren Datei, ein seither geänderter Wert und
   ein Umzug (Anschrift, Grundstück, Koordinaten) zeigen oben einen Hinweis; was daran hängt, kann bis dahin nicht sicher
   entfallen (in den Begründungen und im Protokoll „Nicht gesichert: Planungsrecht …“). Die Bestätigung sagt ihre Wirkung
-  an („30 Vorschriften entfallen jetzt“), wird beim Speichern mit ihren Folgen noch einmal abgefragt (bis dahin „Entwurf
-  – beim Speichern bestätigen“ am Merkmal, mit „zurücknehmen“; im Protokoll „Entwurf – für diesen Ort bestätigt …“ und
-  beim Ergebnis, wie viele Paragrafen an noch nicht Gespeichertem hängen) und steht mit Name und Datum im Protokoll.
-  „Speichern, diese als Entwurf behalten“ lässt sie Entwurf. Ein Wert außerhalb der Liste lässt sich nicht für den Ort
+  an („30 Vorschriften entfallen jetzt“), gilt sofort („für diesen Ort bestätigt (Name, Datum)“ am Merkmal, bis zum
+  Speichern mit „geändert“ und „zurücknehmen“; im Protokoll „für diesen Ort bestätigt …; noch nicht gespeichert“ und beim Ergebnis, wie viele
+  Paragrafen an noch nicht Gespeichertem hängen) und steht mit Name und Datum im Protokoll. Gespeichert wird sie wie
+  alles andere, ohne Rückfrage. Ein Wert außerhalb der Liste lässt sich nicht für den Ort
   bestätigen – er zählt ohnehin nicht. Angaben von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative
   Werte und halbe Anzahlen sind nur Hinweis, Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
 - **Ergebnis (Karte über den Vorschriften):** Ampelzähler (blenden ein/aus; Häkchen, Statuspunkt, Zahl und Wort im
@@ -162,7 +162,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Sätzen steht bei der Anzeige nach „§“, „Abs.“, „Nr.“ ein geschütztes Leerzeichen.
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
   Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis tragen).
-  Darüber steht die Karte „Ergebnis“ (siehe oben). Marken: „von Hand“ bzw. „von Hand · Entwurf“, „überholt“, „nicht wirksam“,
+  Darüber steht die Karte „Ergebnis“ (siehe oben). Marken: „von Hand“ (bis zum Speichern „von Hand · geändert“), „überholt“, „nicht wirksam“,
   „Text geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht). Hängt eine Regel an einem anderen Paragrafen,
   der selbst offen ist, heißt es „hängt an § … – dort offen“; in den Einzelheiten steht das unter „Hängt an“ (getrennt
   von den fehlenden Angaben). Ist die Mitte schmaler als 900 px, steht der Grund unter dem Titel.
@@ -284,12 +284,12 @@ Rückfragen; auch Einzelfragen anderer Gruppen, z. B. „Bäume fällen“ unter
   der Vorfrage (die Antworten bleiben in der Datei). Ein „ja“ bzw. Widerspruch auf einer tieferen Stufe (z. B. Zone des
   Heilquellenschutzgebiets) reicht bis zur obersten Vorfrage.
 - **„Keine davon …“** steht über den Vorfragen einer Gruppe, sobald zwei offen sind (nur Vorfragen `vorfrage.…`, keine
-  Einzelfragen, die zugleich Vorfrage sind): alle offenen Vorfragen in einem Dialog „nein“ – bei Schutzgebieten mit
-  **einem Beleg je Vorfrage** (Pflicht; eine Auskunft der Naturschutzbehörde belegt weder Denkmal noch Gehölze), die
-  Vorschau zeigt, was alle zusammen herabstufen. Danach geht der Fokus auf die erste Vorfrage, angesagt wird einmal für
-  alle. Die Liste der Vorfragen steht ohnehin oben in der Gruppe; ein Ankreuzfeld je Gegenstand gibt es nicht, weil es
-  „unklar“, Belege und Treffer der Lage-Abfrage je Gegenstand nicht abbilden könnte.
-- **Lage-Abfrage:** Ein Treffer macht die Vorfrage zu „ja“ (mit Beleg). „Kein Treffer“ belegt sie nicht mit „nein“
+  Einzelfragen, die zugleich Vorfrage sind): alle offenen Vorfragen auf einmal „nein“ – bei Schutzgebieten über einen
+  Dialog, der jede Vorfrage mit ihrer Frage nennt und zeigt, was alle zusammen herabstufen; ein Klick auf „Übernehmen“
+  genügt (kein Textfeld). Jede Angabe steht danach mit Namen und Datum im Protokoll. Danach geht der Fokus auf die erste
+  Vorfrage, angesagt wird einmal für alle. Die Liste der Vorfragen steht ohnehin oben in der Gruppe; ein Ankreuzfeld je
+  Gegenstand gibt es nicht, weil es „unklar“ und Treffer der Lage-Abfrage je Gegenstand nicht abbilden könnte.
+- **Lage-Abfrage:** Ein Treffer macht die Vorfrage zu „ja“ (gesichert). „Kein Treffer“ belegt sie nicht mit „nein“
   vor – die Dienste prüfen nur einen Umkreis von 25 m und nicht jede Einzelfrage (z. B. den Einwirkungsbereich nach
   § 34 BNatSchG, Naturdenkmäler, Bodendenkmäler); an der offenen Vorfrage steht dann ein Hinweis, was die Abfrage
   ergab und was sie nicht prüft.
@@ -317,7 +317,7 @@ Manche Angaben folgen zwingend aus anderen (`folgt: [{ wenn, wert, grund }]` am 
 `ableitungenAnwenden`): Trifft `wenn` gesichert zu (auch über Merkmale; nie aus Hinweisen oder widersprüchlichen
 Merkmalen), gilt der Wert, die Frage entfällt. Die Werte stehen am Ende ihrer Gruppe unter „Ergibt sich aus anderen
 Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen Angaben“). Ändern heißt die Ausgangsangabe
-ändern; „Überstimmen …“ stellt in einem begründeten Sonderfall die Frage, eine Antwort dann nur mit Beleg.
+ändern; „Überstimmen …“ stellt in einem Sonderfall die Frage, eine Antwort dann über den Bestätigungsdialog.
 
 | Angabe | ergibt sich | Grund |
 | --- | --- | --- |
@@ -336,10 +336,10 @@ Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen A
 
 - **Nie still überschrieben:** Eine abweichende gespeicherte Angabe (auch ein Hinweis aus dem Modell, z. B. zwei
   Wohnungen im Einfamilienhaus) bleibt stehen und wird zum **Widerspruch** (`gegenFolge`, nur in der Auswertung) – die
-  Frage steht wieder da, betroffene Vorschriften werden höchstens „prüfen“, nie „entfällt“. „Mit Beleg übernehmen …“
-  behält sie als begründeten Sonderfall (dann ohne Widerspruch); eine neue Antwort gilt dort ebenfalls nur mit Beleg.
-  „nicht überstimmen“ nimmt „Überstimmen …“ zurück. Bricht man den Beleg-Dialog ab, zeigt das Feld wieder den
-  geltenden Wert.
+  Frage steht wieder da, betroffene Vorschriften werden höchstens „prüfen“, nie „entfällt“. „Als Sonderfall übernehmen …“
+  behält sie bestätigt als Sonderfall (dann ohne Widerspruch); eine neue Antwort geht dort ebenfalls über den
+  Bestätigungsdialog. „nicht überstimmen“ nimmt „Überstimmen …“ zurück. Bricht man den Dialog ab, zeigt das Feld wieder
+  den geltenden Wert.
 - Die Gebäudeart gilt als Zustand nach dem Vorhaben. Bei einer **Nutzungsänderung** könnte ein Teil zu Gästezimmern,
   Laden o. Ä. werden, ohne dass sie angepasst ist – Besucher, Verkaufsfläche und Gastbetten werden dort nicht
   abgeleitet.
@@ -356,31 +356,36 @@ Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen A
 
 ## Von Hand festlegen
 
-Jeder darf festlegen – und bestätigt dafür zweimal:
+Jeder darf festlegen – mit einem Klick, ohne Begründungstext und ohne weitere Rückfrage beim Speichern (Wunsch der
+Nutzer: kein Pflichtfeld, keine doppelte Bestätigung):
 
-1. **Beim Festlegen:** „Von Hand festlegen …“ → Ampel wählen, **Begründung** (Pflicht, mindestens 10 Zeichen) und Name.
-   Herabstufungen (gilt → prüfen/entfällt, prüfen → entfällt) werden ausdrücklich angesagt. Die Festlegung ist danach
-   ein Entwurf (gestrichelte Marke).
-2. **Beim Speichern:** Neue, geänderte und **aufgehobene** Festlegungen erscheinen in einer Liste (vorher → nachher,
-   Begründung, Herabstufungen hervorgehoben) – ebenso neu bestätigte Hinweise (siehe unten). „Bestätigen und speichern“
-   geht erst nach dem Haken „Ich habe diese … geprüft“. Ist eine Festlegung inzwischen **überholt**, sagt die Liste das,
-   und „Bestätigen und speichern“ ist gesperrt, bis sie erneut festgelegt oder aufgehoben ist; „noch nicht wirksam“ wird
-   ebenfalls angezeigt. „Speichern, diese als Entwurf behalten“ schreibt für sie den bisherigen Stand der Datei (eine
-   schon bestätigte Festlegung bleibt also erhalten) und lässt die Änderung in der App als Entwurf offen. Vor einem
-   Antragswechsel, dem Öffnen eines anderen Projekts oder dem Beenden gilt das nicht als „gespeichert“: Die App meldet,
-   dass Entwürfe offen sind, und bleibt, bis sie bestätigt, aufgehoben oder ausdrücklich verworfen („Nicht speichern“)
-   sind.
+1. **Beim Festlegen:** „Von Hand festlegen …“ → Ampel wählen → „Festlegen“. „Festgelegt von“ ist vorbelegt und kein
+   Pflichtfeld (leer gilt der gemerkte Name bzw. der aus den Stammdaten, sonst „Bearbeitung“; das Feld zeigt ihn als
+   Platzhalter). Herabstufungen (gilt → prüfen/entfällt, prüfen → entfällt) nennt der Dialog vorher. Die Festlegung
+   gilt sofort (kein Entwurf) und trägt den Zeitpunkt (`bestaetigt`). Bis zum Speichern heißt die Marke „von Hand ·
+   geändert“, wie „geändert“ an den Merkmalen; danach „von Hand“.
+2. **Beim Speichern:** gespeichert wird ohne Dialog. Aufheben und „Rückgängig“ bleiben möglich, wie im Rest der App.
+   Festlegungen ohne Zeitpunkt (aus älteren Dateien, früher „Entwurf“) gelten zur sicheren Seite als **überholt** („ohne
+   Zeitpunkt getroffen – ältere Datei“): Sie tragen die Ampel nicht, ein „entfällt“ wird mindestens „prüfen“; erneut
+   festlegen oder aufheben.
 
-„Festlegung aufheben“ wirkt sofort; daneben steht „Rückgängig“, der Fokus geht auf „Von Hand festlegen …“. Auch das
-Aufheben einer gespeicherten Festlegung wird beim Speichern noch einmal bestätigt. Ein Entwurf zählt für Verweise,
-„Klärt am meisten“ und die offenen Punkte noch nicht als Klärung; eine mit „Rückgängig“ wiederhergestellte Festlegung,
-die nicht mehr dem Stand der Datei entspricht, ist wieder Entwurf.
+**Nachvollziehbarkeit:** Jede Festlegung steht weiter mit Ampel, automatischer Ampel, Namen, Datum und Stand
+(gespeichert/noch nicht gespeichert, überholt, noch nicht wirksam) im Prüfprotokoll und ist in Liste, Einzelheiten und Protokoll als
+„von Hand“ gekennzeichnet. Begründungen aus älteren Dateien (als sie Pflicht war) bleiben erhalten und erscheinen in
+Einzelheiten, Liste und Protokoll (Spalte „Begründung“ nur, wenn es eine gibt); „Festlegung ändern …“ nennt sie, bevor
+eine neue Festlegung sie ersetzt. Fachlich ersetzt das Protokoll keine Begründung: Wer von Hand abweicht, hält den Grund
+weiter in den eigenen Unterlagen fest. Ältere LEXIO-Stände lesen Festlegungen ohne Begründung nicht (sie verwerfen sie
+beim Lesen) – im Büro deshalb alle Arbeitsplätze aktualisieren. Beim Lesen braucht eine Festlegung Ampel, Namen und
+Datum; unvollständige Einträge fallen weg.
+
+„Festlegung aufheben“ wirkt sofort; daneben steht „Rückgängig“ (stellt sie unverändert wieder her), der Fokus geht auf
+„Von Hand festlegen …“.
 
 Eine Festlegung geht der Automatik vor. Sie wird **überholt**, sobald die automatische Ampel danach strenger wird als
 damals und als die Festlegung (wird sie schwächer oder kommt sie bei der Festlegung an, bleibt die Festlegung richtig),
 sobald sich der **Ort** ändert (Anschrift, Grundstück oder Koordinaten – eine Festlegung gilt für den Ort, an dem sie
 getroffen wurde; eine Festlegung ohne Ortsangabe – aus einer älteren Datei – gilt als überholt; über der Liste ordnet
-„Für diesen Ort übernehmen“ alle in einem Schritt dem jetzigen Ort zu, als Entwurf, der beim Speichern bestätigt wird),
+„Für diesen Ort übernehmen“ alle in einem Schritt dem jetzigen Ort zu),
 sobald sich eine beteiligte Angabe (auch nur ihre Sicherheit, z. B. ein neuer Widerspruch) oder der Text einer
 Fundstelle ändert (oder sie ohne geprüften Text getroffen wurde und der Text jetzt vorliegt) – dann steht die Marke
 „überholt“ daran, ein überholtes „entfällt“ zählt mindestens als „prüfen“, ein überholtes „prüfen“ hält ein
@@ -391,30 +396,28 @@ erneutes Festlegen hilft dagegen nicht. Verweist eine Regel auf einen anderen Pa
 automatische Ampel oder eine bestätigte, nicht überholte Festlegung – und auch die nur als unsicher (ein „entfällt“, das
 darauf beruht, wird „prüfen“).
 
-**Festlegen** wird angesagt („§ 6 BauO NRW: von Hand „gilt“ festgelegt – Entwurf, beim Speichern noch einmal
-bestätigen“). Wirkte ein „entfällt“ von Hand noch nicht, sagen Dialog und Ansage es vorher bzw. danach („noch nicht
+**Festlegen** wird angesagt („§ 6 BauO NRW: von Hand „gilt“ festgelegt“). Wirkte ein „entfällt“ von Hand noch nicht, sagen Dialog und Ansage es vorher bzw. danach („noch nicht
 wirksam (Text der Norm nicht verfügbar), es bleibt bei „gilt““) – mit derselben Bedingung wie der Kern
 (`entfaelltVorbehalt`: nur bei Regeln mit Prüfsummen; Verweise ohne abrufbaren Text brauchen keinen Text; sonst Text
 fehlt, Rechtsstand alt, neuere Fassung zum Stichtag, Text für anderen Stichtag, angekündigte Fassung). **Aufheben** wird
-angesagt („Festlegung aufgehoben – automatisch: „gilt““), ebenso „Rückgängig“ („Festlegung wiederhergestellt – „prüfen“
-(Entwurf)“, bei einem noch nicht wirksamen „entfällt“ mit Grund). Die Gruppenüberschrift „Antragsmerkmale“ ist während
+angesagt („Festlegung aufgehoben – automatisch: „gilt““), ebenso „Rückgängig“ („Festlegung wiederhergestellt – „prüfen““,
+bei einem noch nicht wirksamen „entfällt“ mit Grund). Die Gruppenüberschrift „Antragsmerkmale“ ist während
 einer Suche `aria-disabled` (nicht zuklappbar), bleibt aber voll lesbar.
 
 **Hinweise bestätigen:** Angaben, die nur Hinweis sind (z. B. „kein Treffer im Landschaftsschutzgebiet“, Flächen aus
-dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen – nur mit Angabe, worauf die Bestätigung beruht (z.
-B. Auskunft der Behörde mit Datum). Der Dialog zeigt vorher, wie viele Vorschriften dadurch herabgestuft werden – mit
-genau der Rechnung, die danach gilt. Widerspricht ein Dienst der Angabe, bleibt der Widerspruch auch nach der
-Bestätigung bestehen; der Dialog sagt das. Auch Bestätigungen werden beim Speichern noch einmal bestätigt und stehen im
-Prüfprotokoll. Der Dialog beim Speichern nennt, was genau neu ist (neue, geänderte, aufgehobene Festlegungen, neu
-gesicherte Angaben, das Planungsrecht), mit Name und Datum; die Folgen je Punkt allein gegenüber der Datei, mit Vermerk,
-was eine andere Bestätigung ebenso bewirkt, und bei mehreren Punkten „Zusammen (gegenüber dem Stand ohne diese
-Bestätigungen)“ – so fehlt keine Herabstufung, auch wenn zwei Bestätigungen dieselbe Vorschrift entscheiden. Der Fokus
-beginnt am Häkchen. Eine bestätigte Angabe aus dem Modell bzw. aus einer Tabelle des Regelmoduls gilt nur für genau
-diesen Wert – ändert sich das Modell bzw. die Tabelle, ist sie wieder Hinweis.
+dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen – ein Klick auf „Bestätigen“ im Dialog genügt,
+ohne Begründungstext (der Fokus steht schon darauf). Der Dialog zeigt vorher, wie viele Vorschriften dadurch
+herabgestuft werden – mit genau der Rechnung, die danach gilt. Widerspricht ein Dienst der Angabe, bleibt der
+Widerspruch auch nach der Bestätigung bestehen; der Dialog sagt das. Die Bestätigung steht mit Namen und Datum im
+Prüfprotokoll und gilt sofort (kein Entwurf; bis zum Speichern mit der Marke „geändert“); gespeichert wird ohne Rückfrage. Danach wird angesagt, was übernommen
+ist. Ein Beleg aus einer älteren Datei
+bleibt lesbar (Protokoll: Spalte „gestützt auf“ bzw. „Beleg: …“, nur wenn es einen gibt). Eine bestätigte Angabe aus
+dem Modell bzw. aus einer Tabelle des Regelmoduls gilt nur für genau diesen Wert – ändert sich das Modell bzw. die
+Tabelle, ist sie wieder Hinweis.
 
-**Schutzgebiete und Geodaten von Hand** (ja/nein, Auswahl) gibt es nur mit Beleg – wie eine Bestätigung. Widerspricht
-die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch stehen; was nur an ihr hängt, bleibt „prüfen“ (für einen
-begründeten Sonderfall: den Paragrafen von Hand festlegen).
+**Schutzgebiete und Geodaten von Hand** (ja/nein, Auswahl) gehen über denselben Bestätigungsdialog (Folgen sichtbar, ein
+Klick) und gelten danach wie eine Bestätigung. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der
+Widerspruch stehen; was nur an ihr hängt, bleibt „prüfen“ (für einen Sonderfall: den Paragrafen von Hand festlegen).
 
 ## Lage abfragen (Desktop)
 
@@ -460,7 +463,7 @@ wer nur sucht, bekommt „Suche leeren“ statt „Filter zurücksetzen“. Nach
 die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet dasselbe Menü wie „Mehr“ an der Marke selbst (ein zweiter Klick schließt es),
 Esc gibt den Fokus an die Marke zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an
 der Angabe bzw. am Knopf. In den Dialogen „von Hand festlegen“, „Angabe bestätigen“ und „Angabe von Hand setzen“ löst
-Enter (außer im mehrzeiligen Begründungsfeld) den Hauptknopf aus; der Titel steht im Kopf des Dialogs.
+Enter den Hauptknopf aus; Pflichtfelder gibt es dort keine; der Titel steht im Kopf des Dialogs.
 
 ## Rechtsstand
 
@@ -485,13 +488,13 @@ Enter (außer im mehrzeiligen Begründungsfeld) den Hauptknopf aus; der Titel st
 ## Prüfprotokoll
 
 Kopf aus den Stammdaten, Grundlagen (Stichtag, Module, Regelpaket, Merkmale, Ergebnis), dann **Festlegungen von Hand**
-(Ampel, automatisch, Begründung, Name, Datum, Entwurf/bestätigt) und **gesicherte Angaben** (Wert, Herkunft, worauf
-gestützt, von wem) als Tabellen, dann die **offenen Punkte** als Tabelle „Was fehlt – Anzahl – Paragrafen“; danach alle
+(Ampel, automatisch, Name, Datum, gespeichert/noch nicht gespeichert; Begründung nur aus älteren Dateien) und **gesicherte Angaben**
+(Wert, Herkunft, von wem, wann; worauf gestützt nur aus älteren Dateien) als Tabellen, dann die **offenen Punkte** als Tabelle „Was fehlt – Anzahl – Paragrafen“; danach alle
 Paragrafen je Ebene mit Ampel, Begründung und Fassung, Quellen der Geodaten, Hinweise und Auskünfte der Module. Angaben
-von Hand ohne Beleg stehen in einer eigenen Tabelle (mit wer und wann), ebenso die **wegen „nein“ in der Vorfrage
-entfallenen Einzelfragen** (je Vorfrage mit Antwort, wer, wann und Beleg). Die offenen Punkte zählen wie „Klärt am meisten“
+von Hand ohne eigene Bestätigung stehen in einer eigenen Tabelle („Weitere Angaben von Hand“) (mit wer und wann), ebenso die **wegen „nein“ in der
+Vorfrage entfallenen Einzelfragen** (je Vorfrage mit Antwort, wer und wann; ein Beleg aus einer älteren Datei dazu). Die offenen Punkte zählen wie „Klärt am meisten“
 (ein Paragraf kann unter mehreren Angaben stehen); Punkte mit nur einem Paragrafen stehen gesammelt unter „Weitere“.
-Enthält es Entwürfe, steht „ENTWURF …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
+Ist etwas noch nicht gespeichert, steht „Nicht gespeichert: …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
 Überschriften werden nicht von ihrer Tabelle getrennt. Warum „Prüfung abschließen“ gesperrt ist, steht sichtbar neben
 dem Knopf. „Drucken / PDF …“ ist der Hauptknopf rechts außen (wie in allen Druckvorschauen), „Schließen“ steht links
 davon. „Drucken / PDF …“ schlägt den Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. Am Bildschirm klebt die
@@ -499,7 +502,7 @@ Aktionsleiste oben und der Tabellenkopf darunter (in sehr niedrigen Fenstern –
 Tabellenzellen trennen nach Silben (erst notfalls mitten im Wort), kurze Nummern („§ 248“) und Kennungen („SO‑076“)
 bleiben zusammen. Nach dem Speichern bei offenem Protokoll heißt es „Gespeichert – die Prüfung lässt sich jetzt
 abschließen.“, wenn nichts mehr sperrt. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln, Zähler, Regelpaket)
-in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen ist. Danach steht oben
+in der Projektdatei ab – erst, wenn alles gespeichert und jeder Text geladen ist. Danach steht oben
 eine Meldung („Prüfung vom … abgelegt (… gilt · … prüfen · … entfällt) – zum Übernehmen in die Datei speichern“,
 stehende Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; „Jetzt speichern“ steht auch neben jedem Sperrtext
 „Erst speichern …“. Danach (auch nach Strg+S) „Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog, der Fokus geht
@@ -508,11 +511,8 @@ den Fokus zu verschieben. Eine abgelegte, noch nicht gespeicherte Prüfung ist a
 (Meldung mit „Jetzt speichern“, Eintrag „noch nicht in der Datei gespeichert“). Derselbe Stand (gleiche Ampeln,
 Fassungen, Regelpaket, Stichtag) wird nicht zweimal abgeschlossen; abgeschlossene Prüfungen stehen mit Datum und
 Uhrzeit. Mit „ohne „entfällt““ vermerkt das Ergebnis, dass diese Vorschriften im Ausdruck fehlen. Nach jedem Speichern
-steht im Kopf kurz „Gespeichert“ (bzw. „– keine Änderungen“, „– N Entwürfe bleiben offen“), auch angesagt. Im
-Speichern-Dialog nennt eine geänderte Festlegung den bisherigen Stand der Datei („bisher: gilt (Name, Datum: Grund)“);
-Kopf und Fuß (Häkchen, Knöpfe) stehen fest, die Liste dazwischen ist ein benannter Scrollbereich („Änderungen seit dem
-letzten Speichern“, Tabstopp, Pfeiltasten scrollen), der Startfokus bleibt am Häkchen. Schmal (≤ 600 px) stehen die
-Knöpfe untereinander, in sehr niedrigen Fenstern scrollt der ganze Dialog. „Jetzt speichern“ ist während des Speicherns
+steht im Kopf kurz „Gespeichert“ (bzw. „– keine Änderungen“), auch angesagt; einen Dialog beim Speichern gibt es nicht.
+„Jetzt speichern“ ist während des Speicherns
 `aria-disabled` (fokussierbar, gesperrt dargestellt).
 
 ## Daten

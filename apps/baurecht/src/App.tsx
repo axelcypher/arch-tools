@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { FaktWert, Festlegung } from '@core/baurecht/typen';
-import { faktName } from '@core/baurecht/typen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { hinweisF6Eigen, hinweisFokussieren } from '@core/ui/Hinweis';
@@ -15,29 +13,27 @@ import { Angaben } from './components/Angaben';
 import { AmpelMarke, AMPEL_ERKLAERUNG } from './components/Ampel';
 import { Detail } from './components/Detail';
 import type { FolgenRechner } from './components/Dialoge';
-import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog, VorfragenNeinDialog } from './components/Dialoge';
+import { FaktBestaetigenDialog, FestlegenDialog, VorfragenNeinDialog } from './components/Dialoge';
 import { Kopf } from './components/Kopf';
 import { Protokoll } from './components/Protokoll';
 import { Vorschriften } from './components/Vorschriften';
 import { lageAbfragen } from './lage';
 import { ausProjektwahl, dateiOeffnen, speichernJetzt } from './projekt';
-import { auswertungMit, folgenBeimSpeichern, herabstufungen, texteLaden, usePruefstand } from './pruefung';
+import { auswertungMit, herabstufungen, texteLaden, usePruefstand } from './pruefung';
 import { abgelegtesPaket, paketNachladen } from './regelpaket';
-import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, useBaurecht } from './store';
-import type { BaurechtPruefung } from '@core/baurecht/projekt';
+import { istGeaendert, useBaurecht } from './store';
 
 const log = logger('baurecht');
 
 /**
- * Speichern mit zweiter Bestätigung: Festlegungen von Hand (neu, geändert oder aufgehoben) und bestätigte Hinweise.
- * „Ohne diese speichern“ schreibt für sie den Stand der Datei zurück (nichts geht verloren, nichts Unbestätigtes wird
- * gespeichert) und lässt sie danach als Entwurf in der App. true = gespeichert.
+ * Speichern – ohne weitere Rückfrage: wer und wann festgelegt bzw. bestätigt hat, steht schon an jedem Eintrag (gilt
+ * sofort, kein Entwurf). true = gespeichert.
  */
 let speichertGerade: Promise<boolean> | null = null;
 
 export function speichern(): Promise<boolean> {
-  // ein zweites Strg+S bzw. ein Doppelklick während des Speicherns (oder der Bestätigung) startet keinen zweiten Lauf –
-  // es bekommt das Ergebnis des laufenden
+  // ein zweites Strg+S bzw. ein Doppelklick während des Speicherns startet keinen zweiten Lauf – es bekommt das Ergebnis
+  // des laufenden
   if (speichertGerade) return speichertGerade;
   speichertGerade = speichernLauf().finally(() => {
     speichertGerade = null;
@@ -50,26 +46,7 @@ async function speichernLauf(): Promise<boolean> {
   // Modulwerte, die nicht mehr gelten, nicht wieder in die Datei schreiben (eine Auswertung nur, wenn es welche gibt)
   if (Object.values(useBaurecht.getState().pruefung.fakten).some((f) => f.herkunft === 'modul')) useBaurecht.getState().veralteteModulwerteEntfernen(auswertungMit(useBaurecht.getState().pruefung.fakten).fakten);
   const s = useBaurecht.getState();
-  // vor dem Dialog: „ohne diese speichern“ setzt die Entwürfe vorübergehend auf den Stand der Datei
   const warGeaendert = istGeaendert(s);
-  const festlegungen = offeneFestlegungen(s);
-  const fakten = offeneBestaetigungen(s);
-  let entwurf: { festlegungen: Record<string, Festlegung | null>; fakten: Record<string, FaktWert | null>; planungsrechtOrt?: BaurechtPruefung['planungsrechtOrt'] | null } | null = null;
-  if (festlegungen.length || fakten.length) {
-    const a = await bestaetigenFragen({ festlegungen, fakten });
-    if (a === 'abbrechen') return false;
-    if (a === 'bestaetigen') useBaurecht.getState().festlegungenBestaetigen(festlegungen);
-    else {
-      // der Stand nach der Antwort (während des Dialogs kann z. B. „Lage abfragen“ fertig geworden sein)
-      const jetzt = useBaurecht.getState().pruefung;
-      entwurf = {
-        festlegungen: Object.fromEntries(festlegungen.map((id) => [id, jetzt.festlegungen[id] ?? null])),
-        fakten: Object.fromEntries(fakten.filter((id) => id !== PLANUNGSRECHT).map((id) => [id, jetzt.fakten[id] ?? null])),
-        ...(fakten.includes(PLANUNGSRECHT) ? { planungsrechtOrt: jetzt.planungsrechtOrt ?? null } : {}),
-      };
-      useBaurecht.getState().aufDateistand(festlegungen, fakten);
-    }
-  }
   let ok = false;
   try {
     const konflikte: string[] = [];
@@ -82,48 +59,9 @@ async function speichernLauf(): Promise<boolean> {
     await meldung('Speichern fehlgeschlagen', fehlerText(e), e);
     return false;
   } finally {
-    if (entwurf) {
-      // Entwürfe zurück in die App – nur, wo seitdem nichts anderes geschrieben wurde (Eintrag = Stand der Datei)
-      const st = useBaurecht.getState();
-      const p = structuredClone(st.pruefung);
-      const gleich = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-      for (const [id, f] of Object.entries(entwurf.festlegungen)) {
-        if (!gleich(p.festlegungen[id], st.pruefungDatei.festlegungen[id])) continue;
-        if (f) p.festlegungen[id] = f;
-        else delete p.festlegungen[id];
-      }
-      for (const [id, f] of Object.entries(entwurf.fakten)) {
-        if (!gleich(p.fakten[id], st.pruefungDatei.fakten[id])) continue;
-        if (f) p.fakten[id] = f;
-        else delete p.fakten[id];
-      }
-      if (entwurf.planungsrechtOrt !== undefined && gleich(p.planungsrechtOrt, st.pruefungDatei.planungsrechtOrt)) {
-        if (entwurf.planungsrechtOrt) p.planungsrechtOrt = entwurf.planungsrechtOrt;
-        else delete p.planungsrechtOrt;
-      }
-      useBaurecht.setState({ pruefung: p });
-    }
-    // Rückmeldung im Kopf (sichtbar und angesagt) – erst nach dem Zurückschreiben: bleiben Entwürfe, sagt sie das
-    if (ok) {
-      const st = useBaurecht.getState();
-      const offen = offeneFestlegungen(st).length + offeneBestaetigungen(st).length;
-      useBaurecht.setState({ gespeichertMeldung: { am: Date.now(), text: offen ? `Gespeichert – ${offen === 1 ? 'ein Entwurf bleibt' : `${offen} Entwürfe bleiben`} offen` : warGeaendert ? 'Gespeichert' : 'Gespeichert – keine Änderungen' } });
-    }
+    // Rückmeldung im Kopf (sichtbar und angesagt)
+    if (ok) useBaurecht.setState({ gespeichertMeldung: { am: Date.now(), text: warGeaendert ? 'Gespeichert' : 'Gespeichert – keine Änderungen' } });
   }
-}
-
-/**
- * Vor dem Verlassen (anderer Antrag, anderes Projekt, Beenden): true nur, wenn danach nichts Ungespeichertes bleibt.
- * Wer im Bestätigen-Dialog „als Entwurf behalten“ wählt, bleibt – die Entwürfe gehen sonst stillschweigend verloren.
- */
-export async function speichernVollstaendig(): Promise<boolean> {
-  const ok = await speichern();
-  if (!ok) return false;
-  if (istGeaendert(useBaurecht.getState())) {
-    await meldung('Entwürfe bleiben offen', 'Gespeichert ist alles außer den Entwürfen. Damit sie nicht verloren gehen, bleibt das Projekt geöffnet: bitte die Entwürfe beim Speichern bestätigen, aufheben oder ausdrücklich verwerfen („Nicht speichern“).');
-    return false;
-  }
-  return true;
 }
 
 /**
@@ -228,7 +166,7 @@ export function App() {
   }, [project, modulSchluessel, stand.einreichung]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Titelleiste (Beenden, Rahmen-App): nur „gespeichert“, wenn keine Entwürfe übrig bleiben
-  const speichernMitMeldung = useCallback(async () => speichernVollstaendig(), []);
+  const speichernMitMeldung = useCallback(async () => speichern(), []);
 
   // F6 führt LEXIO selbst (eigener Kreis mit dem Hinweis-Stapel als letzter Station), nicht zusätzlich core
   useEffect(() => {
@@ -256,12 +194,12 @@ export function App() {
   // anderer Antrag: ungespeicherte Festlegungen, Bestätigungen und Merkmale nicht stillschweigend verwerfen
   const antragWechseln = async (antrag: string) => {
     if (antrag === useBaurecht.getState().antrag) return;
-    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig(), UNGESPEICHERT))) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichern(), UNGESPEICHERT))) return;
     useBaurecht.getState().antragWaehlen(antrag);
   };
 
   const projekteOeffnen = async () => {
-    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig(), UNGESPEICHERT))) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichern(), UNGESPEICHERT))) return;
     setWahl(true);
   };
 
@@ -276,13 +214,8 @@ export function App() {
     }
   };
 
-  const titel = (id: string) => {
-    const p = stand.auswertung.paragrafen.find((x) => x.id === id);
-    return { titel: stand.auswertung.text.paragraf?.(id) ?? id, automatisch: p?.automatisch, ampel: p?.ampel, ueberholt: p?.ueberholt, unwirksam: p?.unwirksam };
-  };
-  const faktTitel = (id: string) => faktName(stand.auswertung.faktDefs[id], id);
   const faktDef = (id: string) => stand.auswertung.faktDefs[id];
-  // Folgen einer Angabe: Vorschau im Dialog (mit der Angabe gegenüber jetzt) …
+  // Folgen einer Angabe: Vorschau im Dialog (mit der Angabe gegenüber jetzt)
   const folgen: FolgenRechner = (id, wert, weitere) => {
     const eigene = { ...useBaurecht.getState().pruefung.fakten, ...weitere };
     if (wert) eigene[id] = wert;
@@ -290,11 +223,6 @@ export function App() {
     const mit = auswertungMit(eigene);
     return { herab: herabstufungen(stand.auswertung, mit), nachher: mit.fakten[id] };
   };
-  // … und beim Speichern (jetzt gegenüber dem Stand der Datei)
-  // stabil je Auswertung: der Speicherdialog rechnet die Folgen nur neu, wenn sich der Stand wirklich ändert
-  const auswertungJetzt = stand.auswertung;
-  // je Punkt allein gegenüber der Datei und alle zusammen (Überschneidungen gehen nicht verloren)
-  const folgenSeitDatei = useCallback((ids: string[]) => folgenBeimSpeichern(ids, auswertungJetzt), [auswertungJetzt]);
 
   return (
     <div className="app br-app">
@@ -363,7 +291,6 @@ export function App() {
       <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} paragrafen={stand.auswertung.paragrafen} />
       <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
       <VorfragenNeinDialog folgen={folgen} />
-      <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} faktDef={faktDef} />
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
     </div>
   );
