@@ -25,13 +25,6 @@
   margin-top: 2px;
 }
 /* Stammdaten-Knopf: Abstand zum folgenden Feld (app-seitig, bis base.css nachzieht) */
-.grz-fest .sd-knopf {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  margin-bottom: 12px;
-}
 /* Vollgeschoss-Tabelle: feste Spalten, bemessen an der Zellschrift (--fs-m: „−0,20“, „100 %“) bzw. am längsten
    Kopfwort („Geschoss“); die Einstufung nimmt den Rest. Köpfe höchstens zweizeilig („über / Gel.“), die Einheit steht
    im Tooltip – ein längeres Kopfwort braucht eine breitere Spalte. So passen die Zahlen auch, wenn die Nachweis-Karte
@@ -86,7 +79,7 @@
   display: block;
   background: var(--canvas);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   margin-bottom: 8px;
 }
 /* Tabellen: gemeinsame Zahlentabelle .summary-table; hier nur, was TERRIO darüber hinaus braucht */
@@ -166,7 +159,7 @@
 }
 .kpi {
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   padding: 8px 10px;
   background: var(--bg);
 }
@@ -304,7 +297,7 @@
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--sel);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
 }
 .lp-eigenschaften-titel,
 .lp-eigenschaften .lp-kanten,
@@ -409,7 +402,7 @@
   height: min(62vh, 640px);
   min-height: 360px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   overflow: hidden;
 }
 
@@ -423,7 +416,7 @@
   top: 8px;
   right: 8px;
   padding: 2px 6px;
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-xs);
   background: var(--overlay-bg);
 }
 /* Bezug für die Breite der Tastenübersicht */
@@ -438,7 +431,7 @@
   display: flex;
   gap: 12px;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--overlay-bg);
 }
 
@@ -447,6 +440,7 @@
   width: 10px;
   height: 10px;
   margin-right: 4px;
+  /* Farbfeld: Kleinstteil, darf unter --radius-xs bleiben */
   border-radius: 2px;
   vertical-align: -1px;
 }
@@ -537,7 +531,7 @@
   padding: 8px 12px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   box-shadow: var(--schatten-schwebend);
   font-size: 11.5px;
 }
@@ -614,7 +608,7 @@
 .lp-plan {
   position: relative;
   margin-bottom: 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-s);
 }
 .lp-plan .grz-skizze {
   margin-bottom: 0;
@@ -635,7 +629,7 @@
   padding: 12px 16px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   box-shadow: var(--schatten-schwebend);
   font-size: 12px;
   text-align: center;
@@ -663,7 +657,7 @@
   padding: 3px 6px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   font-size: 12px;
 }
 .lp-plan-steuerung .toggle {

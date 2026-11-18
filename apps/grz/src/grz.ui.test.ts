@@ -564,6 +564,12 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(css).not.toMatch(/@media \(max-width: 1280px\)/);
     // Kartenkopf ganz aus core: das „?“ kommt über die Eigenschaft hilfe, keine eigene Regel für das h2
     expect(css).not.toMatch(/\.karte-kopf h2\s*\{/);
+    // Radien nach Rolle aus der Skala: nur Token, Pillen (999px) und das Farbfeld der 3D-Legende (Kleinstteil)
+    const radien = [...css.matchAll(/border-radius: ([^;]+);/g)].map((m) => m[1]);
+    expect(radien.filter((r) => !/^var\(--radius(-s|-xs)?\)$/.test(r) && r !== '999px')).toEqual(['2px']);
+    expect(css).toMatch(/\.grz-3d-legende i \{[^}]*border-radius: 2px;/);
+    // Stammdaten-Knopf und Planungsphase ganz aus core (eine eigene Spalten-Regel ließ die Phase über die Karte ragen)
+    expect(css).not.toMatch(/\.sd-knopf/);
     // Verweisknopf (button.link) kommt aus core, keine eigene Regel
     expect(css).not.toMatch(/button\.link/);
     // schmale Fenster: die Untergrenze der Seitenkarten kommt aus BreitenLeiste min (core), keine eigene Regel;
