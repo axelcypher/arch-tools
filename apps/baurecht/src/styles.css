@@ -171,9 +171,9 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   }
 }
 @container app (max-width: 1199px) {
-  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip). „Speichern“ kürzt
-     die Werkzeugleiste selbst (Kompaktstufe, `tb-text`) */
-  /* nur noch für Screenreader – wie .unsichtbar aus core (base.css), hier nur unter dieser Breite */
+  /* Beschriftungen von Antrag und Einreichung dann nur noch für Screenreader (wie .unsichtbar aus core, hier nur unter
+     dieser Breite), sichtbar steht der Name im Feld (aria-label, Tooltip). „Speichern“ kürzt die Werkzeugleiste selbst
+     (Kompaktstufe, `tb-text`) */
   .br-kopf-label {
     position: absolute;
     width: 1px;
