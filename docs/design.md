@@ -384,14 +384,18 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   `aria-describedby`); weicht der eingetragene Wert ab (etwa aus einer Datei), steht daneben ein Knopf `small` „Neu
   berechnen“. Abgrenzung: `.feld-wert` ist eine schreibgeschützte Angabe ohne Feld (Text neben Feldern), `.berechnet`
   ein Feld, dessen Wert sich ändern kann und das wie die anderen Felder in der Reihe steht.
-- **Von außen gesperrte Felder** (z. B. im Vordruck gesperrt oder von der Behörde auszufüllen) sind eine Ausnahme:
-  ebenfalls schreibgeschützt statt gesperrt (`readOnly`, nicht `disabled`) und gestaltet wie `.berechnet`, darunter eine
-  kurze Herkunftszeile (`.feld-herkunft`, z. B. „Im Vordruck gesperrt“), aber kein Tab-Stopp (`tabIndex={-1}`): Sie
-  tragen nichts zur Eingabe bei und stünden in Tabellen sonst zu Dutzenden zwischen den Eingaben. Erreichbar bleiben sie
-  per Klick und über Sprünge (Prüfliste, Suche); dann werden sie samt Herkunft vorgelesen. Berechnete Felder bleiben
-  Tab-Stopps, weil sich ihr Wert mit den Eingaben ändert und man ihn beim Durchgehen prüft. Kästchen kennen kein
-  `readOnly` und bleiben `disabled`; ein ganz gesperrtes Formular sperrt alle Felder mit `disabled`. Abgrenzung zu
-  `.feld-wert`: der ist gar kein Feld und deshalb nie fokussierbar.
+- **Von außen vorgegebene Felder** (im Vordruck gesperrt, z. B. von der Behörde auszufüllen) sind schreibgeschützt
+  (`readOnly`, nicht `disabled`) und tragen ebenfalls `.berechnet` – die Klasse steht hier für die Gestalt „nicht
+  einzutragen“, nicht für eine Berechnung –, darunter `.feld-herkunft` mit `.field-hint` (z. B. „Im Vordruck gesperrt“,
+  am Feld über `aria-describedby`; in einer papiergetreuen Ansicht ohne Platz dafür steht die Herkunft im `title`).
+  Kommen solche Felder gehäuft vor (Tabellen, Vordrucke) und wird ihr Inhalt für die Eingabe nicht gebraucht, sind sie
+  kein Tab-Stopp (`tabIndex={-1}`, auch die Weiterschaltung mit Enter überspringt sie); sonst stünden Dutzende
+  Tab-Stopps zwischen den Eingaben. Ein einzelnes vorgegebenes Feld bleibt Tab-Stopp. Erreichbar sind sie per Klick und
+  über Sprünge, die genau dieses Feld ansteuern (Prüfliste, Gliederung, Hinweis); dann werden sie samt Herkunft
+  vorgelesen, im Lesemodus des Screenreaders ohnehin. Summenfelder, deren Wert die App selbst berechnet (mit „Neu
+  berechnen“), bleiben Tab-Stopps, weil sich ihr Wert mit den Eingaben ändert. Kästchen kennen kein `readOnly` und
+  bleiben `disabled`; ein ganz gesperrtes Formular sperrt alle Felder mit `disabled`. `.feld-wert` ist kein Feld und nie
+  fokussierbar.
 - `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht; gesperrt (auch mit `aria-disabled`)
   ohne Zeiger und mit Text in `--muted` – statt der Deckkraft gesperrter Knöpfe, damit der Text lesbar bleibt; rechts
   hält es `--s2` Abstand (am Ende von `.karte-aktionen` keinen, dort schließt es bündig ab).
