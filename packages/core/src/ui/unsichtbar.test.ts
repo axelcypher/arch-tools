@@ -3,7 +3,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+// Zeilenenden vereinheitlichen: unter Windows checkt git base.css mit CRLF aus
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8').replace(/\r\n/g, '\n');
 
 describe('.unsichtbar (nur für Screenreader)', () => {
   it('blendet über clip-path aus, clip als Rückfall, ohne display: none', () => {
