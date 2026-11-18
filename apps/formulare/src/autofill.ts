@@ -16,9 +16,9 @@
 import type { Feld } from './forma/felder';
 import type { Formular } from './forma/formular';
 import type { Projektkarte, Teil } from './forma/projektkarte';
-import { ausfuellen, pkTitel, pkWert, verwendeteEintraege, zuordnungen } from './forma/projektkarte';
+import { ausfuellen, pkEintrag, pkTitel, pkWert, verwendeteEintraege, zuordnungen } from './forma/projektkarte';
 import { kennung } from './forma/formular';
-import { korrigiert, zusaetzlicheFelder } from './vorgaben/zuordnungen';
+import { ersatzTitel, korrigiert, zusaetzlicheFelder } from './vorgaben/zuordnungen';
 
 export interface FeldZustand {
   /** zuletzt eingetragener Auto-Wert */
@@ -61,10 +61,11 @@ function quelle(teile: Teil[], pk: Projektkarte): string {
 
 /**
  * Felder mit Zuordnung zur Projektkarte (Textfelder) – unabhängig davon, ob die Projektkarte etwas hat. Verweist ein
- * Vordruck auf die falsche Beteiligten-Gruppe, gilt die Korrektur aus `vorgaben/zuordnungen.ts`.
+ * Vordruck auf die falsche Beteiligten-Gruppe, gilt die Korrektur aus `vorgaben/zuordnungen.ts`. `ersatz` ist der Titel
+ * des Eintrags, der gilt, wenn die Zuordnung keinen Eintrag der Projektkarte trifft (siehe `autoWerte`).
  */
-export function autofillFelder(formular: Formular, felder: Feld[][]): Map<string, { feld: Feld; teile: Teil[] }> {
-  const out = new Map<string, { feld: Feld; teile: Teil[] }>();
+export function autofillFelder(formular: Formular, felder: Feld[][]): Map<string, { feld: Feld; teile: Teil[]; ersatz?: string }> {
+  const out = new Map<string, { feld: Feld; teile: Teil[]; ersatz?: string }>();
   const k = kennung(formular);
   const zusaetzlich = zusaetzlicheFelder(k);
   formular.seiten.forEach((seite, i) => {
@@ -77,17 +78,33 @@ export function autofillFelder(formular: Formular, felder: Feld[][]): Map<string
     }
     for (const [name, teile] of liste) {
       const feld = nachName.get(name);
-      const t = feld ? korrigiert(k, feld.schluessel, teile) : [];
-      if (feld && feld.art === 'text' && t.some((x) => x.art === 'eintrag')) out.set(feld.schluessel, { feld, teile: t });
+      if (!feld || feld.art !== 'text') continue;
+      const t = korrigiert(k, feld.schluessel, teile);
+      const ersatz = ersatzTitel(k, feld.schluessel);
+      if (t.some((x) => x.art === 'eintrag') || ersatz) out.set(feld.schluessel, { feld, teile: t, ...(ersatz ? { ersatz } : {}) });
     }
   });
   return out;
 }
 
+/** Eintrag der Projektkarte mit diesem Titel (ohne Doppelpunkt, Groß- und Kleinschreibung egal), sonst undefined */
+const nachTitel = (pk: Projektkarte, titel: string) => pk.eintraege.find((e) => normiert(pkTitel(e.titel)).toLowerCase() === normiert(titel).toLowerCase());
+
+/**
+ * Zuordnung, mit der ein Feld ausgefüllt wird: die aus FORMA (bzw. korrigiert); trifft sie keinen Eintrag, den die
+ * Projektkarte hat, und gibt es einen Ersatz nach Titel, gilt der Eintrag mit diesem Titel
+ */
+function wirksam(teile: Teil[], ersatz: string | undefined, pk: Projektkarte): Teil[] {
+  if (!ersatz || verwendeteEintraege(teile).some((t) => pkEintrag(pk, t.gruppe, t.id))) return teile;
+  const e = nachTitel(pk, ersatz);
+  return e ? [{ art: 'eintrag', gruppe: e.gruppe, id: e.id, trenner: '' }] : teile;
+}
+
 /** Auto-Werte eines Formulars aus der Projektkarte (nur Felder, für die sie etwas hat) */
 export function autoWerte(formular: Formular, felder: Feld[][], pk: Projektkarte): Map<string, AutoWert> {
   const out = new Map<string, AutoWert>();
-  for (const [k, { feld, teile }] of autofillFelder(formular, felder)) {
+  for (const [k, { feld, teile: forma, ersatz }] of autofillFelder(formular, felder)) {
+    const teile = wirksam(forma, ersatz, pk);
     const wert = ausfuellen(teile, (g, id) => pkWert(pk, g, id), feld.einzeilig);
     if (wert.trim()) out.set(k, { feld, wert, quelle: quelle(teile, pk) });
   }
