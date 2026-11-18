@@ -68,6 +68,61 @@ jobs:
             apps/baurecht/dist
             apps/suite/dist
 
+  # Im PR: Tests auch unter Windows (dort checkt git anders aus, Pfade und Zeitverhalten weichen ab – #308): core, wenn
+  # der PR core, die TS-/Vitest-Konfiguration, Abhängigkeiten oder diese Datei berührt; dazu jede App, deren Tests oder
+  # vite.config der PR ändert. Der Job läuft in jedem PR und endet ohne Tests grün, wenn nichts davon betroffen ist – so
+  # hängt kein PR an einem fehlenden Check, auch wenn er Pflicht wird. Auf main (push) nicht: dort prüft der Release-Lauf
+  # jede App unter Windows
+  windows-tests:
+    name: Tests (Windows)
+    if: github.event_name == 'pull_request'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # volle Historie: die Auswahl braucht die Abzweigung des PRs vom Ziel-Branch (Merge-Base)
+          fetch-depth: 0
+      - name: Betroffene Testprojekte
+        id: betroffen
+        shell: bash
+        env:
+          ZIEL: ${{ github.base_ref }}
+          KOPF: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --quiet --no-tags origin "+refs/heads/$ZIEL:refs/remotes/origin/$ZIEL"
+          # --no-renames: aus core verschobene Dateien stehen auch mit dem alten Pfad in der Liste
+          geaendert=$(git diff --no-renames --name-only "$(git merge-base "origin/$ZIEL" "$KOPF")" "$KOPF")
+          projekte=""
+          # ohne Pipe (bash -eo pipefail: grep -q beendet sich früh, printf bekäme SIGPIPE und der Treffer ginge verloren)
+          if grep -Eq '^packages/core/|^tsconfig(\.base)?\.json$|^vitest\.config\.[cm]?[jt]s$|^package(-lock)?\.json$|^\.gitattributes$|^\.github/workflows/ci\.yml$' <<<"$geaendert"; then
+            projekte="core"
+          fi
+          for app in $(grep -Eo '^apps/[^/]+/(.*\.test\.[cm]?[jt]sx?|vite\.config\.[cm]?[jt]s)$' <<<"$geaendert" | cut -d/ -f2 | sort -u); do
+            projekte="$projekte $app"
+          done
+          projekte=$(echo $projekte)
+          echo "projekte=$projekte" >> "$GITHUB_OUTPUT"
+          if [ -n "$projekte" ]; then echo "Tests unter Windows für: $projekte"; else echo "Weder core noch Tests betroffen – Tests unter Windows entfallen."; fi
+      - uses: actions/setup-node@v4
+        if: steps.betroffen.outputs.projekte != ''
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.betroffen.outputs.projekte != ''
+        run: npm ci
+      - name: Tests
+        if: steps.betroffen.outputs.projekte != ''
+        shell: bash
+        env:
+          PROJEKTE: ${{ steps.betroffen.outputs.projekte }}
+        run: |
+          WORKER=$(node -p "Math.max(2, require('os').availableParallelism())")
+          echo "Kerne bzw. Test-Worker: $WORKER"
+          args=()
+          for p in $PROJEKTE; do args+=(--project "$p"); done
+          # --passWithNoTests: ein PR, der die Tests einer App löscht, bricht hier nicht ab
+          npx vitest run --maxWorkers="$WORKER" --passWithNoTests "${args[@]}"
+
   tauri:
     name: Tauri-Hülle prüfen (${{ matrix.app }})
     runs-on: ubuntu-latest
