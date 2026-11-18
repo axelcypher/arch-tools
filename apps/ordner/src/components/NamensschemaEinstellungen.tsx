@@ -243,7 +243,7 @@ function KuerzelListe({
             <th>Bedeutung</th>
             <th>{mitLph ? 'LPh' : 'Schreibweisen'}</th>
             <th>
-              <span className="po-unsichtbar">Entfernen</span>
+              <span className="unsichtbar">Entfernen</span>
             </th>
           </tr>
         </thead>
