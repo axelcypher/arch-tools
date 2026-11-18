@@ -117,14 +117,19 @@ Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`spa
 Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
 stehen auf `--bg` mit `--radius-s`; bricht eine Bezeichnung um, bleiben die Werte einer Zeile auf einer Linie (Wert und
 Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie brechen in schmalen Karten um
-(Wunschbreite 9em, nie schmaler als ihr Inhalt). Eine Einheit am Wert steht als `small` im `strong` (`--fs-s`, normal,
-`--muted`). Kennzahl mit Prüfergebnis (`.metric.pruefung`, Wunschbreite 12em): oben ein Kopf (`.metric-kopf`) aus
-Bezeichnung und Marke rechts (`.marke` mit Variante), gleich darunter der Wert, dann mehrere Nebenzeilen (`small`); der
-Wert steht hier oben, damit er in Kacheln mit unterschiedlich vielen Nebenzeilen auf einer Linie bleibt; in einer Zeile
-deshalb nicht mit einfachen Kacheln mischen. Zustand der Kachel: `.metric.warnung` bzw. `.metric.alarm` als Innenrand in
-`--warn-punkt` bzw. `--danger` (verschiebt nichts); der Zustand steht immer auch als Text (Marke oder Nebentext), die
-Farbe allein reicht nicht. Mehr als vier oder fünf Kacheln gehören nicht nebeneinander: die wichtigsten Werte als
-Kacheln, die übrigen in einer Tabelle darunter.
+(Wunschbreite 9em, nie schmaler als ihr Inhalt). Ergänzungen:
+
+- **Einheit am Wert:** `small` im `strong` (`<strong>0,42 <small>m²</small></strong>`), `--fs-s`, normal, `--muted`.
+- **Kennzahl mit Prüfergebnis** (`.metric.pruefung`, Wunschbreite 12em): oben der Kopf `.metric-kopf` aus Bezeichnung
+  und Marke rechts (`<div class="metric-kopf"><span>GRZ</span><span class="marke ok">eingehalten</span></div>`), gleich
+  darunter der Wert, dann beliebig viele Nebenzeilen (`small`). Der Wert steht oben, damit er bei unterschiedlich vielen
+  Nebenzeilen auf einer Linie bleibt; dafür die Bezeichnung kurz und einzeilig halten und in einer Zeile nicht mit
+  einfachen Kacheln mischen.
+- **Zustand:** `.metric.warnung` bzw. `.metric.fehler` (wie bei `.marke`) als Innenrand in `--warn-text` bzw.
+  `--fehler-text`; er verschiebt nichts. Der Zustand steht immer auch als Text (Marke oder Nebentext), die Farbe allein
+  reicht nicht.
+- **Anzahl:** Mehr als vier oder fünf Kacheln gehören nicht nebeneinander – die wichtigsten Werte als Kacheln, die
+  übrigen in einer Tabelle darunter.
 
 ## Überschriften
 

@@ -26,9 +26,19 @@ describe('Kennzahl-Kacheln', () => {
     expect(regel('.metric > strong')).toMatch(/margin-top:\s*auto/);
   });
 
-  it('Warnung und Alarm als Innenrand, ohne Rahmen (verschiebt nichts)', () => {
-    expect(regel('.metric.warnung')).toMatch(/box-shadow:\s*inset 0 0 0 1px var\(--warn-punkt\)/);
-    expect(regel('.metric.alarm')).toMatch(/box-shadow:\s*inset 0 0 0 1px var\(--danger\)/);
-    expect(regel('.metric.alarm')).not.toMatch(/border/);
+  it('Kopf so hoch wie eine Marke und umbrechend', () => {
+    const r = regel('.metric > .metric-kopf');
+    expect(r).toMatch(/min-height:\s*18px/);
+    expect(r).toMatch(/flex-wrap:\s*wrap/);
+  });
+
+  it('Warnung und Fehler als Innenrand in den Textfarben des Zustands, ohne Rahmen', () => {
+    const w = regel('.metric.warnung');
+    const f = regel('.metric.fehler');
+    expect(w).toMatch(/box-shadow:\s*inset 0 0 0 1px var\(--warn-text\)/);
+    expect(f).toMatch(/box-shadow:\s*inset 0 0 0 1px var\(--fehler-text\)/);
+    // Punktfarbe (zu wenig Kontrast auf hellem Grund) und --danger (nur für zerstörende Aktionen) nicht
+    expect(w + f).not.toMatch(/--warn-punkt|--danger|border/);
+    expect(css).not.toMatch(/\n\.metric\.alarm \{/);
   });
 });

@@ -1122,7 +1122,10 @@ textarea:focus {
 }
 .metric > .metric-kopf {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  /* so hoch wie eine Marke: Kacheln mit und ohne Marke halten den Wert auf einer Linie */
+  min-height: 18px;
   justify-content: space-between;
   gap: var(--s1);
   font-size: var(--fs-xs);
@@ -1132,12 +1135,13 @@ textarea:focus {
   margin-top: 0;
 }
 
-/* Zustand der Kachel als Innenrand (verschiebt nichts); der Zustand steht zusätzlich als Text (Marke, Nebentext) */
+/* Zustand der Kachel als Innenrand (verschiebt nichts) in den Textfarben des Zustands (Kontrast über 3 : 1); der
+   Zustand steht zusätzlich als Text (Marke, Nebentext) */
 .metric.warnung {
-  box-shadow: inset 0 0 0 1px var(--warn-punkt);
+  box-shadow: inset 0 0 0 1px var(--warn-text);
 }
-.metric.alarm {
-  box-shadow: inset 0 0 0 1px var(--danger);
+.metric.fehler {
+  box-shadow: inset 0 0 0 1px var(--fehler-text);
 }
 
 .points-editor {

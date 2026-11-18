@@ -1,10 +1,34 @@
 {
-  "flaechenrechner": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung.",
-  "ava": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung.",
-  "grz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung.",
-  "kosten": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung.",
-  "ordner": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung.",
-  "entzerrung": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung.",
-  "formulare": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung.",
-  "baurecht": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  }
 }
