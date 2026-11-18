@@ -146,6 +146,17 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     expect(wert('0:Memo14')).toBe('');
   });
 
+  it('von FORMA berechnete Felder: schreibgeschützt (fokussierbar), nicht gesperrt – und ohne Eingaben', async () => {
+    datei.bytes = synthetischesFormular('nw010010', '2024G', [[], [{ name: 'Panel1', titel: 'Kopf Blatt 2', felder: [{ art: 'memo', name: 'Memo1', text: 'Bauherrschaft', berechnet: true }] }]]);
+    const host = await oeffnen();
+    const kopf = eingabe(host, '1:Memo1');
+    expect([kopf.readOnly, kopf.disabled, kopf.classList.contains('berechnet')]).toEqual([true, false, true]);
+    await tippe('1:Memo1', 'X');
+    act(() => useFormulare.getState().feldVerlassen(feldVon('1:Memo1')));
+    await warte();
+    expect(wert('1:Memo1')).toBe('');
+  });
+
   it('Fahrradstellplätze mit derselben Regel', async () => {
     await oeffnen();
     await tippe('1:Memo3', '4');

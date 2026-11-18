@@ -956,24 +956,10 @@ button.icon.fo-gl-zaehlt.an {
 .fo-feld input[type='text'] {
   width: 100%;
   font-family: inherit;
+}
+/* berechnete Felder (.berechnet aus core) behalten ihre feste Höhe */
+.fo-feld textarea:not(.berechnet) {
   resize: vertical;
-}
-/* berechnete Felder (von FORMA gesperrt bzw. Summen der App, schreibgeschützt): ohne Feldgrund, gestrichelt – die Schrift
-   bleibt in Textfarbe, damit der Wert lesbar bleibt */
-.fo-feld :is(textarea, input[type='text']).berechnet {
-  background: var(--bg);
-  border-style: dashed;
-  border-color: var(--border);
-  color: var(--text);
-  cursor: default;
-  resize: none;
-  opacity: 1;
-}
-.fo-summe-aus {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s2);
 }
 .fo-feld.geaendert {
   border-left-color: var(--sel);

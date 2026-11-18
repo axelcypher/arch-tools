@@ -313,9 +313,10 @@ function FeldEingabe({
   };
   const berechnet = summe && rechne(summe.teile, textVon);
   const neuBerechnen = summe && berechnet && !berechnet.ungueltig.length && typeof wert === 'string' && wert.trim() !== berechnet.wert ? berechnet.wert : undefined;
-  // von FORMA berechnete Felder trägt man nicht ein
-  const gesperrt = gesperrtFormular || (feld.berechnet && !summe);
-  const nurLesen = !!summe;
+  // berechnete Felder (von FORMA oder Summen der App) trägt man nicht ein: schreibgeschützt, aber fokussierbar und vorlesbar
+  // (Kästchen kennen kein readOnly – dort bleibt disabled); ganz gesperrt nur im gesperrten Formular
+  const gesperrt = gesperrtFormular || (feld.berechnet && feld.art === 'kreuz');
+  const nurLesen = feld.berechnet;
   const summeAus = summe && herkunft(summe, titelVon);
   const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? 'wird berechnet'}` : feld.hinweis;
 
@@ -391,7 +392,7 @@ function FeldEingabe({
         )}
         {ohneBeschriftung && info}
         {eingabe}
-        <div className="fo-summe-aus">
+        <div className="feld-herkunft">
           <span className="field-hint" id={hinweisId}>
             {herkunft(summe, titelVon, true)}
           </span>
