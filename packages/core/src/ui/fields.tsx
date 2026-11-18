@@ -327,9 +327,11 @@ export function TextField({
   );
 }
 
-export function Field({ label, children, hint, pflicht = false }: { label: string; children: React.ReactNode; hint?: string; pflicht?: boolean }) {
+/** Beschriftetes Feld. `breite` gilt im `.feldraster`: `breit` über die ganze Zeile, `zwei` über zwei Spalten. */
+export function Field({ label, children, hint, pflicht = false, breite }: { label: string; children: React.ReactNode; hint?: string; pflicht?: boolean; breite?: 'breit' | 'zwei' }) {
+  const klasse = breite === 'breit' ? 'field feldraster-breit' : breite === 'zwei' ? 'field feldraster-zwei' : 'field';
   return (
-    <label className="field">
+    <label className={klasse}>
       <span className="field-label">
         {label}
         {pflicht && (
