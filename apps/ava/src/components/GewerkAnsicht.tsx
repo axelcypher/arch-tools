@@ -211,7 +211,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
           {angaben}
         </span>
         {g && (
-          <button className="small ava-link" title="Ordner des Gewerks öffnen" aria-label="Ordner öffnen" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>
+          <button className="ava-link" title="Ordner des Gewerks öffnen" aria-label="Ordner öffnen" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>
             <Symbol name="ordnerOffen" /> <span className="ava-ordner-text">Ordner öffnen</span>
           </button>
         )}

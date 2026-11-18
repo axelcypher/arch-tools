@@ -120,7 +120,7 @@
 }
 
 .ava-link {
-  margin-left: 8px;
+  margin-left: var(--s2);
 }
 
 /* ---------- Tabellen ---------- */
@@ -274,6 +274,11 @@
 .ava-tabs > .segment,
 .ava-tabs > .ava-link {
   flex: none;
+}
+
+/* in der Steuerzeile reicht die Lücke der Zeile */
+.ava-tabs > .ava-link {
+  margin-left: 0;
 }
 
 /* lange Dateinamen der Scans umbrechen statt abschneiden */
