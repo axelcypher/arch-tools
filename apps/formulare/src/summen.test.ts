@@ -10,10 +10,13 @@ describe('Summenfelder: Rechnen', () => {
     expect(ganzeZahl('3')).toBe(3);
     expect(ganzeZahl(' 3 ')).toBe(3);
     expect(ganzeZahl('1 000')).toBe(1000);
+    expect(ganzeZahl('1\u00a0000')).toBe(1000);
     expect(ganzeZahl('1.000')).toBe(1000);
+    expect(ganzeZahl('12.345.678')).toBe(12345678);
     expect(ganzeZahl('')).toBeNull();
     expect(ganzeZahl('  ')).toBeNull();
-    for (const x of ['ca. 3', '2-3', '1,5', '1.5', '-1', 'drei']) expect(ganzeZahl(x), x).toBeNaN();
+    // Leerzeichen innen nur als Tausendertrennung: „2 3“ ist keine 23; gemischte Trennung und zu große Zahlen auch nicht
+    for (const x of ['ca. 3', '2-3', '1,5', '1.5', '-1', 'drei', '2 3', '12 34', '1 2 3', '1.000 000', '99999999999999999999']) expect(ganzeZahl(x), x).toBeNaN();
   });
 
   it('alle Teile leer: Summe leer; ein Teil gefüllt: leere zählen als 0; Unsinn: keine Summe', () => {
@@ -56,6 +59,22 @@ describe('Summenfelder: Rechnen', () => {
     expect(Object.fromEntries(summenNachAenderung(KFZ, get(datei), get({ ...datei, '0:Memo12': '2-3' })))).toEqual({ '0:Memo14': '', '0:Memo17': '1' });
   });
 
+  it('Teile wieder wie in der Datei (Rückgängig): die Summe der Datei gilt wieder – außer sie wurde neu berechnet', () => {
+    const datei = { '0:Memo12': '2', '0:Memo13': '3', '0:Memo14': '7', '0:Memo15': '', '0:Memo16': '', '0:Memo17': '7' };
+    const get = (w: Record<string, string>) => (s: string) => w[s];
+    const geaendert = { ...datei, '0:Memo12': '4', '0:Memo14': '7', '0:Memo17': '7' };
+    // Teil zurück auf den Dateiwert: Summen wie in der Datei (hier unverändert 7 – also keine neuen Werte)
+    const zurueck = summenNachAenderung(KFZ, get({ ...geaendert, '0:Memo14': '7' }), get(datei), get(datei));
+    expect(zurueck.size).toBe(0);
+    const ausGerechnet = summenNachAenderung(KFZ, get({ ...datei, '0:Memo12': '4', '0:Memo14': '7' }), get({ ...datei, '0:Memo14': '7' }), get(datei));
+    expect(ausGerechnet.size).toBe(0);
+    // nach „Neu berechnen“ (Summe im Verlauf): es wird gerechnet
+    const neu = summenNachAenderung(KFZ, get({ ...datei, '0:Memo12': '4', '0:Memo14': '7' }), get({ ...datei, '0:Memo14': '5' }), get(datei), new Set(['0:Memo14']));
+    expect(Object.fromEntries(neu)).toEqual({ '0:Memo17': '5' });
+    const neu2 = summenNachAenderung(KFZ, get({ ...datei, '0:Memo12': '4', '0:Memo14': '6' }), get({ ...datei, '0:Memo14': '6' }), get(datei), new Set(['0:Memo14']));
+    expect(neu2.get('0:Memo14')).toBe('5');
+  });
+
   it('Felder, die es im Formular nicht gibt, bleiben unberührt', () => {
     expect(
       summenNachAenderung(
@@ -68,9 +87,20 @@ describe('Summenfelder: Rechnen', () => {
 });
 
 describe('Summenfelder: Hinweise und Herkunft', () => {
-  it('Herkunft nennt die Teile', () => {
+  it('Herkunft nennt die Teile – kurz ohne den gemeinsamen Anfang bis zu einem Wortende', () => {
     expect(herkunft(KFZ[0], titel)).toBe('Summe aus „in Garagen“ und „im Freien“');
     expect(herkunft(KFZ[1], (s) => s)).toBe('Summe aus „0:Memo14“, „0:Memo15“ und „0:Memo16“');
+    const lang = (s: string) =>
+      ({
+        '0:Memo12': 'Stellplätze auf dem Baugrundstück: in Garagen',
+        '0:Memo13': 'Stellplätze auf dem Baugrundstück: im Freien',
+        '0:Memo14': 'Stellplätze insgesamt auf dem Baugrundstück',
+        '0:Memo15': 'Stellplätze auf fremdem Grundstück mit Baulast',
+        '0:Memo16': 'Stellplätze durch Ablösung',
+      })[s] ?? s;
+    expect(herkunft(KFZ[0], lang, true)).toBe('Summe aus „in Garagen“ und „im Freien“');
+    expect(herkunft(KFZ[1], lang, true)).toBe('Summe aus „insgesamt auf dem Baugrundstück“, „auf fremdem Grundstück mit Baulast“ und „durch Ablösung“');
+    expect(herkunft(KFZ[0], lang)).toBe('Summe aus „Stellplätze auf dem Baugrundstück: in Garagen“ und „Stellplätze auf dem Baugrundstück: im Freien“');
   });
 
   it('Teil keine ganze Zahl: Hinweis an Teil und Summe', () => {
@@ -82,8 +112,8 @@ describe('Summenfelder: Hinweise und Herkunft', () => {
     const h = summenHinweise([KFZ[0]], werte({ '0:Memo12': '2', '0:Memo13': '3', '0:Memo14': '7' }), titel);
     expect(h).toHaveLength(1);
     expect(h[0].felder).toEqual(['0:Memo14']);
-    expect(h[0].text).toBe('„auf dem Baugrundstück“: eingetragen ist 7, die Summe der Angaben ist 5. Die Summe wird neu berechnet, sobald sich eine der Angaben ändert.');
-    expect(summenHinweise([KFZ[0]], werte({ '0:Memo14': '4' }), titel)[0].text).toContain('die Summe der Angaben ist leer (keine Angaben)');
+    expect(h[0].text).toBe('„auf dem Baugrundstück“: eingetragen ist 7, die Angaben ergeben 5. „Neu berechnen“ am Feld übernimmt die Summe.');
+    expect(summenHinweise([KFZ[0]], werte({ '0:Memo14': '4' }), titel)[0].text).toContain('die Angaben ergeben keine Summe (alle leer)');
   });
 
   it('kein Hinweis, wenn die Summe stimmt (auch mit Leerzeichen) oder alles leer ist', () => {

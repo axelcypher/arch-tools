@@ -103,14 +103,35 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['5', '6']);
     const summe = eingabe(host, '0:Memo14');
     expect(summe.value).toBe('5');
-    expect(summe.disabled).toBe(true);
-    expect(summe.closest('label')!.querySelector('.field-hint')!.textContent).toBe('Summe aus „Stellplätze auf dem Baugrundstück: in Garagen“ und „Stellplätze auf dem Baugrundstück: im Freien“');
-    // Rückgängig: die Summe folgt den Angaben
+    // schreibgeschützt, aber fokussierbar; die kurze Herkunft hängt am Feld, die lange steht im Tooltip
+    expect([summe.readOnly, summe.disabled]).toEqual([true, false]);
+    const herkunft = summe.closest('label')!.querySelector('.field-hint')!;
+    expect(herkunft.textContent).toBe('Summe aus „in Garagen“ und „im Freien“');
+    expect(summe.getAttribute('aria-describedby')).toBe(herkunft.id);
+    expect(summe.closest('label')!.getAttribute('title')).toContain('Summe aus „Stellplätze auf dem Baugrundstück: in Garagen“');
+    // Rückgängig und Wiederholen: die Summe folgt den Angaben
     act(() => void useFormulare.getState().rueckgaengig());
     await warte();
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['5', '5']);
-    // alle Angaben geleert: Summen wieder leer, nicht 0
+    act(() => void useFormulare.getState().wiederholen());
+    await warte();
+    expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['5', '6']);
+    // mehrere Angaben in einem Schritt
+    act(() =>
+      useFormulare.getState().werteSetzen(
+        [
+          { feld: feldVon('0:Memo12'), wert: '10' },
+          { feld: feldVon('0:Memo15'), wert: '2' },
+        ],
+        'Test',
+      ),
+    );
+    await warte();
+    expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['13', '16']);
+    // Angaben auf dem Grundstück geleert: Summe dort leer, nicht 0 – „insgesamt“ zählt Baulast und Ablösung weiter
     for (const s of ['0:Memo12', '0:Memo13']) await tippe(s, '');
+    expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['', '3']);
+    for (const s of ['0:Memo15', '0:Memo16']) await tippe(s, '');
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['', '']);
   });
 
@@ -137,11 +158,25 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     const host = await oeffnen();
     expect(offen().aenderungen).toEqual({});
     expect(wert('0:Memo14')).toBe('7');
-    expect(hinweise(host)).toContain('eingetragen ist 7, die Summe der Angaben ist 5');
+    expect(hinweise(host)).toContain('eingetragen ist 7, die Angaben ergeben 5');
     // ändert sich eine Angabe, wird neu gerechnet – der Hinweis verschwindet
     await tippe('0:Memo13', '4');
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['6', '6']);
     expect(hinweise(host)).not.toContain('eingetragen ist');
+    // Rückgängig: die Angaben sind wieder wie in der Datei – damit auch die Summe aus der Datei, nichts bleibt geändert
+    act(() => void useFormulare.getState().rueckgaengig());
+    await warte();
+    expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['7', '7']);
+    expect(offen().aenderungen).toEqual({});
+    // „Neu berechnen“ am Feld übernimmt die Summe (ein Schritt im Verlauf, rückgängig zu machen)
+    const knopf = () => [...eingabe(host, '0:Memo14').closest('label')!.querySelectorAll('button')].find((b) => b.textContent === 'Neu berechnen');
+    act(() => knopf()!.click());
+    await warte();
+    expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['5', '5']);
+    expect(knopf()).toBeUndefined();
+    act(() => void useFormulare.getState().rueckgaengig());
+    await warte();
+    expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['7', '7']);
   });
 
   it('die Summe landet in der Formulardatei', async () => {

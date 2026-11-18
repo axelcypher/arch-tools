@@ -444,7 +444,8 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           className={`fo-el fo-memo${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${autofill ? ` ${autofill}` : ''}`}
           style={{ ...pos, ...schrift(k), textAlign: AUSRICHTUNG[bezeichner(k.o, 'Alignment') ?? ''] }}
           value={typeof wert === 'string' ? wert : ''}
-          disabled={gesperrt || feld.berechnet}
+          disabled={gesperrt || (feld.berechnet && !feld.summe)}
+          readOnly={feld.summe}
           title={autofill ? `${titel} – ${AUTOFILL_TEXT[autofill]}` : titel}
           aria-label={feld.beschriftung}
           data-feld={feld.schluessel}

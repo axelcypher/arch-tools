@@ -751,7 +751,7 @@ function aufbereiten(bytes: Uint8Array) {
   const formular = parseFormular(bytes);
   // Summenfelder (summen.ts) sind berechnet – auch wenn ein Vordruck sie nicht sperrt
   const summen = new Set(summenVon(kennung(formular)).map((x) => x.ziel));
-  const felder = formular.seiten.map((s, i) => felderDerSeite(s, i).map((f) => (summen.has(f.schluessel) && f.art === 'text' ? { ...f, berechnet: true } : f)));
+  const felder = formular.seiten.map((s, i) => felderDerSeite(s, i).map((f) => (summen.has(f.schluessel) && f.art === 'text' ? { ...f, berechnet: true, summe: true } : f)));
   // Sicherheitsnetz: Was sich nicht unverändert zurückschreiben lässt, wird auch nicht gespeichert
   const nurLesen = gleich(formularBytes(formular), bytes) ? null : 'Die Datei lässt sich nicht verlustfrei zurückschreiben – Speichern ist gesperrt.';
   return { formular, felder, nurLesen };
@@ -770,7 +770,8 @@ function bereinige(aenderungen: Record<string, Wert>, felder: Feld[][]): Record<
 
 /**
  * Summenfelder nach einer Änderung neu rechnen (summen.ts): nur Summen, deren Teile sich gegenüber `vorher` (dasselbe
- * Formular) geändert haben. Ohne Vorgänger (gerade geöffnet) bleibt alles, wie es ist.
+ * Formular) geändert haben. Sind die Teile wieder wie in der Datei (z. B. nach Rückgängig), gilt die Summe der Datei,
+ * außer sie steht selbst im Verlauf („Neu berechnen“). Ohne Vorgänger (gerade geöffnet) bleibt alles, wie es ist.
  */
 function mitSummen(vorher: OffenesFormular | null, o: OffenesFormular): Record<string, Wert> {
   const summen = summenVon(kennung(o.formular));
@@ -782,7 +783,12 @@ function mitSummen(vorher: OffenesFormular | null, o: OffenesFormular): Record<s
     const w = wertVon(x, f);
     return typeof w === 'string' ? w : '';
   };
-  const neu = summenNachAenderung(summen, text(vorher), text(o));
+  const datei = (s: string) => {
+    const f = felder.get(s);
+    return f && typeof f.original === 'string' ? f.original : undefined;
+  };
+  const gesetzt = new Set(o.verlauf.schritte.slice(0, o.verlauf.position).flatMap((x) => x.aenderungen.map((a) => a.feld)));
+  const neu = summenNachAenderung(summen, text(vorher), text(o), datei, gesetzt);
   return neu.size ? mitWerten(o, neu) : o.aenderungen;
 }
 
