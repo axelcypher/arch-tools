@@ -43,8 +43,9 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 
 Radien: `--radius` 8px für Flächen (Karte, Dialog), `--radius-s` 6px für Knöpfe, Segmente und kartenartige Kästen
 innerhalb einer Karte (Kennzahl, Planeintrag, Ziel), `--radius-xs` 4px für Felder, Code, Listen und kleine Kästen
-(Hinweis, Protokoll). Verschachtelte Kästen runden kleiner als ihre Umgebung, damit die Ecken ineinander liegen. Kleiner
-als 4px nur für Kleinstteile (Farbfeld, Einfügemarke), Pillen mit `999px`.
+(Hinweis, Protokoll). Verschachtelte Kästen runden kleiner als ihre Umgebung, damit die Ecken ineinander liegen; es zählt
+die Ebene, nicht das Element (eine Liste in einem Dialog ist ein Kasten in einer Fläche: `--radius-s`). Kleiner als 4px
+nur für Kleinstteile (Farbfeld, Einfügemarke); Pillen (Zähler, Balken, Marken mit runden Enden) mit `999px`.
 
 Weitere: `--ctl-h` 30px und `--ctl-h-s` 24px (Höhe der Bedienelemente).
 

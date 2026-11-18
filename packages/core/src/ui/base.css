@@ -2186,7 +2186,7 @@ code {
   min-width: 16px;
   margin-left: 4px;
   padding: 0 4px;
-  border-radius: var(--radius);
+  border-radius: 999px;
   background: var(--danger);
   /* dunkles Schema: dunkle Schrift auf dem helleren Rot (Kontrast) */
   color: var(--on-accent);

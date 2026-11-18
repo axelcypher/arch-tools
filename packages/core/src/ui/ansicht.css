@@ -127,7 +127,7 @@ html.zieht * {
   overflow-y: auto;
   scrollbar-gutter: stable;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-s);
   background: var(--bg);
   padding: 10px;
 }
@@ -139,7 +139,7 @@ html.zieht * {
 .av-ed-abschnitt {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-s);
   padding: 8px 10px 10px;
 }
 .av-ed-abschnitt.aktiv {
@@ -175,7 +175,7 @@ html.zieht * {
   min-height: 38px;
   padding: 3px 6px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-xs);
   background: var(--panel);
 }
 .av-ed-feld.quelle {
@@ -235,7 +235,7 @@ html.zieht * {
 .av-ed-leer {
   padding: 10px 6px;
   border: 1px dashed var(--border);
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-xs);
   text-align: center;
 }
 .av-ed-neu {
@@ -268,7 +268,7 @@ html.zieht * {
   align-items: center;
   gap: 8px;
   padding: 3px 6px;
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-xs);
   cursor: pointer;
 }
 .av-ed-kat-feld:hover {
@@ -370,7 +370,7 @@ html.zieht * {
   overflow-y: auto;
   scrollbar-gutter: stable;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-s);
   background: var(--bg);
   padding: 10px;
 }

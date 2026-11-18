@@ -17,8 +17,26 @@ describe('Radien aus der Skala', () => {
   it('core nutzt für Rundungen der Skala die Token statt fester Werte (unter 4px nur Kleinstteile, Pillen 999px)', () => {
     for (const datei of dateien) {
       const css = readFileSync(join(ordner, datei), 'utf8');
-      const fest = [...css.matchAll(/border-radius:\s*([^;]+);/g)].map((m) => m[1]).filter((w) => /(^|\s)([4-9]|\d{2})px/.test(w) && !/999px/.test(w));
-      expect(fest, datei).toEqual([]);
+      const fest = [...css.matchAll(/border(?:-[a-z]+)*-radius:\s*([^;]+);/g)].map((m) => m[1]).filter((w) => /\dpx/.test(w) && !/999px/.test(w));
+      // unter 4px nur die Kleinstteile (Farbfeld, Einfügemarke)
+      expect(
+        fest.every((w) => w === '2px'),
+        `${datei}: ${fest.join(', ')}`,
+      ).toBe(true);
+      expect(fest.length, datei).toBeLessThanOrEqual(datei === 'base.css' || datei === 'ansicht.css' ? 1 : 0);
     }
+  });
+});
+
+describe('verschachtelte Kästen im Editor der Ansichten', () => {
+  it('Katalog, Abschnitt und Verknüpfungsliste im Dialog --radius-s, Felder darin --radius-xs', () => {
+    const css = readFileSync(join(ordner, 'ansicht.css'), 'utf8');
+    const radius = (sel: string) => {
+      const i = css.indexOf(`\n${sel} {`);
+      expect(i, sel).toBeGreaterThan(-1);
+      return css.slice(i, css.indexOf('}', i)).match(/border-radius:\s*([^;]+);/)?.[1];
+    };
+    for (const sel of ['.av-ed-katalog', '.av-ed-abschnitt', '.av-verknuepfen-liste']) expect(radius(sel), sel).toBe('var(--radius-s)');
+    for (const sel of ['.av-ed-feld', '.av-ed-leer', '.av-ed-kat-feld']) expect(radius(sel), sel).toBe('var(--radius-xs)');
   });
 });
