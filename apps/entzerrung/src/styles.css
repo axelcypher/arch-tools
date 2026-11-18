@@ -392,7 +392,7 @@
   font-size: var(--fs-xs);
   padding: 1px var(--s2);
   border-radius: 999px;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 
@@ -426,8 +426,8 @@
 }
 /* Entfernen/Umbenennen: größere Trefferfläche, erst bei Zeigen oder Fokus deutlich */
 .ef-entfernen {
-  min-width: 24px;
-  min-height: 24px;
+  min-width: var(--ctl-h-s);
+  min-height: var(--ctl-h-s);
   opacity: 0.35;
 }
 .list li:hover .ef-entfernen,
