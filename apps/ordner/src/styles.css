@@ -345,9 +345,9 @@
 /* Meldung des Editors (.meldung ok/fehler): liegt über dem unteren Rand des Baums, statt ihn zu verschieben */
 .po-editor-meldung {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
+  left: var(--s2);
+  right: var(--s2);
+  bottom: var(--s2);
   z-index: 2;
   display: flex;
   align-items: center;
