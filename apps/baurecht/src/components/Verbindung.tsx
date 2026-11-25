@@ -84,7 +84,10 @@ export function VerbindungDialog({ onClose, pruefen }: { onClose: () => void; pr
         {laeuft && <span className="br-laedt">Verbindungen werden geprüft …</span>}
         {ergebnis && (nichtErreichbar ? `${nichtErreichbar} von ${ergebnis.length} Quellen nicht erreichbar.` : `Alle ${ergebnis.length} Quellen erreichbar.`)}
         {fehler && <Fehlertext text={fehler} vorne="Prüfung nicht möglich:" />}
-        {kopiert && ` ${kopiert}`}
+      </div>
+      {/* eigene kurze Region: „kopiert“ sagt nicht den ganzen Stand noch einmal an */}
+      <div role="status" aria-live="polite" className="br-leise">
+        {kopiert}
       </div>
       {kopierFehler && (
         <p className="meldung fehler" role="alert">

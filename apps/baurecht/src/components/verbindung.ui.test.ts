@@ -102,7 +102,9 @@ describe('Fehler beim Abruf und „Verbindung prüfen“', () => {
     expect(text).toContain('www.gesetze-im-internet.de: nicht erreichbar');
     expect(text).toContain('Zertifikat ausgestellt von: Firmen-Firewall CA (Beispiel GmbH)');
     expect(text).toContain('recht.nrw.de: erreichbar (HTTP 200, 80 ms)');
-    expect(document.querySelector('[role="status"]')!.textContent).toContain('Befund in die Zwischenablage kopiert.');
+    const regionen = [...document.querySelectorAll('[role="status"]')];
+    expect(regionen[1].textContent).toBe('Befund in die Zwischenablage kopiert.');
+    expect(regionen[0].textContent).toBe('1 von 2 Quellen nicht erreichbar.');
     // erneut prüfen: während der Prüfung gesperrt (aria-disabled), der Fokus bleibt am Knopf, ein zweiter Klick startet nichts
     const erneut = knopf('Erneut prüfen');
     let fertig: (r: NetzPruefung[]) => void = () => undefined;
