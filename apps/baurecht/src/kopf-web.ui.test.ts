@@ -35,7 +35,16 @@ function render(vorher?: () => void): HTMLElement {
   act(() => {
     root = createRoot(host);
     root.render(
-      createElement(Kopf, { stand, onRechtsstand: () => undefined, onLage: () => undefined, onProtokoll: () => undefined, onSpeichern: () => undefined, onAntrag: () => undefined, lageLaeuft: false }),
+      createElement(Kopf, {
+        stand,
+        onRechtsstand: () => undefined,
+        onVerbindung: () => undefined,
+        onLage: () => undefined,
+        onProtokoll: () => undefined,
+        onSpeichern: () => undefined,
+        onAntrag: () => undefined,
+        lageLaeuft: false,
+      }),
     );
   });
   return host;

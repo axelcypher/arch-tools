@@ -94,6 +94,7 @@ pub fn run() {
             // Baurecht (apps/baurecht/src-tauri/src/netz.rs)
             netz_holen,
             netz_hosts_erweitern,
+            netz_pruefen,
             baurecht_ablage_lesen,
             baurecht_ablage_schreiben,
             // Rahmen

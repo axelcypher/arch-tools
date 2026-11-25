@@ -11,6 +11,9 @@
 // Keine `use`-Zeilen auf oberster Ebene: Die Datei wird per include! neben andere Befehlsdateien gelegt (Rahmen-App),
 // gleichnamige Importe würden dort kollidieren.
 
+// Zertifikate (wie das Betriebssystem), Proxy (Umgebung, Windows-Internetoptionen), verständliche Fehler, Diagnose
+include!("netz_verbindung.rs");
+
 /// Hosts, die immer erlaubt sind
 const NETZ_GRUNDLISTE: &[&str] = &[
     // Rechtsquellen
@@ -85,15 +88,10 @@ struct NetzAntwort {
     daten: String,
 }
 
-fn netz_agent(zeit_ms: u64) -> ureq::Agent {
-    ureq::AgentBuilder::new()
-        .timeout(std::time::Duration::from_millis(zeit_ms.clamp(1000, 300_000)))
-        // Umleitungen selbst verfolgen (jede Station gegen die Freigaben prüfen)
-        .redirects(0)
-        // Proxy aus der Umgebung (Firmennetze)
-        .try_proxy_from_env(true)
-        .user_agent(concat!("arch-tools Baurecht/", env!("CARGO_PKG_VERSION"), " (+https://github.com/axelcypher/arch-tools)"))
-        .build()
+/// Agent für eine Station: TLS wie das Betriebssystem, Proxy je Host (Umgebung bzw. Windows-Internetoptionen)
+fn netz_agent(zeit_ms: u64, adresse: &str) -> Result<(ureq::Agent, NetzProxyWahl), String> {
+    let proxy = netz_proxy(&netz_host_anzeige(adresse));
+    Ok((netz_agent_mit(zeit_ms, netz_tls()?, &proxy)?, proxy))
 }
 
 /// Ziel einer Umleitung: absolut (nur https) oder ab der Wurzel desselben Hosts; geprüft wird es wie jede Adresse
@@ -110,10 +108,10 @@ fn netz_umleitung(adresse: &str, ziel: &str) -> Result<String, String> {
 
 fn netz_abrufen(url: String, etag: Option<String>, geaendert: Option<String>, zeit_ms: u64) -> Result<NetzAntwort, String> {
     use std::io::Read;
-    let agent = netz_agent(zeit_ms);
     let mut adresse = url;
     for _ in 0..8 {
         netz_erlaubt(&adresse)?;
+        let (agent, proxy) = netz_agent(zeit_ms, &adresse)?;
         let mut anfrage = agent.get(&adresse);
         if let Some(e) = &etag {
             anfrage = anfrage.set("If-None-Match", e);
@@ -124,7 +122,7 @@ fn netz_abrufen(url: String, etag: Option<String>, geaendert: Option<String>, ze
         let antwort = match anfrage.call() {
             Ok(a) => a,
             Err(ureq::Error::Status(_, a)) => a,
-            Err(e) => return Err(format!("Nicht erreichbar: {adresse} ({e})")),
+            Err(e) => return Err(netz_fehler_text(&adresse, &e.to_string(), &proxy)),
         };
         let status = antwort.status();
         if (300..400).contains(&status) && status != 304 {
@@ -167,6 +165,17 @@ async fn netz_holen(url: String, etag: Option<String>, geaendert: Option<String>
             log::warn!("Abruf fehlgeschlagen: {ziel}: {e}");
             e
         })
+}
+
+/// „Verbindung prüfen“: je Rechtsquelle bzw. Geodienst erreichbar ja/nein, Aussteller des Zertifikats, genutzter Proxy
+#[tauri::command]
+async fn netz_pruefen() -> Result<Vec<NetzPruefung>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let faeden: Vec<_> = NETZ_PRUEF_HOSTS.iter().map(|h| std::thread::spawn(move || netz_host_pruefen(h, 30_000))).collect();
+        faeden.into_iter().map(|f| f.join().map_err(|_| "Prüfung abgebrochen".to_string())).collect::<Result<Vec<_>, _>>()
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// öffentlicher Schlüssel des Regelpakets (Base64, 32 Byte; Zeilen mit # sind Kommentare; leer = nicht eingerichtet)

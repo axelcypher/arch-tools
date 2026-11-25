@@ -6,7 +6,13 @@ describe('Netz', () => {
   it('Fehler der Tauri-Hülle: nur Verbindungsfehler und Zeitüberschreitungen sind vorübergehend', () => {
     expect(tauriFehler('Nicht erreichbar: https://recht.nrw.de/x (timed out)', 'u')).toBeInstanceOf(NetzFehler);
     expect(tauriFehler('Lesen fehlgeschlagen: https://x (reset)', 'u')).toBeInstanceOf(NetzFehler);
-    for (const dauerhaft of ['Host nicht freigegeben: boese.example', 'Antwort zu groß: https://x', 'Umleitung nicht unterstützt: c', 'Zu viele Umleitungen']) {
+    // übersetzte Fehler der Tauri-Hülle (netz_verbindung.rs): Abbruch und Zeitüberschreitung vorübergehend, Zertifikat nicht
+    expect(tauriFehler('Zeitüberschreitung: recht.nrw.de antwortet nicht rechtzeitig.\nProxy: keiner eingestellt.\nTechnische Einzelheiten: https://recht.nrw.de/: timed out', 'u')).toBeInstanceOf(
+      NetzFehler,
+    );
+    const zertifikat =
+      'Zertifikat abgelehnt: Das Zertifikat der Verbindung zu recht.nrw.de ist auf diesem Rechner nicht vertrauenswürdig …\nTechnische Einzelheiten: https://recht.nrw.de/: invalid peer certificate: UnknownIssuer';
+    for (const dauerhaft of ['Host nicht freigegeben: boese.example', 'Antwort zu groß: https://x', 'Umleitung nicht unterstützt: c', 'Zu viele Umleitungen', zertifikat]) {
       const f = tauriFehler(dauerhaft, 'u');
       expect(f).not.toBeInstanceOf(NetzFehler);
       expect(f.message).toBe(dauerhaft);

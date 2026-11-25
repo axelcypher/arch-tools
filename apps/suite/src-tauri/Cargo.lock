@@ -72,6 +72,8 @@ dependencies = [
  "log",
  "ring",
  "rusqlite",
+ "rustls",
+ "rustls-platform-verifier",
  "serde",
  "serde_json",
  "tauri",
@@ -82,6 +84,8 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-updater",
  "ureq",
+ "webpki-root-certs",
+ "windows-registry",
 ]
 
 [[package]]

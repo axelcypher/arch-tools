@@ -672,6 +672,29 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-norm-inhalt {
   border-top: 1px solid var(--line-soft);
 }
+/* Fehler beim Abruf: der Satz, darunter aufklappbar die technischen Einzelheiten (.rf-details aus core) */
+.br-fehlertext {
+  color: var(--warn-text);
+}
+/* „Verbindung prüfen“: Stand über der Tabelle; Quelle als Zeilenkopf in normaler Schrift, gestaltet wie die Zellen
+   der .summary-table (Linie, Innenabstand, oben bündig); der Fehlersatz unter der roten Marke in Textfarbe (die Marke
+   sagt schon, dass es scheitert) */
+.br-verbindung-stand {
+  margin: var(--s2) 0;
+}
+.br-verbindung tbody th {
+  text-align: left;
+  font-size: inherit;
+  color: var(--text);
+  font-weight: 600;
+  padding: 3px 4px;
+  border-top: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+.br-verbindung .br-fehlertext {
+  margin-top: var(--s1);
+  color: var(--text);
+}
 .br-norm-info {
   display: flex;
   flex-wrap: wrap;

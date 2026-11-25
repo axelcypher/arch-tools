@@ -8,6 +8,7 @@ import { offeneFestlegungen, useBaurecht } from '../store';
 import { suchNorm, textPasst } from '../suche';
 import { FlaechenSpalte, Karte } from '@core/ui/Karte';
 import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb, scrollBereich, STATUSPUNKT } from './Ampel';
+import { Fehlertext } from './Fehlertext';
 
 type Gruppierung = 'offen' | 'ebene' | 'thema';
 
@@ -159,12 +160,8 @@ function NormKarte({
                 {n.fassung.texterkennung ? ' · Text aus Texterkennung' : ''}
               </span>
             )}
-            {!laedt && n.ohneText && <span className="br-warn-text">Text nicht verfügbar{n.fehler ? ` – ${n.fehler}` : ''}</span>}
-            {n.fassung && n.fehler && (
-              <span className="br-warn-text" title={n.fehler}>
-                letzter Abruf fehlgeschlagen – Stand {datum(n.fassung.abgerufen)}
-              </span>
-            )}
+            {!laedt && n.ohneText && (n.fehler ? <Fehlertext text={n.fehler} vorne="Text nicht verfügbar." zu={n.def.kurz} /> : <span className="br-warn-text">Text nicht verfügbar</span>)}
+            {n.fassung && n.fehler && <Fehlertext text={n.fehler} vorne={`Letzter Abruf fehlgeschlagen, es gilt der Stand vom ${datum(n.fassung.abgerufen)}.`} zu={n.def.kurz} />}
             {n.kuenftige?.map((k) => (
               <span key={k.gueltigAb} className="br-warn-text">
                 neue Fassung ab {datum(k.gueltigAb)}

@@ -45,6 +45,7 @@ function render(aufrufe: string[] = [], lageLaeuft = false, antraege?: string[],
           key: 'k',
           stand,
           onRechtsstand: () => aufrufe.push('rechtsstand'),
+          onVerbindung: () => aufrufe.push('verbindung'),
           onLage: () => aufrufe.push('lage'),
           onProtokoll: () => undefined,
           onSpeichern: () => undefined,
@@ -71,7 +72,7 @@ const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [
 const taste = (key: string) => act(() => void (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 
 describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
-  it('Sammelmarke öffnet das gemeinsame Menü mit „Lage abfragen“ und „Rechtsstand prüfen“; Esc gibt den Fokus an die Marke zurück', () => {
+  it('Sammelmarke öffnet das gemeinsame Menü mit „Lage abfragen“, „Rechtsstand prüfen“ und „Verbindung prüfen …“; Esc gibt den Fokus an die Marke zurück', () => {
     const host = render();
     const marke = host.querySelector<HTMLButtonElement>('.br-marke-knopf')!;
     expect(marke, 'Sammelmarke der Warnungen').toBeTruthy();
@@ -79,7 +80,7 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     klick(marke);
     expect(menue()).not.toBeNull();
     expect(marke.getAttribute('aria-expanded')).toBe('true');
-    expect(punkte().map((p) => p.textContent)).toEqual([expect.stringContaining('Lage abfragen'), expect.stringContaining('Rechtsstand prüfen')]);
+    expect(punkte().map((p) => p.textContent)).toEqual([expect.stringContaining('Lage abfragen'), expect.stringContaining('Rechtsstand prüfen'), expect.stringContaining('Verbindung prüfen …')]);
     // die Warnungen stehen kurz als Hinweis an „Rechtsstand prüfen“, vollständig im Tooltip
     expect(punkte()[1].getAttribute('title')).toBe(`Alle Texte sofort an der Quelle prüfen · ${marke.title}`);
     const n = marke.title.split(' · ').length;
@@ -182,7 +183,7 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
       klick(host.querySelector<HTMLButtonElement>('.br-kopf .werkzeugleiste-mehr button')!);
       const texte = punkte().map((p) => p.textContent ?? '');
       expect(texte[0]).toContain('Antrag: BAUA 1');
-      expect(texte.slice(1)).toEqual([expect.stringContaining('Lage abfragen'), expect.stringContaining('Rechtsstand prüfen')]);
+      expect(texte.slice(1)).toEqual([expect.stringContaining('Lage abfragen'), expect.stringContaining('Rechtsstand prüfen'), expect.stringContaining('Verbindung prüfen …')]);
       // Untermenü: die Anträge als Einfachauswahl
       act(() => punkte()[0].click());
       const wahl = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];

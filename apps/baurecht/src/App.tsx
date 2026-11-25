@@ -16,6 +16,7 @@ import type { FolgenRechner } from './components/Dialoge';
 import { FaktBestaetigenDialog, FestlegenDialog, VorfragenNeinDialog } from './components/Dialoge';
 import { Kopf } from './components/Kopf';
 import { Protokoll } from './components/Protokoll';
+import { VerbindungDialog } from './components/Verbindung';
 import { Vorschriften } from './components/Vorschriften';
 import { lageAbfragen } from './lage';
 import { ausProjektwahl, dateiOeffnen, speichernJetzt } from './projekt';
@@ -138,6 +139,7 @@ export function App() {
   const dirty = useBaurecht(istGeaendert);
   const [wahl, setWahl] = useState(() => isTauri());
   const [logOffen, setLogOffen] = useState(false);
+  const [verbindung, setVerbindung] = useState(false);
   const [protokoll, setProtokoll] = useState(false);
   const [lageLaeuft, setLageLaeuft] = useState(false);
   const stand = usePruefstand();
@@ -242,7 +244,7 @@ export function App() {
           <h1 className="unsichtbar">
             {APP_NAMEN.baurecht.name} – {name}
           </h1>
-          <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} onAntrag={(a) => void antragWechseln(a)} lageLaeuft={lageLaeuft} />
+          <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onVerbindung={() => setVerbindung(true)} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} onAntrag={(a) => void antragWechseln(a)} lageLaeuft={lageLaeuft} />
           {!isTauri() && (
             <div className="br-hinweisband" role="note">
               Web-Version: Die Gesetzestexte lassen sich hier nicht abrufen. Ohne Text kann die App nicht prüfen, ob sich ein Paragraf seit der Prüfung der Regel geändert hat – deshalb bleibt, was sonst entfiele, gelb. Die volle Prüfung bietet die Desktop-App.
@@ -291,6 +293,7 @@ export function App() {
       <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} paragrafen={stand.auswertung.paragrafen} />
       <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
       <VorfragenNeinDialog folgen={folgen} />
+      {verbindung && <VerbindungDialog onClose={() => setVerbindung(false)} />}
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
     </div>
   );

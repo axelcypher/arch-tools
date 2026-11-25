@@ -255,6 +255,8 @@ dependencies = [
  "base64 0.22.1",
  "log",
  "ring",
+ "rustls",
+ "rustls-platform-verifier",
  "serde",
  "serde_json",
  "tauri",
@@ -265,6 +267,8 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-updater",
  "ureq",
+ "webpki-root-certs",
+ "windows-registry",
 ]
 
 [[package]]
