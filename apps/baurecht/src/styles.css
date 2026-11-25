@@ -672,6 +672,32 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-norm-inhalt {
   border-top: 1px solid var(--line-soft);
 }
+/* Fehler beim Abruf: der Satz, darunter aufklappbar die technische Angabe (Rohfehler für IT bzw. Support) */
+.br-fehlertext {
+  color: var(--warn-text);
+}
+.br-technik summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.br-technik code {
+  display: block;
+  margin-top: var(--s1);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+/* „Verbindung prüfen“ */
+.br-verbindung-stand {
+  margin: var(--s2) 0;
+}
+.br-verbindung td {
+  vertical-align: top;
+}
+.br-verbindung .br-fehlertext {
+  margin-top: var(--s1);
+}
 .br-norm-info {
   display: flex;
   flex-wrap: wrap;

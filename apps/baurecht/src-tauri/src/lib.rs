@@ -41,6 +41,7 @@ pub fn run() {
             write_binary_file,
             netz_holen,
             netz_hosts_erweitern,
+            netz_pruefen,
             baurecht_ablage_lesen,
             baurecht_ablage_schreiben
         ])

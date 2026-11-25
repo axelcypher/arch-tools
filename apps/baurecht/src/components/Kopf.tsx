@@ -47,6 +47,7 @@ function GespeichertMeldung() {
 export function Kopf({
   stand,
   onRechtsstand,
+  onVerbindung,
   onLage,
   onProtokoll,
   onSpeichern,
@@ -55,6 +56,8 @@ export function Kopf({
 }: {
   stand: Pruefstand;
   onRechtsstand: () => void;
+  /** „Verbindung prüfen …“: Dialog mit Erreichbarkeit, Zertifikat und Proxy je Rechtsquelle */
+  onVerbindung: () => void;
   onLage: () => void;
   onProtokoll: () => void;
   onSpeichern: () => void;
@@ -123,6 +126,13 @@ export function Kopf({
             // kurz im Menü (sonst wird es sehr breit), alle Warnungen im Tooltip
             hinweis: laedt.length ? 'Texte werden geholt' : warnText.length > 1 ? `${warnText.length} Warnungen` : warnText[0],
             titel: ['Alle Texte sofort an der Quelle prüfen', ...warnText].join(' · '),
+          },
+          {
+            text: 'Verbindung prüfen …',
+            aktion: onVerbindung,
+            // nicht abrufbare Texte: hier steht der Weg, die Ursache zu finden
+            hinweis: fehler ? `${fehler} nicht abrufbar` : undefined,
+            titel: 'Erreichbarkeit der Rechtsquellen und Geodienste, Aussteller der Zertifikate und genutzter Proxy – wenn Texte nicht laden',
           },
         ];
   const marke = useRef<HTMLButtonElement>(null);

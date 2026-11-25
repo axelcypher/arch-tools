@@ -484,6 +484,20 @@ Enter den Hauptknopf aus; Pflichtfelder gibt es dort keine; der Titel steht im K
 - **Prüfsumme je Absatz:** Jede Regel weiß, an welchem Text sie geprüft ist. Ändert sich ein Absatz, wird aus „entfällt“
   ein „prüfen“ (aus „gilt“ wird nichts Schwächeres), bis die Regel nachgezogen ist.
 - Ohne Text (Web-Version, Quelle nie erreichbar) bleibt aus demselben Grund alles, was sonst entfiele, gelb.
+- **Verbindung in Firmennetzen** (Desktop): Zertifikate werden wie vom Betriebssystem geprüft – unter Windows mit der
+  Zertifikatskette von Windows, also auch mit der Stamm-CA einer Firewall oder eines Virenschutzes, die HTTPS selbst
+  prüft und neu signiert (dort steht sie im Windows-Zertifikatspeicher); die mitgelieferten Stammzertifikate gelten
+  zusätzlich. Proxy: zuerst die Umgebung (`HTTPS_PROXY`, `ALL_PROXY`, `HTTP_PROXY`, `NO_PROXY`), sonst die
+  Internetoptionen von Windows (Proxyserver, für https der Eintrag `https=`, Ausnahmen inkl. `<local>`). Ein
+  Proxy-Skript (PAC) wird erkannt, aber nicht ausgewertet – die Meldung sagt das; dann den Proxy als `HTTPS_PROXY`
+  eintragen. Nur http-Proxys (CONNECT), kein SOCKS.
+- **Fehler beim Abruf** stehen als verständlicher Satz da (z. B. „Das Zertifikat der Verbindung zu … ist auf diesem
+  Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall oder ein Virenschutz …“, „… beim Aufbau abgebrochen –
+  vermutlich blockiert eine Firewall oder ein Proxy sie“, jeweils mit Host und genutztem Proxy); der Rohfehler ist als
+  „Technische Angabe“ aufklappbar.
+- **„Verbindung prüfen …“** (Menü „Mehr“): je Rechtsquelle bzw. Geodienst erreichbar ja/nein, wer das Zertifikat
+  ausgestellt hat (eine Prüfstelle zeigt sich mit eigenem Namen) und welcher Proxy genutzt wird; „Befund kopieren“
+  legt alles als Text in die Zwischenablage (für die IT bzw. den Support).
 
 ## Prüfprotokoll
 
@@ -603,6 +617,10 @@ bricht sonst ab.
 
 ## Technik
 
+- Verbindungsaufbau in `apps/baurecht/src-tauri/src/netz_verbindung.rs` (per `include!` in `netz.rs`, ohne Tauri, mit
+  eigenen Rust-Tests): rustls mit `rustls-platform-verifier` und `webpki-root-certs` (ohne OpenSSL bzw. native-tls),
+  Proxy-Wahl (Registry-Werte als Eingabe testbar), Übersetzung der Fehler, Aussteller der Kette aus dem Zertifikat
+  (`netz_pruefen`).
 - Netz nur über den Tauri-Befehl `netz_holen` (`apps/baurecht/src-tauri/src/netz.rs`) zu freigegebenen Hosts; jede
   Umleitung wird einzeln gegen die Liste geprüft; Hosts aus einem gültig signierten Paket kommen dazu. Die CSP der
   Webansicht bleibt unverändert. Die Signatur des Index prüft die Tauri-Hülle beim Freigeben der Hosts selbst
