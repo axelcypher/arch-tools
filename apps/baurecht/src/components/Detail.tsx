@@ -433,7 +433,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         )}
         {zeigeVergleich && t?.vorige
           ? p.geaendert.map((g) => <Gegenueberstellung key={g} alt={t.vorige!.paragrafen[p.paragraf]} neu={text} absatz={g.split('/')[1] ?? ''} />)
-          : text ? <ParagrafText p={text} absaetze={absaetze} geaendert={geaendert} /> : !laedt && norm.def.quelle.art !== 'verweis' && t?.fehler ? <div className="br-leise"><Fehlertext text={t.fehler} vorne="Text nicht verfügbar: " /></div> : <p className="br-leise">{laedt ? 'Text wird geholt …' : norm.def.quelle.art === 'verweis' ? 'Nur Fundstelle – der Text ist nicht frei verfügbar.' : 'Text nicht verfügbar (Web-Version oder noch nicht geholt).'}</p>}
+          : text ? <ParagrafText p={text} absaetze={absaetze} geaendert={geaendert} /> : !laedt && norm.def.quelle.art !== 'verweis' && t?.fehler ? <div className="br-leise"><Fehlertext text={t.fehler} vorne="Text nicht verfügbar." /></div> : <p className="br-leise">{laedt ? 'Text wird geholt …' : norm.def.quelle.art === 'verweis' ? 'Nur Fundstelle – der Text ist nicht frei verfügbar.' : 'Text nicht verfügbar (Web-Version oder noch nicht geholt).'}</p>}
       </section>
     </Karte>
   );

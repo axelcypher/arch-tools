@@ -494,7 +494,7 @@ Enter den Hauptknopf aus; Pflichtfelder gibt es dort keine; der Titel steht im K
 - **Fehler beim Abruf** stehen als verständlicher Satz da (z. B. „Das Zertifikat der Verbindung zu … ist auf diesem
   Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall oder ein Virenschutz …“, „… beim Aufbau abgebrochen –
   vermutlich blockiert eine Firewall oder ein Proxy sie“, jeweils mit Host und genutztem Proxy); der Rohfehler ist als
-  „Technische Angabe“ aufklappbar.
+  „Technische Einzelheiten“ aufklappbar (wie in den Rückfragen).
 - **„Verbindung prüfen …“** (Menü „Mehr“): je Rechtsquelle bzw. Geodienst erreichbar ja/nein, wer das Zertifikat
   ausgestellt hat (eine Prüfstelle zeigt sich mit eigenem Namen) und welcher Proxy genutzt wird; „Befund kopieren“
   legt alles als Text in die Zwischenablage (für die IT bzw. den Support).

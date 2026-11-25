@@ -169,7 +169,7 @@ struct NetzWinProxy {
 struct NetzProxyWahl {
     /// http://host:port, falls einer genutzt wird
     proxy: Option<String>,
-    /// woher: „Umgebung“, „Windows“ oder „keiner“
+    /// woher: „Umgebung“, „Windows“, „Ausnahme (NO_PROXY)“, „Ausnahme in Windows“ oder „keiner“
     quelle: String,
     /// was nicht unterstützt wird (Proxy-Skript, https-Proxy, SOCKS)
     hinweis: Option<String>,
@@ -235,7 +235,7 @@ fn netz_proxy_waehlen(host: &str, umgebung: &dyn Fn(&str) -> Option<String>, win
     let var = |namen: &[&str]| namen.iter().find_map(|n| umgebung(n).map(|v| v.trim().to_string()).filter(|v| !v.is_empty()));
     if let Some(p) = var(&["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy", "HTTP_PROXY", "http_proxy"]) {
         if var(&["NO_PROXY", "no_proxy"]).map(|n| netz_no_proxy(host, &n)).unwrap_or(false) {
-            return NetzProxyWahl { proxy: None, quelle: "Umgebung (NO_PROXY)".into(), hinweis: None };
+            return NetzProxyWahl { proxy: None, quelle: "Ausnahme (NO_PROXY)".into(), hinweis: None };
         }
         return match netz_proxy_adresse(&p) {
             Ok(a) => NetzProxyWahl { proxy: Some(a), quelle: "Umgebung".into(), hinweis: None },
@@ -247,7 +247,7 @@ fn netz_proxy_waehlen(host: &str, umgebung: &dyn Fn(&str) -> Option<String>, win
     if w.aktiv {
         if let Some(server) = w.server.as_deref().and_then(netz_proxy_server) {
             if w.ausnahmen.as_deref().map(|a| netz_win_ausgenommen(host, a)).unwrap_or(false) {
-                return NetzProxyWahl { proxy: None, quelle: "Windows (Ausnahme)".into(), hinweis: None };
+                return NetzProxyWahl { proxy: None, quelle: "Ausnahme in Windows".into(), hinweis: None };
             }
             return match netz_proxy_adresse(&server) {
                 Ok(a) => NetzProxyWahl { proxy: Some(a), quelle: "Windows".into(), hinweis: None },
@@ -266,37 +266,41 @@ fn netz_proxy(host: &str) -> NetzProxyWahl {
 
 /* ---------- Fehler ---------- */
 
-/// Rohfehler des Verbindungsaufbaus in einen verständlichen Satz übersetzen (erste Zeile), der Rohtext folgt als
-/// „Technische Angabe“ in einer eigenen Zeile – die Oberfläche zeigt ihn aufklappbar. Beginnt mit „Nicht erreichbar:“
-/// bzw. „Zeitüberschreitung:“ (das Frontend erkennt daran vorübergehende Fehler).
+/// Rohfehler des Verbindungsaufbaus übersetzen. Aufbau in Zeilen (die Oberfläche zeigt sie getrennt):
+/// 1. „Nicht erreichbar: …“ bzw. „Zeitüberschreitung: …“ – der Anfang erkennt das Frontend als vorübergehenden Fehler,
+///    danach ein verständlicher Satz;
+/// 2. „Proxy: …“ – genutzter Proxy bzw. was fehlt (nur bei Fehlern, die am Netz liegen);
+/// 3. „Technische Einzelheiten: …“ – der Rohfehler (aufklappbar, für die IT bzw. den Support).
 fn netz_fehler_text(adresse: &str, roh: &str, proxy: &NetzProxyWahl) -> String {
     let host = netz_host_anzeige(adresse);
     let r = roh.to_ascii_lowercase();
     let ueber = match (&proxy.proxy, &proxy.hinweis) {
-        (Some(p), _) => format!(" Genutzter Proxy: {p} ({}).", proxy.quelle),
-        (None, Some(h)) => format!(" {h}; bitte den Proxy in der Umgebungsvariablen HTTPS_PROXY eintragen oder die IT fragen."),
-        (None, None) => " Es ist kein Proxy eingestellt.".to_string(),
+        (Some(p), _) => format!("Genutzter Proxy: {p} ({}).", proxy.quelle),
+        (None, Some(h)) => format!("{h} – bitte die IT fragen (Proxy als HTTPS_PROXY eintragen)."),
+        (None, None) => "Es ist kein Proxy eingestellt.".to_string(),
     };
-    let (anfang, satz) = if r.contains("unknownissuer") || r.contains("unknown issuer") || r.contains("invalid peer certificate: unknown") {
-        ("Nicht erreichbar", format!("Das Zertifikat der Verbindung zu {host} ist auf diesem Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall oder ein Virenschutz die verschlüsselte Verbindung mit einem eigenen Zertifikat, das Windows nicht kennt. Bitte die IT bitten, {host} von der HTTPS-Prüfung auszunehmen oder das Stammzertifikat der Prüfstelle im Windows-Zertifikatspeicher zu hinterlegen."))
+    // (Anfang, Satz, Proxy nennen)
+    let (anfang, satz, mit_proxy) = if r.contains("unknownissuer") || r.contains("unknown issuer") {
+        ("Nicht erreichbar", format!("Das Zertifikat der Verbindung zu {host} ist auf diesem Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall oder ein Virenschutz die verschlüsselte Verbindung mit einem eigenen Zertifikat, das Windows nicht kennt. Bitte die IT bitten, {host} von dieser Prüfung auszunehmen oder das Stammzertifikat der Prüfstelle in Windows zu hinterlegen."), false)
     } else if r.contains("expired") || r.contains("notvalidyet") || r.contains("not valid yet") {
-        ("Nicht erreichbar", format!("Das Zertifikat von {host} ist abgelaufen oder noch nicht gültig – bitte Datum und Uhrzeit des Rechners prüfen."))
+        ("Nicht erreichbar", format!("Das Zertifikat von {host} ist abgelaufen oder noch nicht gültig – bitte Datum und Uhrzeit des Rechners prüfen."), false)
     } else if r.contains("invalid peer certificate") || r.contains("certificate") {
-        ("Nicht erreichbar", format!("Das Zertifikat von {host} wurde abgelehnt – vermutlich prüft eine Firewall oder ein Virenschutz die Verbindung."))
+        ("Nicht erreichbar", format!("Das Zertifikat von {host} wurde abgelehnt – vermutlich prüft eine Firewall oder ein Virenschutz die Verbindung."), false)
     } else if r.contains("timed out") || r.contains("timeout") {
-        ("Zeitüberschreitung", format!("{host} antwortet nicht rechtzeitig.{ueber}"))
+        ("Zeitüberschreitung", format!("{host} antwortet nicht rechtzeitig."), true)
     } else if r.contains("dns") || r.contains("failed to lookup") || r.contains("no such host") {
-        ("Nicht erreichbar", format!("Der Name {host} lässt sich nicht auflösen – keine Internetverbindung, oder das Netz lässt nur einen Proxy hinaus.{ueber}"))
+        ("Nicht erreichbar", format!("Die Adresse {host} wird nicht gefunden – keine Internetverbindung, oder das Netz ist nur über einen Proxy erreichbar."), true)
     } else if r.contains("unexpected end of file") || r.contains("unexpectedeof") || r.contains("reset") || r.contains("aborted") || r.contains("tls connection init failed") {
-        ("Nicht erreichbar", format!("Die Verbindung zu {host} wurde beim Aufbau abgebrochen – vermutlich blockiert eine Firewall oder ein Proxy sie.{ueber}"))
+        ("Nicht erreichbar", format!("Die Verbindung zu {host} wurde beim Aufbau abgebrochen – vermutlich blockiert eine Firewall oder ein Proxy sie."), true)
     } else if r.contains("refused") {
-        ("Nicht erreichbar", format!("Die Verbindung zu {host} wurde abgewiesen.{ueber}"))
+        ("Nicht erreichbar", format!("Die Verbindung zu {host} wurde abgewiesen."), true)
     } else {
-        ("Nicht erreichbar", format!("{host} ist nicht erreichbar.{ueber}"))
+        ("Nicht erreichbar", format!("{host} ist nicht erreichbar."), true)
     };
     // ureq nennt die Adresse meist selbst – nicht doppelt
     let roh = roh.strip_prefix(&format!("{adresse}: ")).unwrap_or(roh);
-    format!("{anfang}: {satz}\nTechnische Angabe: {adresse}: {roh}")
+    let proxy_zeile = if mit_proxy { format!("\nProxy: {ueber}") } else { String::new() };
+    format!("{anfang}: {satz}{proxy_zeile}\nTechnische Einzelheiten: {adresse}: {roh}")
 }
 
 /// Host einer Adresse für Texte (sonst die Adresse)
@@ -421,18 +425,18 @@ mod netz_verbindung_tests {
         let t = netz_fehler_text(a, "https://www.gesetze-im-internet.de/bbaug/xml.zip: Connection Failed: tls connection init failed: invalid peer certificate: UnknownIssuer", &kein);
         let (erste, zweite) = t.split_once('\n').unwrap();
         assert!(erste.starts_with("Nicht erreichbar: Das Zertifikat der Verbindung zu www.gesetze-im-internet.de ist auf diesem Rechner nicht vertrauenswürdig"));
-        assert!(zweite.starts_with("Technische Angabe: https://www.gesetze-im-internet.de/bbaug/xml.zip: "));
+        // beim Zertifikat keine Proxy-Zeile (es liegt nicht am Proxy)
+        assert!(zweite.starts_with("Technische Einzelheiten: https://www.gesetze-im-internet.de/bbaug/xml.zip: "));
         assert!(zweite.contains("UnknownIssuer"));
         // die Adresse steht nur einmal da
         assert_eq!(zweite.matches("bbaug/xml.zip").count(), 1);
         let mit = NetzProxyWahl { proxy: Some("http://proxy:3128".into()), quelle: "Windows".into(), hinweis: None };
         let t = netz_fehler_text("https://testphase.rechtsinformationen.bund.de/v1/x", "Connection Failed: tls connection init failed: unexpected end of file", &mit);
-        assert!(t.starts_with("Nicht erreichbar: Die Verbindung zu testphase.rechtsinformationen.bund.de wurde beim Aufbau abgebrochen"));
-        assert!(t.contains("Genutzter Proxy: http://proxy:3128 (Windows)."));
+        assert!(t.starts_with("Nicht erreichbar: Die Verbindung zu testphase.rechtsinformationen.bund.de wurde beim Aufbau abgebrochen – vermutlich blockiert eine Firewall oder ein Proxy sie.\nProxy: Genutzter Proxy: http://proxy:3128 (Windows).\nTechnische Einzelheiten: "));
         let skript = NetzProxyWahl { proxy: None, quelle: "keiner".into(), hinweis: Some("In Windows ist ein Proxy-Skript eingestellt (x) – LEXIO wertet es nicht aus".into()) };
-        assert!(netz_fehler_text("https://recht.nrw.de/", "unexpected end of file", &skript).contains("Proxy-Skript eingestellt (x) – LEXIO wertet es nicht aus; bitte den Proxy"));
-        assert!(netz_fehler_text("https://recht.nrw.de/", "Network Error: timed out reading response", &kein).starts_with("Zeitüberschreitung: recht.nrw.de antwortet nicht rechtzeitig. Es ist kein Proxy eingestellt."));
-        assert!(netz_fehler_text("https://recht.nrw.de/", "Dns Failed: failed to lookup address information", &kein).contains("lässt sich nicht auflösen"));
+        assert!(netz_fehler_text("https://recht.nrw.de/", "unexpected end of file", &skript).contains("\nProxy: In Windows ist ein Proxy-Skript eingestellt (x) – LEXIO wertet es nicht aus – bitte die IT fragen"));
+        assert!(netz_fehler_text("https://recht.nrw.de/", "Network Error: timed out reading response", &kein).starts_with("Zeitüberschreitung: recht.nrw.de antwortet nicht rechtzeitig.\nProxy: Es ist kein Proxy eingestellt."));
+        assert!(netz_fehler_text("https://recht.nrw.de/", "Dns Failed: failed to lookup address information", &kein).contains("Die Adresse recht.nrw.de wird nicht gefunden"));
         assert!(netz_fehler_text("https://recht.nrw.de/", "invalid peer certificate: Expired", &kein).contains("abgelaufen"));
         assert!(netz_fehler_text("https://recht.nrw.de/", "irgendwas", &kein).starts_with("Nicht erreichbar: recht.nrw.de ist nicht erreichbar."));
     }
