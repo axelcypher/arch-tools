@@ -314,6 +314,8 @@ fn netz_proxy(host: &str) -> NetzProxyWahl {
 /// 3. „Technische Einzelheiten: …“ – der Rohfehler (aufklappbar, für die IT bzw. den Support).
 fn netz_fehler_text(adresse: &str, roh: &str, proxy: &NetzProxyWahl) -> String {
     let host = netz_host_anzeige(adresse);
+    // ureq nennt die Adresse meist selbst – nicht doppelt, und Ziffern der Adresse (z. B. „407“) nicht als Fehlercode lesen
+    let roh = roh.strip_prefix(&format!("{adresse}: ")).unwrap_or(roh);
     let r = roh.to_ascii_lowercase();
     let ueber = match (&proxy.anzeige, &proxy.hinweis) {
         (Some(p), _) => format!("{p} ({}).", proxy.quelle),
@@ -330,7 +332,7 @@ fn netz_fehler_text(adresse: &str, roh: &str, proxy: &NetzProxyWahl) -> String {
         ("Zertifikat abgelehnt", format!("Das Zertifikat von {host} ist abgelaufen oder noch nicht gültig – bitte Datum und Uhrzeit des Rechners prüfen."), false)
     } else if r.contains("invalid peer certificate") || r.contains("certificate") {
         ("Zertifikat abgelehnt", format!("Das Zertifikat von {host} wurde abgelehnt – vermutlich prüft eine Firewall oder ein Virenschutz die Verbindung."), false)
-    } else if r.contains("407") || r.contains("proxy authentication") {
+    } else if r.contains("407 proxy") || r.contains("proxy authentication") {
         ("Nicht erreichbar", "Der Proxy verlangt eine Anmeldung (z. B. die Windows-Anmeldung), die LEXIO nicht beherrscht – bitte die IT fragen, ob die Rechtsquellen ohne Anmeldung am Proxy erreichbar sein können.".to_string(), true)
     } else if r.contains("timed out") || r.contains("timeout") {
         ("Zeitüberschreitung", format!("{host} antwortet nicht rechtzeitig."), true)
@@ -343,8 +345,6 @@ fn netz_fehler_text(adresse: &str, roh: &str, proxy: &NetzProxyWahl) -> String {
     } else {
         ("Nicht erreichbar", format!("{host} ist nicht erreichbar."), true)
     };
-    // ureq nennt die Adresse meist selbst – nicht doppelt
-    let roh = roh.strip_prefix(&format!("{adresse}: ")).unwrap_or(roh);
     let proxy_zeile = if mit_proxy { format!("\nProxy: {ueber}") } else { String::new() };
     format!("{anfang}: {satz}{proxy_zeile}\nTechnische Einzelheiten: {adresse}: {roh}")
 }
@@ -517,6 +517,9 @@ mod netz_verbindung_tests {
         assert!(netz_fehler_text("https://recht.nrw.de/", "Dns Failed: failed to lookup address information", &kein).contains("Die Adresse recht.nrw.de wird nicht gefunden"));
         assert!(netz_fehler_text("https://recht.nrw.de/", "invalid peer certificate: Expired", &kein).starts_with("Zertifikat abgelehnt: Das Zertifikat von recht.nrw.de ist abgelaufen"));
         assert!(netz_fehler_text("https://recht.nrw.de/", "Connection Failed: Proxy failed to connect: 407 Proxy Authentication Required", &mit).contains("Der Proxy verlangt eine Anmeldung"));
+        // „407“ in der Adresse ist kein Fehlercode
+        let a407 = "https://recht.nrw.de/lrgv/4070";
+        assert!(netz_fehler_text(a407, &format!("{a407}: Network Error: timed out reading response"), &kein).starts_with("Zeitüberschreitung:"));
         assert!(netz_fehler_text("https://recht.nrw.de/", "irgendwas", &kein).starts_with("Nicht erreichbar: recht.nrw.de ist nicht erreichbar."));
     }
 
