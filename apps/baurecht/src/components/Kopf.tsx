@@ -125,7 +125,13 @@ export function Kopf({
             deaktiviert: laedt.length > 0,
             // kurz im Menü (sonst wird es sehr breit), alle Warnungen im Tooltip
             // „N nicht abrufbar“ allein steht an „Verbindung prüfen …“ (dort ist der Weg zur Ursache) – nicht doppelt
-            hinweis: laedt.length ? 'Texte werden geholt' : warnText.length > 1 ? `${warnText.length} Warnungen` : warnText[0] && !(fehler && warnText[0] === `${fehler} nicht abrufbar`) ? warnText[0] : undefined,
+            hinweis: laedt.length
+              ? 'Texte werden geholt'
+              : warnText.length > 1
+                ? `${warnText.length} Warnungen`
+                : warnText[0] && !(fehler && warnText[0] === `${fehler} nicht abrufbar`)
+                  ? warnText[0]
+                  : undefined,
             titel: ['Alle Texte sofort an der Quelle prüfen', ...warnText].join(' · '),
           },
           {
