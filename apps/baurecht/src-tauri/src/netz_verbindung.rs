@@ -10,8 +10,10 @@
 //
 // Proxy: zuerst die Umgebung (HTTPS_PROXY, ALL_PROXY, HTTP_PROXY, NO_PROXY), sonst unter Windows die Internetoptionen
 // (HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings: ProxyEnable, ProxyServer, ProxyOverride). Ein
-// Proxy-Skript (AutoConfigURL) bzw. „Einstellungen automatisch erkennen“ wird erkannt, aber nicht ausgewertet – die
-// Fehlermeldung und die Diagnose nennen es.
+// Proxy-Skript (AutoConfigURL) wird erkannt, aber nicht ausgewertet – die Fehlermeldung und die Diagnose nennen es.
+// „Einstellungen automatisch erkennen“ (WPAD, ein Binärwert unter Connections) wird nicht gelesen. Ein Proxy, der eine
+// Anmeldung verlangt (407, z. B. Windows-Anmeldung), wird nicht bedient – die Meldung sagt das. Zugangsdaten eines
+// Proxys (http://name:passwort@host:port) gehen an ureq, in Texten erscheinen sie nie (`netz_proxy_anzeige`).
 
 // Keine `use`-Zeilen auf oberster Ebene (siehe netz.rs).
 
@@ -20,13 +22,15 @@ const NETZ_PRUEF_HOSTS: &[&str] = &["www.gesetze-im-internet.de", "testphase.rec
 
 /* ---------- Zertifikate ---------- */
 
-/// TLS-Einstellungen mit der Zertifikatsprüfung des Betriebssystems (plus mitgelieferte Stammzertifikate);
-/// `pruefer` umhüllt die Prüfung (Diagnose: Kette mitschreiben)
+/// TLS-Einstellungen mit der Zertifikatsprüfung des Betriebssystems (plus mitgelieferte Stammzertifikate und – nur in
+/// Tests – `weitere`); `pruefer` umhüllt die Prüfung (Diagnose: Kette mitschreiben)
 fn netz_tls_mit(
+    weitere: &[rustls::pki_types::CertificateDer<'static>],
     pruefer: impl FnOnce(std::sync::Arc<dyn rustls::client::danger::ServerCertVerifier>) -> std::sync::Arc<dyn rustls::client::danger::ServerCertVerifier>,
 ) -> Result<std::sync::Arc<rustls::ClientConfig>, String> {
     let anbieter = std::sync::Arc::new(rustls::crypto::ring::default_provider());
-    let system = rustls_platform_verifier::Verifier::new_with_extra_roots(webpki_root_certs::TLS_SERVER_ROOT_CERTS.iter().cloned(), anbieter.clone())
+    let wurzeln = webpki_root_certs::TLS_SERVER_ROOT_CERTS.iter().chain(weitere).cloned();
+    let system = rustls_platform_verifier::Verifier::new_with_extra_roots(wurzeln, anbieter.clone())
         .map_err(|e| format!("Zertifikatsprüfung nicht verfügbar: {e}"))?;
     let config = rustls::ClientConfig::builder_with_provider(anbieter)
         .with_safe_default_protocol_versions()
@@ -40,7 +44,7 @@ fn netz_tls_mit(
 /// TLS-Einstellungen für alle Abrufe (einmal aufgebaut)
 fn netz_tls() -> Result<std::sync::Arc<rustls::ClientConfig>, String> {
     static TLS: std::sync::OnceLock<Result<std::sync::Arc<rustls::ClientConfig>, String>> = std::sync::OnceLock::new();
-    TLS.get_or_init(|| netz_tls_mit(|p| p)).clone()
+    TLS.get_or_init(|| netz_tls_mit(&[], |p| p)).clone()
 }
 
 /// Prüfung, die die vorgelegte Zertifikatskette mitschreibt (für „Verbindung prüfen“: wer hat das Zertifikat ausgestellt?)
@@ -167,8 +171,12 @@ struct NetzWinProxy {
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct NetzProxyWahl {
-    /// http://host:port, falls einer genutzt wird
+    /// http://host:port, falls einer genutzt wird – mit Zugangsdaten (nur für ureq; an die Oberfläche geht `anzeige`)
+    #[serde(skip)]
     proxy: Option<String>,
+    /// derselbe ohne Zugangsdaten (http://***@host:port) – für Texte und die Oberfläche
+    #[serde(rename = "proxy")]
+    anzeige: Option<String>,
     /// woher: „Umgebung“, „Windows“, „Ausnahme (NO_PROXY)“, „Ausnahme in Windows“ oder „keiner“
     quelle: String,
     /// was nicht unterstützt wird (Proxy-Skript, https-Proxy, SOCKS)
@@ -197,17 +205,30 @@ fn netz_proxy_server(server: &str) -> Option<String> {
     teil("https=").or_else(|| teil("http="))
 }
 
-/// Host bei einer Ausnahme der Internetoptionen („ProxyOverride“: „*.intern;10.*;<local>“)
+/// einfacher Platzhalter-Abgleich: `*` steht für beliebig viele Zeichen (auch mehrere `*`, z. B. „192.168.*.*“)
+fn netz_glob(muster: &str, text: &str) -> bool {
+    let teile: Vec<&str> = muster.split('*').collect();
+    if teile.len() == 1 {
+        return muster == text;
+    }
+    let (erst, letzt) = (teile[0], teile[teile.len() - 1]);
+    if text.len() < erst.len() + letzt.len() || !text.starts_with(erst) || !text.ends_with(letzt) {
+        return false;
+    }
+    let mut rest = &text[erst.len()..text.len() - letzt.len()];
+    for t in &teile[1..teile.len() - 1] {
+        match rest.find(t) {
+            Some(i) => rest = &rest[i + t.len()..],
+            None => return false,
+        }
+    }
+    true
+}
+
+/// Host bei einer Ausnahme der Internetoptionen („ProxyOverride“: „*.intern;10.*.*.*;<local>“), ohne Groß/klein
 fn netz_win_ausgenommen(host: &str, ausnahmen: &str) -> bool {
-    ausnahmen.split(';').map(|a| a.trim().to_ascii_lowercase()).filter(|a| !a.is_empty()).any(|a| {
-        if a == "<local>" {
-            return !host.contains('.');
-        }
-        match a.split_once('*') {
-            None => host == a,
-            Some((anfang, ende)) => host.len() >= anfang.len() + ende.len() && host.starts_with(anfang) && host.ends_with(ende),
-        }
-    })
+    let host = host.to_ascii_lowercase();
+    ausnahmen.split(';').map(|a| a.trim().to_ascii_lowercase()).filter(|a| !a.is_empty()).any(|a| if a == "<local>" { !host.contains('.') } else { netz_glob(&a, &host) })
 }
 
 /// Host bei NO_PROXY („intern.de,.example.org,*“)
@@ -230,32 +251,52 @@ fn netz_proxy_adresse(roh: &str) -> Result<String, String> {
     }
 }
 
+/// Proxy-Adresse ohne Zugangsdaten (für Texte)
+fn netz_proxy_anzeige(adresse: &str) -> String {
+    let (schema, rest) = adresse.split_once("://").unwrap_or(("", adresse));
+    let rest = match rest.rsplit_once('@') {
+        Some((_, host)) => format!("***@{host}"),
+        None => rest.to_string(),
+    };
+    if schema.is_empty() { rest } else { format!("{schema}://{rest}") }
+}
+
+/// gewählter Proxy mit Anzeige ohne Zugangsdaten
+fn netz_proxy_wahl(proxy: Option<String>, quelle: &str, hinweis: Option<String>) -> NetzProxyWahl {
+    NetzProxyWahl { anzeige: proxy.as_deref().map(netz_proxy_anzeige), proxy, quelle: quelle.into(), hinweis: hinweis.map(|h| netz_proxy_anzeige_im_text(&h)) }
+}
+
+/// Zugangsdaten in einem Text (z. B. Hinweis mit der Proxy-Adresse) verbergen
+fn netz_proxy_anzeige_im_text(text: &str) -> String {
+    text.split(' ').map(|w| if w.contains("://") && w.contains('@') { netz_proxy_anzeige(w) } else { w.to_string() }).collect::<Vec<_>>().join(" ")
+}
+
 /// Proxy für einen Host wählen: Umgebung vor Windows; Ausnahmen beachten
 fn netz_proxy_waehlen(host: &str, umgebung: &dyn Fn(&str) -> Option<String>, win: Option<&NetzWinProxy>) -> NetzProxyWahl {
     let var = |namen: &[&str]| namen.iter().find_map(|n| umgebung(n).map(|v| v.trim().to_string()).filter(|v| !v.is_empty()));
     if let Some(p) = var(&["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy", "HTTP_PROXY", "http_proxy"]) {
         if var(&["NO_PROXY", "no_proxy"]).map(|n| netz_no_proxy(host, &n)).unwrap_or(false) {
-            return NetzProxyWahl { proxy: None, quelle: "Ausnahme (NO_PROXY)".into(), hinweis: None };
+            return netz_proxy_wahl(None, "Ausnahme (NO_PROXY)", None);
         }
         return match netz_proxy_adresse(&p) {
-            Ok(a) => NetzProxyWahl { proxy: Some(a), quelle: "Umgebung".into(), hinweis: None },
-            Err(h) => NetzProxyWahl { proxy: None, quelle: "Umgebung".into(), hinweis: Some(h) },
+            Ok(a) => netz_proxy_wahl(Some(a), "Umgebung", None),
+            Err(h) => netz_proxy_wahl(None, "Umgebung", Some(h)),
         };
     }
-    let Some(w) = win else { return NetzProxyWahl { proxy: None, quelle: "keiner".into(), hinweis: None } };
+    let Some(w) = win else { return netz_proxy_wahl(None, "keiner", None) };
     let skript = w.skript.as_ref().map(|s| format!("In Windows ist ein Proxy-Skript eingestellt ({s}) – LEXIO wertet es nicht aus"));
     if w.aktiv {
         if let Some(server) = w.server.as_deref().and_then(netz_proxy_server) {
             if w.ausnahmen.as_deref().map(|a| netz_win_ausgenommen(host, a)).unwrap_or(false) {
-                return NetzProxyWahl { proxy: None, quelle: "Ausnahme in Windows".into(), hinweis: None };
+                return netz_proxy_wahl(None, "Ausnahme in Windows", None);
             }
             return match netz_proxy_adresse(&server) {
-                Ok(a) => NetzProxyWahl { proxy: Some(a), quelle: "Windows".into(), hinweis: None },
-                Err(h) => NetzProxyWahl { proxy: None, quelle: "Windows".into(), hinweis: Some(h) },
+                Ok(a) => netz_proxy_wahl(Some(a), "Windows", None),
+                Err(h) => netz_proxy_wahl(None, "Windows", Some(h)),
             };
         }
     }
-    NetzProxyWahl { proxy: None, quelle: "keiner".into(), hinweis: skript }
+    netz_proxy_wahl(None, "keiner", skript)
 }
 
 /// Proxy für einen Host aus der echten Umgebung (ein Port gehört nicht zum Host – Ausnahmen gelten je Name)
@@ -267,25 +308,30 @@ fn netz_proxy(host: &str) -> NetzProxyWahl {
 /* ---------- Fehler ---------- */
 
 /// Rohfehler des Verbindungsaufbaus übersetzen. Aufbau in Zeilen (die Oberfläche zeigt sie getrennt):
-/// 1. „Nicht erreichbar: …“ bzw. „Zeitüberschreitung: …“ – der Anfang erkennt das Frontend als vorübergehenden Fehler,
-///    danach ein verständlicher Satz;
-/// 2. „Proxy: …“ – genutzter Proxy bzw. was fehlt (nur bei Fehlern, die am Netz liegen);
+/// 1. „Nicht erreichbar: …“ bzw. „Zeitüberschreitung: …“ (das Frontend wiederholt sie) oder „Zertifikat abgelehnt: …“
+///    (nicht wiederholt), danach ein verständlicher Satz;
+/// 2. „Proxy: …“ – genutzter Proxy (ohne Zugangsdaten) bzw. was fehlt (nur bei Fehlern, die am Netz liegen);
 /// 3. „Technische Einzelheiten: …“ – der Rohfehler (aufklappbar, für die IT bzw. den Support).
 fn netz_fehler_text(adresse: &str, roh: &str, proxy: &NetzProxyWahl) -> String {
     let host = netz_host_anzeige(adresse);
     let r = roh.to_ascii_lowercase();
-    let ueber = match (&proxy.proxy, &proxy.hinweis) {
-        (Some(p), _) => format!("Genutzter Proxy: {p} ({}).", proxy.quelle),
+    let ueber = match (&proxy.anzeige, &proxy.hinweis) {
+        (Some(p), _) => format!("{p} ({}).", proxy.quelle),
+        // die Umgebung selbst nennt den nicht unterstützten Proxy: dort hilft nur eine http-Adresse
+        (None, Some(h)) if proxy.quelle == "Umgebung" => format!("{h} – bitte die IT fragen (HTTPS_PROXY als http://host:port eintragen)."),
         (None, Some(h)) => format!("{h} – bitte die IT fragen (Proxy als HTTPS_PROXY eintragen)."),
-        (None, None) => "Es ist kein Proxy eingestellt.".to_string(),
+        (None, None) => "keiner eingestellt.".to_string(),
     };
-    // (Anfang, Satz, Proxy nennen)
+    // (Anfang, Satz, Proxy nennen). Zertifikatsfehler beginnen mit „Zertifikat abgelehnt“: Das Frontend wiederholt sie
+    // nicht (sie scheiterten jedes Mal gleich), anders als „Nicht erreichbar“ und „Zeitüberschreitung“.
     let (anfang, satz, mit_proxy) = if r.contains("unknownissuer") || r.contains("unknown issuer") {
-        ("Nicht erreichbar", format!("Das Zertifikat der Verbindung zu {host} ist auf diesem Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall oder ein Virenschutz die verschlüsselte Verbindung mit einem eigenen Zertifikat, das Windows nicht kennt. Bitte die IT bitten, {host} von dieser Prüfung auszunehmen oder das Stammzertifikat der Prüfstelle in Windows zu hinterlegen."), false)
+        ("Zertifikat abgelehnt", format!("Das Zertifikat der Verbindung zu {host} ist auf diesem Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall oder ein Virenschutz die verschlüsselte Verbindung mit einem eigenen Zertifikat, das Windows nicht kennt. Bitte die IT bitten, {host} von dieser Prüfung auszunehmen oder das Stammzertifikat der Prüfstelle in Windows zu hinterlegen."), false)
     } else if r.contains("expired") || r.contains("notvalidyet") || r.contains("not valid yet") {
-        ("Nicht erreichbar", format!("Das Zertifikat von {host} ist abgelaufen oder noch nicht gültig – bitte Datum und Uhrzeit des Rechners prüfen."), false)
+        ("Zertifikat abgelehnt", format!("Das Zertifikat von {host} ist abgelaufen oder noch nicht gültig – bitte Datum und Uhrzeit des Rechners prüfen."), false)
     } else if r.contains("invalid peer certificate") || r.contains("certificate") {
-        ("Nicht erreichbar", format!("Das Zertifikat von {host} wurde abgelehnt – vermutlich prüft eine Firewall oder ein Virenschutz die Verbindung."), false)
+        ("Zertifikat abgelehnt", format!("Das Zertifikat von {host} wurde abgelehnt – vermutlich prüft eine Firewall oder ein Virenschutz die Verbindung."), false)
+    } else if r.contains("407") || r.contains("proxy authentication") {
+        ("Nicht erreichbar", "Der Proxy verlangt eine Anmeldung (z. B. die Windows-Anmeldung), die LEXIO nicht beherrscht – bitte die IT fragen, ob die Rechtsquellen ohne Anmeldung am Proxy erreichbar sein können.".to_string(), true)
     } else if r.contains("timed out") || r.contains("timeout") {
         ("Zeitüberschreitung", format!("{host} antwortet nicht rechtzeitig."), true)
     } else if r.contains("dns") || r.contains("failed to lookup") || r.contains("no such host") {
@@ -330,16 +376,19 @@ fn netz_host_pruefen(host: &str, zeit_ms: u64) -> NetzPruefung {
     netz_adresse_pruefen(&format!("https://{host}/"), zeit_ms)
 }
 
-/// eine Adresse prüfen (für Tests auch mit Port)
+/// eine Adresse prüfen – Proxy und zusätzliche Stammzertifikate vorgegeben (Tests: lokaler Server mit Test-CA)
 fn netz_adresse_pruefen(adresse: &str, zeit_ms: u64) -> NetzPruefung {
+    netz_adresse_pruefen_mit(adresse, zeit_ms, netz_proxy(&netz_host_anzeige(adresse)), &[])
+}
+
+fn netz_adresse_pruefen_mit(adresse: &str, zeit_ms: u64, proxy: NetzProxyWahl, weitere: &[rustls::pki_types::CertificateDer<'static>]) -> NetzPruefung {
     let host = netz_host_anzeige(adresse);
     let host = host.as_str();
     let adresse = adresse.to_string();
-    let proxy = netz_proxy(host);
     let kette = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let start = std::time::Instant::now();
     let k = kette.clone();
-    let ergebnis = netz_tls_mit(move |innen| std::sync::Arc::new(NetzKettenPruefer { innen, kette: k })).and_then(|tls| {
+    let ergebnis = netz_tls_mit(weitere, move |innen| std::sync::Arc::new(NetzKettenPruefer { innen, kette: k })).and_then(|tls| {
         let agent = netz_agent_mit(zeit_ms, tls, &proxy)?;
         match agent.get(&adresse).call() {
             Ok(a) => Ok(a.status()),
@@ -383,10 +432,17 @@ mod netz_verbindung_tests {
         assert!(netz_win_ausgenommen("recht.nrw.de", "*.intern;*.nrw.de"));
         assert!(netz_win_ausgenommen("10.0.0.1", "10.*"));
         assert!(!netz_win_ausgenommen("www.dibt.de", "*.nrw.de;10.*"));
+        // mehrere Platzhalter, Groß/klein
+        assert!(netz_win_ausgenommen("www.wfs.nrw.de", "*.NRW.*"));
+        assert!(netz_win_ausgenommen("10.1.2.3", "10.*.*.*"));
+        assert!(netz_win_ausgenommen("192.168.0.7", "192.168.*.*"));
+        assert!(!netz_win_ausgenommen("192.169.0.7", "192.168.*.*"));
+        assert!(!netz_win_ausgenommen("nrw.de", "*.nrw.*"));
         let keine = |_: &str| None::<String>;
         let win = NetzWinProxy { aktiv: true, server: Some("http=proxy:3128;https=proxy:3129".into()), ausnahmen: Some("*.nrw.de;<local>".into()), skript: None };
-        assert_eq!(netz_proxy_waehlen("www.gesetze-im-internet.de", &keine, Some(&win)), NetzProxyWahl { proxy: Some("http://proxy:3129".into()), quelle: "Windows".into(), hinweis: None });
+        assert_eq!(netz_proxy_waehlen("www.gesetze-im-internet.de", &keine, Some(&win)), netz_proxy_wahl(Some("http://proxy:3129".into()), "Windows", None));
         assert_eq!(netz_proxy_waehlen("recht.nrw.de", &keine, Some(&win)).proxy, None);
+        assert_eq!(netz_proxy_waehlen("recht.nrw.de", &keine, Some(&win)).quelle, "Ausnahme in Windows");
         // abgeschaltet bzw. nur ein Proxy-Skript: kein Proxy, aber ein Hinweis
         let aus = NetzWinProxy { aktiv: false, ..win.clone() };
         assert_eq!(netz_proxy_waehlen("www.dibt.de", &keine, Some(&aus)).proxy, None);
@@ -419,25 +475,48 @@ mod netz_verbindung_tests {
     }
 
     #[test]
+    fn zugangsdaten_des_proxys_erscheinen_nie_in_texten() {
+        let env = |n: &str| (n == "HTTPS_PROXY").then(|| "http://anna:geheim@proxy:3128".to_string());
+        let w = netz_proxy_waehlen("recht.nrw.de", &env, None);
+        // an ureq die volle Adresse, in Texten und in der Oberfläche ohne Zugangsdaten
+        assert_eq!(w.proxy.as_deref(), Some("http://anna:geheim@proxy:3128"));
+        assert_eq!(w.anzeige.as_deref(), Some("http://***@proxy:3128"));
+        let json = serde_json::to_string(&w).unwrap();
+        assert!(!json.contains("geheim") && json.contains("http://***@proxy:3128"), "{json}");
+        let t = netz_fehler_text("https://recht.nrw.de/", "unexpected end of file", &w);
+        assert!(!t.contains("geheim") && t.contains("\nProxy: http://***@proxy:3128 (Umgebung)."), "{t}");
+        // auch im Hinweis zu einem nicht unterstützten Proxy
+        let socks = |n: &str| (n == "HTTPS_PROXY").then(|| "socks5://anna:geheim@s:1080".to_string());
+        let w = netz_proxy_waehlen("recht.nrw.de", &socks, None);
+        assert!(!w.hinweis.as_deref().unwrap().contains("geheim"), "{w:?}");
+        assert_eq!(netz_proxy_anzeige("proxy:3128"), "proxy:3128");
+    }
+
+    #[test]
     fn fehler_verstaendlich() {
-        let kein = NetzProxyWahl { proxy: None, quelle: "keiner".into(), hinweis: None };
+        let kein = netz_proxy_wahl(None, "keiner", None);
         let a = "https://www.gesetze-im-internet.de/bbaug/xml.zip";
         let t = netz_fehler_text(a, "https://www.gesetze-im-internet.de/bbaug/xml.zip: Connection Failed: tls connection init failed: invalid peer certificate: UnknownIssuer", &kein);
         let (erste, zweite) = t.split_once('\n').unwrap();
-        assert!(erste.starts_with("Nicht erreichbar: Das Zertifikat der Verbindung zu www.gesetze-im-internet.de ist auf diesem Rechner nicht vertrauenswürdig"));
-        // beim Zertifikat keine Proxy-Zeile (es liegt nicht am Proxy)
+        // Zertifikatsfehler: eigener Anfang (nicht wiederholt), ohne Proxy-Zeile (es liegt nicht am Proxy)
+        assert!(erste.starts_with("Zertifikat abgelehnt: Das Zertifikat der Verbindung zu www.gesetze-im-internet.de ist auf diesem Rechner nicht vertrauenswürdig"));
         assert!(zweite.starts_with("Technische Einzelheiten: https://www.gesetze-im-internet.de/bbaug/xml.zip: "));
         assert!(zweite.contains("UnknownIssuer"));
         // die Adresse steht nur einmal da
         assert_eq!(zweite.matches("bbaug/xml.zip").count(), 1);
-        let mit = NetzProxyWahl { proxy: Some("http://proxy:3128".into()), quelle: "Windows".into(), hinweis: None };
+        let mit = netz_proxy_wahl(Some("http://proxy:3128".into()), "Windows", None);
         let t = netz_fehler_text("https://testphase.rechtsinformationen.bund.de/v1/x", "Connection Failed: tls connection init failed: unexpected end of file", &mit);
-        assert!(t.starts_with("Nicht erreichbar: Die Verbindung zu testphase.rechtsinformationen.bund.de wurde beim Aufbau abgebrochen – vermutlich blockiert eine Firewall oder ein Proxy sie.\nProxy: Genutzter Proxy: http://proxy:3128 (Windows).\nTechnische Einzelheiten: "));
-        let skript = NetzProxyWahl { proxy: None, quelle: "keiner".into(), hinweis: Some("In Windows ist ein Proxy-Skript eingestellt (x) – LEXIO wertet es nicht aus".into()) };
-        assert!(netz_fehler_text("https://recht.nrw.de/", "unexpected end of file", &skript).contains("\nProxy: In Windows ist ein Proxy-Skript eingestellt (x) – LEXIO wertet es nicht aus – bitte die IT fragen"));
-        assert!(netz_fehler_text("https://recht.nrw.de/", "Network Error: timed out reading response", &kein).starts_with("Zeitüberschreitung: recht.nrw.de antwortet nicht rechtzeitig.\nProxy: Es ist kein Proxy eingestellt."));
+        assert!(t.starts_with("Nicht erreichbar: Die Verbindung zu testphase.rechtsinformationen.bund.de wurde beim Aufbau abgebrochen – vermutlich blockiert eine Firewall oder ein Proxy sie.\nProxy: http://proxy:3128 (Windows).\nTechnische Einzelheiten: "), "{t}");
+        let skript = netz_proxy_wahl(None, "keiner", Some("In Windows ist ein Proxy-Skript eingestellt (x) – LEXIO wertet es nicht aus".into()));
+        assert!(netz_fehler_text("https://recht.nrw.de/", "unexpected end of file", &skript).contains("\nProxy: In Windows ist ein Proxy-Skript eingestellt (x) – LEXIO wertet es nicht aus – bitte die IT fragen (Proxy als HTTPS_PROXY eintragen)."));
+        // ist HTTPS_PROXY selbst unbrauchbar, kein Ratschlag im Kreis
+        let env = netz_proxy_wahl(None, "Umgebung", Some("Proxy „socks5://s:1080“ wird nicht unterstützt (nur http://host:port)".into()));
+        let t = netz_fehler_text("https://recht.nrw.de/", "unexpected end of file", &env);
+        assert!(t.contains("HTTPS_PROXY als http://host:port eintragen") && !t.contains("Proxy als HTTPS_PROXY eintragen"), "{t}");
+        assert!(netz_fehler_text("https://recht.nrw.de/", "Network Error: timed out reading response", &kein).starts_with("Zeitüberschreitung: recht.nrw.de antwortet nicht rechtzeitig.\nProxy: keiner eingestellt."));
         assert!(netz_fehler_text("https://recht.nrw.de/", "Dns Failed: failed to lookup address information", &kein).contains("Die Adresse recht.nrw.de wird nicht gefunden"));
-        assert!(netz_fehler_text("https://recht.nrw.de/", "invalid peer certificate: Expired", &kein).contains("abgelaufen"));
+        assert!(netz_fehler_text("https://recht.nrw.de/", "invalid peer certificate: Expired", &kein).starts_with("Zertifikat abgelehnt: Das Zertifikat von recht.nrw.de ist abgelaufen"));
+        assert!(netz_fehler_text("https://recht.nrw.de/", "Connection Failed: Proxy failed to connect: 407 Proxy Authentication Required", &mit).contains("Der Proxy verlangt eine Anmeldung"));
         assert!(netz_fehler_text("https://recht.nrw.de/", "irgendwas", &kein).starts_with("Nicht erreichbar: recht.nrw.de ist nicht erreichbar."));
     }
 
@@ -457,5 +536,61 @@ mod netz_verbindung_tests {
     #[test]
     fn tls_mit_systemzertifikaten_aufbaubar() {
         assert!(netz_tls().is_ok());
+    }
+
+    // Nachgestellte TLS-Prüfstelle: eine eigene Stamm-CA („Firmen-Firewall Test-CA“, gültig bis 4096) signiert das
+    // Zertifikat eines lokalen Servers für localhost – wie eine Firewall, die HTTPS aufbricht und neu signiert.
+    const TEST_CA: &str = "MIIBqjCCAVCgAwIBAgIULfedUGjV2YdSQq+PbbkFp21sA9wwCgYIKoZIzj0EAwIwOjEgMB4GA1UEAwwXRmlybWVuLUZpcmV3YWxsIFRlc3QtQ0ExFjAUBgNVBAoMDUJlaXNwaWVsIEdtYkgwIBcNNzUwMTAxMDAwMDAwWhgPNDA5NjAxMDEwMDAwMDBaMDoxIDAeBgNVBAMMF0Zpcm1lbi1GaXJld2FsbCBUZXN0LUNBMRYwFAYDVQQKDA1CZWlzcGllbCBHbWJIMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjS32OubV5QUesaJR6SQpaGQ8wIho8l8ZfBfIuNaMb9GhMoOmAeFSXU1zn9Y4Aqj9lCJT3lsfBUoIO/aDzNbFKaMyMDAwHQYDVR0OBBYEFMZuE0UAhzhgAJx8NUjidxtpHiorMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIgG3+0cNl0XTvTPYnEj63nS3ckoIHtashdAZs5iDbHGBYCIQCY7OklsGX1xRQXKMd97558qnUYEE5YNHM1I3lHngqUfg==";
+    const TEST_SERVER: &str = "MIIBdzCCAR2gAwIBAgIUbrQx2E1b3q8AcnxjcPB5vgPsDrkwCgYIKoZIzj0EAwIwOjEgMB4GA1UEAwwXRmlybWVuLUZpcmV3YWxsIFRlc3QtQ0ExFjAUBgNVBAoMDUJlaXNwaWVsIEdtYkgwIBcNNzUwMTAxMDAwMDAwWhgPNDA5NjAxMDEwMDAwMDBaMCExHzAdBgNVBAMMFnJjZ2VuIHNlbGYgc2lnbmVkIGNlcnQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAT2v4ndxH4ePrFs+33dvrMw9z9OGPXWzjyrlGUVJt0xwM1d9VR5fOfvyom73Ta6g36Fdzk93QABYdjdtV3MSA6FoxgwFjAUBgNVHREEDTALgglsb2NhbGhvc3QwCgYIKoZIzj0EAwIDSAAwRQIgQ/aq3/W+6hp/AB2o/sh2dMszz1anq82ojsembEaGCO8CIQCm7R9dHA1tJMI5Hg99V4QmcL87k4ncSbMa+quqlqEWJA==";
+    const TEST_SCHLUESSEL: &str = "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgdyylaFYgla8fG+dRXpUIRpntrFVEnZyM9V51iBSLODehRANCAAT2v4ndxH4ePrFs+33dvrMw9z9OGPXWzjyrlGUVJt0xwM1d9VR5fOfvyom73Ta6g36Fdzk93QABYdjdtV3MSA6F";
+
+    fn der(b64: &str) -> Vec<u8> {
+        use base64::Engine;
+        base64::engine::general_purpose::STANDARD.decode(b64).unwrap()
+    }
+
+    /// lokaler TLS-Server mit dem Zertifikat der Test-CA; antwortet einmal mit „200 OK“; liefert die Adresse
+    fn pruefstelle() -> String {
+        use std::io::{Read, Write};
+        let kette = vec![rustls::pki_types::CertificateDer::from(der(TEST_SERVER)), rustls::pki_types::CertificateDer::from(der(TEST_CA))];
+        let schluessel = rustls::pki_types::PrivateKeyDer::try_from(der(TEST_SCHLUESSEL)).unwrap();
+        let cfg = std::sync::Arc::new(
+            rustls::ServerConfig::builder_with_provider(std::sync::Arc::new(rustls::crypto::ring::default_provider()))
+                .with_safe_default_protocol_versions()
+                .unwrap()
+                .with_no_client_auth()
+                .with_single_cert(kette, schluessel)
+                .unwrap(),
+        );
+        let l = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = l.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            if let Some(Ok(mut s)) = l.incoming().next() {
+                let mut c = rustls::ServerConnection::new(cfg).unwrap();
+                let mut t = rustls::Stream::new(&mut c, &mut s);
+                let mut buf = [0u8; 1024];
+                if t.read(&mut buf).is_ok() {
+                    let _ = t.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok");
+                }
+            }
+        });
+        format!("https://localhost:{port}/")
+    }
+
+    #[test]
+    fn pruefstelle_mit_ca_im_speicher_klappt_ohne_kommt_die_verstaendliche_meldung() {
+        // die CA vertrauenswürdig (wie die Firmen-CA im Windows-Zertifikatspeicher): erreichbar, Aussteller genannt
+        let ca = [rustls::pki_types::CertificateDer::from(der(TEST_CA))];
+        let mit = netz_adresse_pruefen_mit(&pruefstelle(), 10_000, netz_proxy_wahl(None, "keiner", None), &ca);
+        assert!(mit.erreichbar, "{mit:?}");
+        assert_eq!(mit.status, Some(200));
+        assert_eq!(mit.aussteller.as_deref(), Some("Firmen-Firewall Test-CA (Beispiel GmbH)"));
+        // ohne sie: abgelehnt, mit verständlicher Meldung – und trotzdem nennt die Diagnose die Prüfstelle
+        let ohne = netz_adresse_pruefen_mit(&pruefstelle(), 10_000, netz_proxy_wahl(None, "keiner", None), &[]);
+        assert!(!ohne.erreichbar);
+        let f = ohne.fehler.unwrap();
+        assert!(f.starts_with("Zertifikat abgelehnt: Das Zertifikat der Verbindung zu localhost:"), "{f}");
+        assert!(f.contains("UnknownIssuer"), "{f}");
+        assert_eq!(ohne.aussteller.as_deref(), Some("Firmen-Firewall Test-CA (Beispiel GmbH)"));
     }
 }

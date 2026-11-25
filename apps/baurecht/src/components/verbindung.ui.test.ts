@@ -10,12 +10,12 @@ import { befundText, proxyText, VerbindungDialog } from './Verbindung';
 
 // Aufbau wie netz_fehler_text in apps/baurecht/src-tauri/src/netz_verbindung.rs
 const ZERT = [
-  'Nicht erreichbar: Das Zertifikat der Verbindung zu www.gesetze-im-internet.de ist auf diesem Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall …',
+  'Zertifikat abgelehnt: Das Zertifikat der Verbindung zu www.gesetze-im-internet.de ist auf diesem Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall …',
   'Technische Einzelheiten: https://www.gesetze-im-internet.de/bbaug/xml.zip: Connection Failed: tls connection init failed: invalid peer certificate: UnknownIssuer',
 ].join('\n');
 const ABBRUCH = [
   'Nicht erreichbar: Die Verbindung zu testphase.rechtsinformationen.bund.de wurde beim Aufbau abgebrochen – vermutlich blockiert eine Firewall oder ein Proxy sie.',
-  'Proxy: Genutzter Proxy: http://proxy:3128 (Windows).',
+  'Proxy: http://proxy:3128 (Windows).',
   'Technische Einzelheiten: https://testphase.rechtsinformationen.bund.de/: unexpected end of file',
 ].join('\n');
 
@@ -57,13 +57,13 @@ afterEach(() => {
 
 describe('Fehler beim Abruf und „Verbindung prüfen“', () => {
   it('Fehlertext: der Satz sichtbar (ohne doppelten Anfang), Proxy dazu, die technischen Einzelheiten aufklappbar wie in core; alte Texte bleiben ganz', () => {
-    expect(fehlerTeile(ZERT)).toMatchObject({ art: 'Nicht erreichbar', satz: expect.stringMatching(/^Das Zertifikat/), technik: expect.stringMatching(/UnknownIssuer$/) });
-    expect(fehlerTeile(ABBRUCH).proxy).toBe('Genutzter Proxy: http://proxy:3128 (Windows).');
+    expect(fehlerTeile(ZERT)).toMatchObject({ art: 'Zertifikat abgelehnt', satz: expect.stringMatching(/^Das Zertifikat/), technik: expect.stringMatching(/UnknownIssuer$/) });
+    expect(fehlerTeile(ABBRUCH)).toMatchObject({ art: 'Nicht erreichbar', proxy: 'http://proxy:3128 (Windows).' });
     expect(fehlerTeile('Nicht erreichbar: https://x.de/ (Fehler)')).toEqual({ satz: 'Nicht erreichbar: https://x.de/ (Fehler)' });
     expect(fehlerTeile('Host nicht freigegeben: x.de')).toEqual({ satz: 'Host nicht freigegeben: x.de' });
     const host = zeige(createElement(Fehlertext, { text: ABBRUCH, vorne: 'Text nicht verfügbar.', zu: 'BauGB' }));
     expect(host.querySelector('.br-fehlertext > span')!.textContent).toBe(
-      'Text nicht verfügbar. Die Verbindung zu testphase.rechtsinformationen.bund.de wurde beim Aufbau abgebrochen – vermutlich blockiert eine Firewall oder ein Proxy sie. Genutzter Proxy: http://proxy:3128 (Windows).',
+      'Text nicht verfügbar. Die Verbindung zu testphase.rechtsinformationen.bund.de wurde beim Aufbau abgebrochen – vermutlich blockiert eine Firewall oder ein Proxy sie. Proxy: http://proxy:3128 (Windows).',
     );
     const d = host.querySelector<HTMLDetailsElement>('details.rf-details')!;
     expect(d.open).toBe(false);
@@ -132,7 +132,7 @@ describe('Fehler beim Abruf und „Verbindung prüfen“', () => {
   });
 
   it('befundText: Fehler in einer Zeile; Proxy in Worten', () => {
-    expect(befundText(ergebnis, new Date('2026-11-25T10:00:00Z'))).toMatch(/Fehler: Nicht erreichbar: Das Zertifikat .* \| Technische Einzelheiten: https/);
+    expect(befundText(ergebnis, new Date('2026-11-25T10:00:00Z'))).toMatch(/Fehler: Zertifikat abgelehnt: Das Zertifikat .* \| Technische Einzelheiten: https/);
     expect(proxyText({ proxy: null, quelle: 'Ausnahme in Windows' })).toBe('kein Proxy – Ausnahme in Windows');
     expect(proxyText({ proxy: null, quelle: 'keiner' })).toBe('kein Proxy');
     expect(proxyText({ proxy: 'http://p:1', quelle: 'Umgebung' })).toBe('http://p:1 (Umgebung)');

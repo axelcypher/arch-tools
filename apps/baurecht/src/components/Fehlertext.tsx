@@ -1,6 +1,6 @@
 /**
  * Fehler beim Abruf (netz_verbindung.rs, `netz_fehler_text`), in Zeilen:
- *   „Nicht erreichbar: <Satz>“ bzw. „Zeitüberschreitung: <Satz>“
+ *   „Nicht erreichbar: <Satz>“, „Zeitüberschreitung: <Satz>“ bzw. „Zertifikat abgelehnt: <Satz>“
  *   „Proxy: <genutzter Proxy bzw. was fehlt>“ (optional)
  *   „Technische Einzelheiten: <Rohfehler>“ (optional)
  * Gezeigt wird der Satz (der Anfang „Nicht erreichbar“ nur, wo der Zusammenhang ihn nicht schon nennt), der Rohfehler
@@ -9,14 +9,14 @@
  */
 
 export interface FehlerTeile {
-  /** „Nicht erreichbar“, „Zeitüberschreitung“ – fehlt bei anderen Fehlern */
+  /** „Nicht erreichbar“, „Zeitüberschreitung“, „Zertifikat abgelehnt“ – fehlt bei anderen Fehlern */
   art?: string;
   satz: string;
   proxy?: string;
   technik?: string;
 }
 
-const ART = /^(Nicht erreichbar|Zeitüberschreitung): /;
+const ART = /^(Nicht erreichbar|Zeitüberschreitung|Zertifikat abgelehnt): /;
 
 export function fehlerTeile(text: string): FehlerTeile {
   const zeilen = text.split('\n');
@@ -44,7 +44,7 @@ export function fehlerTeile(text: string): FehlerTeile {
  */
 export function Fehlertext({ text, vorne, ohneProxy = false, zu }: { text: string; vorne?: string; ohneProxy?: boolean; zu?: string }) {
   const t = fehlerTeile(text);
-  const satz = [vorne, t.satz, ohneProxy ? '' : t.proxy].filter(Boolean).join(' ');
+  const satz = [vorne, t.satz, ohneProxy || !t.proxy ? '' : `Proxy: ${t.proxy}`].filter(Boolean).join(' ');
   return (
     <div className="br-fehlertext">
       <span>{satz}</span>

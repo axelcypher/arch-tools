@@ -171,7 +171,7 @@ async fn netz_holen(url: String, etag: Option<String>, geaendert: Option<String>
 #[tauri::command]
 async fn netz_pruefen() -> Result<Vec<NetzPruefung>, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        let faeden: Vec<_> = NETZ_PRUEF_HOSTS.iter().map(|h| std::thread::spawn(move || netz_host_pruefen(h, 15_000))).collect();
+        let faeden: Vec<_> = NETZ_PRUEF_HOSTS.iter().map(|h| std::thread::spawn(move || netz_host_pruefen(h, 30_000))).collect();
         faeden.into_iter().map(|f| f.join().map_err(|_| "Prüfung abgebrochen".to_string())).collect::<Result<Vec<_>, _>>()
     })
     .await

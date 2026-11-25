@@ -490,11 +490,14 @@ Enter den Hauptknopf aus; Pflichtfelder gibt es dort keine; der Titel steht im K
   zusätzlich. Proxy: zuerst die Umgebung (`HTTPS_PROXY`, `ALL_PROXY`, `HTTP_PROXY`, `NO_PROXY`), sonst die
   Internetoptionen von Windows (Proxyserver, für https der Eintrag `https=`, Ausnahmen inkl. `<local>`). Ein
   Proxy-Skript (PAC) wird erkannt, aber nicht ausgewertet – die Meldung sagt das; dann den Proxy als `HTTPS_PROXY`
-  eintragen. Nur http-Proxys (CONNECT), kein SOCKS.
+  eintragen; „Einstellungen automatisch erkennen“ (WPAD) wird nicht ausgewertet. Nur http-Proxys (CONNECT), kein SOCKS,
+  keine Anmeldung am Proxy (407, z. B. Windows-Anmeldung – die Meldung sagt das). Zugangsdaten in einer Proxy-Adresse
+  (`http://name:passwort@host:port`) erscheinen in keinem Text, auch nicht im kopierten Befund.
 - **Fehler beim Abruf** stehen als verständlicher Satz da (z. B. „Das Zertifikat der Verbindung zu … ist auf diesem
   Rechner nicht vertrauenswürdig – vermutlich prüft eine Firewall oder ein Virenschutz …“, „… beim Aufbau abgebrochen –
   vermutlich blockiert eine Firewall oder ein Proxy sie“, jeweils mit Host und genutztem Proxy); der Rohfehler ist als
-  „Technische Einzelheiten“ aufklappbar (wie in den Rückfragen).
+  „Technische Einzelheiten“ aufklappbar (wie in den Rückfragen). Zertifikatsfehler („Zertifikat abgelehnt“) werden nicht
+  wiederholt – sie scheiterten jedes Mal gleich; Verbindungsabbrüche und Zeitüberschreitungen schon.
 - **„Verbindung prüfen …“** (Menü „Mehr“): je Rechtsquelle bzw. Geodienst erreichbar ja/nein, wer das Zertifikat
   ausgestellt hat (eine Prüfstelle zeigt sich mit eigenem Namen) und welcher Proxy genutzt wird; „Befund kopieren“
   legt alles als Text in die Zwischenablage (für die IT bzw. den Support).
