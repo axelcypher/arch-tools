@@ -1,4 +1,0 @@
-{
-  "baurecht": { "stufe": "minor", "notiz": "Gesetzestexte laden auch in Firmennetzen: Zertifikate wie Windows (Firewall- und Virenschutz-Zertifikate), Proxy aus den Windows-Internetoptionen, verständliche Fehlermeldungen und „Verbindung prüfen …“." },
-  "suite": { "stufe": "minor", "notiz": "LEXIO: Gesetzestexte laden auch in Firmennetzen (Zertifikate wie Windows, Windows-Proxy, „Verbindung prüfen …“)." }
-}
